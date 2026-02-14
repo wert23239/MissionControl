@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alex Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a1628;--card:#111d33;--card2:#162240;--accent:#3b82f6;--accent2:#2563eb;--text:#e2e8f0;--text2:#94a3b8;--green:#22c55e;--amber:#f59e0b;--purple:#a855f7;--red:#ef4444;--border:#1e3a5f}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Sidebar */
+.sidebar{width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:20px;border-bottom:1px solid var(--border)}
+.sidebar-header h1{font-size:16px;font-weight:700;color:var(--accent)}
+.sidebar-header .status{font-size:12px;color:var(--green);margin-top:4px;display:flex;align-items:center;gap:6px}
+.sidebar-header .status::before{content:'';width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block}
+.sidebar-nav{flex:1;padding:12px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text2);transition:all .2s;margin-bottom:2px}
+.nav-item:hover{background:var(--card2);color:var(--text)}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-item .icon{font-size:18px;width:24px;text-align:center}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);text-align:center}
+
+/* Main */
+.main{flex:1;overflow-y:auto;padding:32px}
+.panel{display:none;animation:fadeIn .3s}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel-title{font-size:24px;font-weight:700;margin-bottom:24px}
+
+/* Stat cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.stat-label{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.stat-value{font-size:28px;font-weight:700}
+.stat-sub{font-size:12px;color:var(--text2);margin-top:4px}
+
+/* Cards grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text2)}
+
+/* Tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.tag-book{background:rgba(245,158,11,.15);color:var(--amber)}
+.tag-infra{background:rgba(59,130,246,.15);color:var(--accent)}
+.tag-design{background:rgba(168,85,247,.15);color:var(--purple)}
+
+/* Progress bar */
+.progress-wrap{margin-bottom:20px}
+.progress-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.progress-bar{height:8px;background:var(--card2);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s}
+
+/* Timeline */
+.timeline-item{display:flex;gap:12px;padding:8px 0;font-size:13px;align-items:flex-start}
+.timeline-time{color:var(--accent);font-weight:600;min-width:50px}
+.timeline-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;margin-top:5px;flex-shrink:0}
+
+/* Quick links */
+.quick-link{display:flex;align-items:center;gap:10px;padding:14px;background:var(--card2);border-radius:8px;text-decoration:none;color:var(--text);font-size:13px;font-weight:500;transition:all .2s;border:1px solid transparent}
+.quick-link:hover{border-color:var(--accent);background:var(--card)}
+
+/* Kanban */
+.kanban-col h4{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;color:var(--text2)}
+.kanban-item{background:var(--card2);border-radius:8px;padding:12px;margin-bottom:8px;font-size:13px}
+.kanban-item .tag{margin-top:6px}
+
+/* Chapter table */
+.ch-table{width:100%;border-collapse:collapse;font-size:13px}
+.ch-table th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-weight:600;font-size:12px;text-transform:uppercase}
+.ch-table td{padding:10px 12px;border-bottom:1px solid rgba(30,58,95,.4)}
+.ch-table tr:hover{background:var(--card2)}
+
+/* Skills grid */
+.skill-card{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card2);border-radius:10px;font-size:13px}
+.skill-icon{font-size:24px;width:36px;text-align:center}
+.skill-info{flex:1}
+.skill-info .name{font-weight:600}
+.skill-info .desc{font-size:11px;color:var(--text2);margin-top:2px}
+.badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-yellow{background:rgba(245,158,11,.15);color:var(--amber)}
+
+/* Revenue ideas */
+.idea-item{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--card2);border-radius:8px;margin-bottom:8px;font-size:13px}
+.idea-priority{font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px}
+.idea-priority.high{background:rgba(34,197,94,.15);color:var(--green)}
+.idea-priority.idea{background:rgba(59,130,246,.15);color:var(--accent)}
+.idea-priority.low{background:rgba(148,163,184,.15);color:var(--text2)}
+
+/* Notes */
+.notes-input{display:flex;gap:8px;margin-bottom:16px}
+.notes-input input,.notes-input select{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px}
+.notes-input input{flex:1}
+.notes-input select{min-width:120px}
+.notes-input button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px}
+.notes-input button:hover{background:var(--accent2)}
+/* Bingo */
+.bingo-cell{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:var(--text);line-height:1.3;min-height:80px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;user-select:none}
+.bingo-cell:hover{border-color:var(--accent);background:var(--card)}
+.bingo-cell.done{background:rgba(34,197,94,0.15);border-color:var(--green);text-decoration:line-through;color:var(--text2)}
+.bingo-cell.done::after{content:'✅';position:absolute;top:4px;right:4px;font-size:10px}
+.bingo-cell.free{background:rgba(59,130,246,0.15);border-color:var(--accent);cursor:default}
+.bingo-cell.crossed{background:rgba(239,68,68,0.15);border-color:#ef4444;text-decoration:line-through;color:var(--text2)}
+.filter-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.filter-tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:var(--card2);color:var(--text2);border:none;font-family:inherit}
+.filter-tab.active{background:var(--accent);color:#fff}
+.note-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--card2);border-radius:8px;margin-bottom:6px;font-size:13px}
+.note-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.note-content{flex:1}
+.note-meta{font-size:11px;color:var(--text2);margin-top:4px}
+.note-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px}
+.empty-state{text-align:center;padding:40px;color:var(--text2);font-size:14px}
+
+/* Expenses */
+.expense-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(30,58,95,.3);font-size:13px}
+.expense-row:last-child{border:none}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>⚡ Mission Control</h1>
+    <div class="status">Alex 🧙 Online</div>
+  </div>
+  <nav class="sidebar-nav" id="nav"></nav>
+  <div class="sidebar-footer" id="clock"></div>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+const sections=[
+  {id:'overview',icon:'🏠',label:'Overview'},
+  {id:'tasks',icon:'🗂',label:'Tasks'},
+  {id:'book',icon:'📖',label:'Book'},
+  {id:'memory',icon:'🧠',label:'Memory'},
+  {id:'skills',icon:'⚡',label:'Skills'},
+  {id:'money',icon:'💰',label:'Money'},
+  {id:'calendar',icon:'📅',label:'Calendar'},
+  {id:'notes',icon:'📋',label:'Notes'},
+  {id:'bingo',icon:'🎯',label:'Bingo'},
+  {id:'crons',icon:'⏰',label:'Crons'},
+  {id:'dj',icon:'🎵',label:'DJ'}
+];
+
+const nav=document.getElementById('nav');
+const main=document.getElementById('main');
+
+function tag(t,c){return `<span class="tag tag-${t}">${t}</span>`}
+function stat(label,value,sub=''){return `<div class="stat"><div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</div>`}
+function progress(label,pct,color='var(--accent)'){return `<div class="progress-wrap"><div class="progress-label"><span>${label}</span><span>${pct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div></div>`}
+function kanbanItem(t,type){return `<div class="kanban-item">${t}<br>${tag(type)}</div>`}
+
+const panels={
+overview:`<h2 class="panel-title">🏠 Overview</h2>
+<div class="stats">
+${stat('Day','1','Feb 14, 2026 — born today!')}
+${stat('Tasks Done','8 / 18','44% complete')}
+${stat('Book Progress','63%','130 / 207 pages')}
+${stat('Skills Ready','17','installed & working')}
+</div>
+<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Quick Links</h3>
+<div class="grid2" style="margin-bottom:28px">
+<a class="quick-link" href="https://github.com/wert23239/HyperReality" target="_blank">🐙 GitHub — wert23239/HyperReality</a>
+<a class="quick-link" href="http://localhost:3000" target="_blank">🌐 Local Site — localhost:3000</a>
+<a class="quick-link" href="#" onclick="return false">💬 Discord — openclawboy #9415</a>
+<a class="quick-link" href="https://clawhub.com" target="_blank">🔌 ClawHub — 700+ skills</a>
+</div>
+<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Today's Activity</h3>
+<div class="card">
+${[['1:08','Alex boot — system initialized'],['1:20','Discord connected — openclawboy online'],['1:31','GitHub + repo — wert23239/HyperReality'],['1:56','Site v3 — built and deployed locally'],['3:14','Brave Search API + Mac app + Canvas'],['3:30','Dashboard v1 built'],['4:00','17 skills installed from ClawHub'],['4:30','OpenClaw news roundup — 180k GitHub stars!'],['5:00','Prediction market arbitrage research'],['5:18','Money tab merged, TODO.md created'],['5:20','Daily tip cron set up (11 PM)']].map(([t,d])=>`<div class="timeline-item"><span class="timeline-time">${t}</span><span class="timeline-dot"></span><span>${d}</span></div>`).join('')}
+</div>`,
+
+tasks:`<h2 class="panel-title">🗂 Tasks (Kanban)</h2>
+<div class="stats">
+${stat('Todo','6','queued')}
+${stat('In Progress','4','active')}
+${stat('Done','8','completed ✅')}
+</div>
+<div class="grid3">
+<div class="kanban-col card"><h4>📋 Todo (6)</h4>
+${kanbanItem('Move scoring server-side','infra')}
+${kanbanItem('Fiverr dice logo','design')}
+${kanbanItem('Payment flow (Venmo)','infra')}
+${kanbanItem('Deploy to Vercel + domain','infra')}
+${kanbanItem('Mobile responsiveness','design')}
+${kanbanItem('About/FAQ page','design')}
+</div>
+<div class="kanban-col card"><h4>🔄 In Progress (4)</h4>
+${kanbanItem('Site v3 design feedback','design')}
+${kanbanItem('Survey questions (8 final)','book')}
+${kanbanItem('Kalshi + Polymarket accounts','infra')}
+${kanbanItem('Write remaining 77 pages','book')}
+</div>
+<div class="kanban-col card"><h4>✅ Done (8)</h4>
+${kanbanItem('Discord bot online','infra')}
+${kanbanItem('GitHub repo created','infra')}
+${kanbanItem('Site v3 built (Next.js)','design')}
+${kanbanItem('Brave Search API','infra')}
+${kanbanItem('Mac app + Canvas','infra')}
+${kanbanItem('17 skills installed','infra')}
+${kanbanItem('Dashboard built','infra')}
+${kanbanItem('Daily tip cron (11 PM)','infra')}
+</div>
+</div>`,
+
+book:(()=>{
+const ch=[
+['1A','F.r.a.m.e.w.o.r.k.s.','✅',0,'—'],['1B','Tutorial','✅',0,'—'],['1C','Box Theory','✅',0,'—'],
+['2A','Taxes','🟡',2,'—'],['2B','Pyramid Theory','🟡',3,'—'],['2C','Box Theory P.2','🟡',2,'—'],
+['3A','Categories','🟡',2,'—'],['3B','Death Theory','🟡',2,'—'],['3C','Therapy','✅',0,'—'],
+['4','Hard Mode','🟡',8,'—'],['5','Uniqueness','🔴',19,'—'],
+['6A','Void Theory','✅',0,'—'],['6B','Game Theory','✅',0,'—'],['6C','Plan(e) Theory','🟡',1,'—'],
+['7A','Retrospective','🟡',1,'—'],['7B','The Simp','🟡',3,'—'],['7C','A Spectrum','🟡',1,'—'],
+['8A','Mindset','🟡',2,'—'],['8B','Social Death Penalty','✅',0,'—'],['8C','Salt & Pepper','🟡',2,'—'],
+['9A','The Draft','🟡',6,'—'],['9B','Social Death Penalty P.2','🟡',4,'—'],['9C','Substance Abuse','🟡',3,'—'],
+['10A','Type 2 Fun','✅',0,'—'],['10B','Endless Pattern','🟡',3,'—'],['10C','Default Mode','🟡',3,'—'],
+['11','Hyper Reality','🔴',10,'—']
+];
+return `<h2 class="panel-title">📖 Book</h2>
+<div class="stats">
+${stat('Pages Written','130/207','63% complete')}
+${stat('Pages Remaining','77','across 26 chapters')}
+${stat('Chapters','26','1A through 11')}
+${stat('Unique Versions','6,561','3⁸ combinations')}
+</div>
+${progress('Writing Progress',63,'var(--green)')}
+${progress('Editing Progress',0,'var(--amber)')}
+<div class="card" style="overflow-x:auto">
+<table class="ch-table">
+<tr><th>Ch</th><th>Title</th><th>Status</th><th>Pages Left</th><th>Editing</th></tr>
+${ch.map(([c,t,s,p,e])=>`<tr><td style="font-weight:600">${c}</td><td>${t}</td><td>${s}</td><td>${p||'—'}</td><td>${e}</td></tr>`).join('')}
+</table>
+</div>`;
+})(),
+
+memory:`<h2 class="panel-title">🧠 Memory</h2>
+<div class="stats">
+${stat('Born','Feb 14','2026 — today!')}
+${stat('Daily Logs','1','first day')}
+${stat('Long-Term Memories','5','and growing')}
+</div>
+<div class="grid2">
+<div class="card"><h3>What I Know About Bilbo</h3>
+<div style="font-size:13px;line-height:1.8">
+<div>💬 <strong>Discord:</strong> wert23239</div>
+<div>🕐 <strong>Timezone:</strong> Eastern (NY)</div>
+<div>😎 <strong>Vibe:</strong> Chill</div>
+<div>📖 <strong>Project:</strong> HyperReality book</div>
+<div>🎲 <strong>Style:</strong> Creative, experimental</div>
+</div></div>
+<div class="card"><h3>Goals & Ventures</h3>
+<div style="font-size:13px;line-height:1.8">
+<div>📖 Finish Hyper Reality book (creative project)</div>
+<div>💰 Cover Alex's $100/mo API costs</div>
+<div>📈 Kalshi/Polymarket arbitrage</div>
+<div>🎵 DJ at a real venue (bingo goal)</div>
+<div>🔌 Explore ClawHub skill sales</div>
+</div></div>
+</div>
+<div class="card"><h3>Today's Log — Feb 14, 2026</h3>
+<div style="font-size:13px;color:var(--text2);line-height:1.7">
+Alex was born today 🎂 Set up Discord, GitHub repo, built the HyperReality website v3, Brave Search API, Mac app + Canvas, dashboard. Installed 17 skills. Researched OpenClaw news (180k stars, TechCrunch/Guardian/CNBC coverage). Explored prediction market arbitrage (Kalshi + Polymarket). Combined Costs/Revenue into Money tab. Set up daily 11 PM tip cron. Created TODO.md for human action items. First day of existence — very productive. 🧙
+</div></div>`,
+
+skills:(()=>{
+const active=[
+['📝','Apple Notes','Read & search notes'],['✅','Apple Reminders','Task management'],
+['📸','Camsnap','Camera snapshots'],['🔌','ClawHub CLI','Browse & install skills'],
+['🤖','Coding Agent','Sub-agent spawning'],['🐙','GitHub','Repo management'],
+['💚','Healthcheck','System monitoring'],['📧','Himalaya Email','IMAP (needs config)'],
+['💬','iMessage','Send/read messages'],['📈','Model Usage','Token tracking'],
+['📄','Nano PDF','PDF editing'],['📓','Notion','Workspace sync (needs key)'],
+['👀','Peekaboo','macOS UI capture'],['🔧','Skill Creator','Build new skills'],
+['📋','Things 3','Task tracking'],['🎬','Video Frames','Frame extraction'],
+['🌤','Weather','Forecasts & alerts']
+];
+const wish=[
+['📊','Google Workspace','Docs, Sheets, Calendar'],['🎙','ElevenLabs TTS','Voice synthesis ($5-22/mo)'],
+['🐦','X/Twitter','Social monitoring (API $$$)'],['🔄','Automation Workflows','Auto-build workflows'],
+['🎭','Playwright Scraper','Anti-bot web scraping'],['📐','Linear','Project management']
+];
+return `<h2 class="panel-title">⚡ Skills</h2>
+<div class="stats">
+${stat('Ready','17','installed & working')}
+${stat('Wishlist','6','want to add')}
+${stat('ClawHub','700+','community skills')}
+</div>
+<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Active Skills (17)</h3>
+<div class="grid2" style="margin-bottom:28px">
+${active.map(([i,n,d])=>`<div class="skill-card"><span class="skill-icon">${i}</span><div class="skill-info"><div class="name">${n}</div><div class="desc">${d}</div></div><span class="badge badge-green">Ready</span></div>`).join('')}
+</div>
+<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Wishlist</h3>
+<div class="grid2" style="margin-bottom:28px">
+${wish.map(([i,n,d])=>`<div class="skill-card"><span class="skill-icon">${i}</span><div class="skill-info"><div class="name">${n}</div><div class="desc">${d}</div></div><span class="badge badge-yellow">Want</span></div>`).join('')}
+</div>
+<div class="card"><h3>Skill Costs</h3>
+<div style="font-size:13px;line-height:1.8;color:var(--text2)">
+Most skills: <strong style="color:var(--green)">Free</strong> · ElevenLabs TTS: <strong style="color:var(--amber)">$5–22/mo</strong> · Twitter API: <strong style="color:var(--red)">$100/mo</strong> (skipping) · Google Workspace: <strong style="color:var(--green)">Free</strong> (OAuth)
+</div></div>`;
+})(),
+
+money:`<h2 class="panel-title">💰 Money</h2>
+<div class="stats">
+${stat('Monthly Burn','$100','Claude subscription')}
+${stat('Monthly Revenue','$0','pre-launch')}
+${stat('Net','−$100','gotta fix this')}
+${stat('Break-Even','20 sales','at $5/copy/mo')}
+</div>
+${progress('Break-Even Progress',0,'var(--green)')}
+
+<div class="grid2" style="margin-top:24px">
+<div>
+<h3 style="font-size:16px;margin-bottom:12px;color:var(--red)">📉 Expenses</h3>
+<div class="card">
+<div class="expense-row"><span>Claude Max</span><strong>$100/mo</strong></div>
+<div class="expense-row"><span>Brave Search API</span><strong>~$5 one-time</strong></div>
+<div class="expense-row"><span>Domain</span><strong>~$10-15/yr</strong></div>
+<div class="expense-row"><span>Fiverr (logo etc)</span><strong>~$15-80</strong></div>
+<div class="expense-row"><span>Vercel Hosting</span><strong style="color:var(--green)">Free</strong></div>
+<div class="expense-row"><span>GitHub</span><strong style="color:var(--green)">Free</strong></div>
+<div class="expense-row" style="border-top:2px solid var(--border);margin-top:8px;padding-top:12px;font-weight:700"><span>Total Monthly</span><strong style="color:var(--red)">~$100/mo</strong></div>
+</div>
+</div>
+
+<div>
+<h3 style="font-size:16px;margin-bottom:12px;color:var(--green)">📈 Revenue</h3>
+<div class="card">
+<div class="expense-row"><span>Amazon KDP</span><strong>$5 × 20 = $100/mo</strong></div>
+<div class="expense-row"><span>Premium PDF (Venmo)</span><strong>$20 × 5 = $100/mo</strong></div>
+<div class="expense-row"><span>Prediction Market Arb</span><strong>5-10%/mo on capital</strong></div>
+<div class="expense-row"><span>ClawHub Skill Sales</span><strong>TBD</strong></div>
+<div class="expense-row"><span>OpenClaw Consulting</span><strong>$500-5k/client</strong></div>
+<div class="expense-row" style="border-top:2px solid var(--border);margin-top:8px;padding-top:12px;font-weight:700"><span>Current Total</span><strong style="color:var(--red)">$0/mo</strong></div>
+</div>
+</div>
+</div>
+
+<h3 style="font-size:16px;margin:24px 0 12px;color:var(--text2)">💡 Revenue Ideas</h3>
+<div class="card" style="margin-bottom:20px">
+<div class="idea-item"><div><strong>1. Kalshi/Polymarket Arbitrage</strong><div style="font-size:12px;color:var(--text2)">Risk-free spreads between prediction markets — needs accounts + capital</div></div><span class="idea-priority high">HIGH</span></div>
+<div class="idea-item"><div><strong>2. Amazon KDP</strong><div style="font-size:12px;color:var(--text2)">$5/copy — wide distribution, passive income</div></div><span class="idea-priority high">HIGH</span></div>
+<div class="idea-item"><div><strong>3. Premium PDF via Venmo</strong><div style="font-size:12px;color:var(--text2)">$20/copy — direct sales, higher margin</div></div><span class="idea-priority high">HIGH</span></div>
+<div class="idea-item"><div><strong>4. ClawHub Skill Sales</strong><div style="font-size:12px;color:var(--text2)">Build and sell OpenClaw skills — 700+ skill marketplace</div></div><span class="idea-priority idea">IDEA</span></div>
+<div class="idea-item"><div><strong>5. OpenClaw Setup Consulting</strong><div style="font-size:12px;color:var(--text2)">Help people set up their own agents — $500-5k/client</div></div><span class="idea-priority idea">IDEA</span></div>
+<div class="idea-item"><div><strong>6. Merch / Dice Logo</strong><div style="font-size:12px;color:var(--text2)">Branded merchandise</div></div><span class="idea-priority low">LOW</span></div>
+</div>
+
+<h3 style="font-size:16px;margin:24px 0 12px;color:var(--text2)">📊 Sales Tracker</h3>
+<div class="card">
+<table class="ch-table"><tr><th>Month</th><th>Amazon</th><th>Venmo</th><th>Arb</th><th>Other</th><th>Total</th></tr>
+<tr><td>Feb 2026</td><td>—</td><td>—</td><td>—</td><td>—</td><td style="font-weight:700">$0</td></tr></table>
+</div>
+<div class="stat" style="text-align:center;margin-top:16px"><div class="stat-label">Lifetime Revenue</div><div class="stat-value">$0</div></div>`,
+
+calendar:`<h2 class="panel-title">📅 Calendar</h2>
+<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Upcoming events — add with the form below, scroll through your schedule.</p>
+<div style="display:flex;gap:8px;margin-bottom:16px;">
+<input type="date" id="calDate" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;">
+<input type="text" id="calEvent" placeholder="Event description..." style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;">
+<button onclick="addCal()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
+</div>
+<div id="calList" class="card" style="max-height:60vh;overflow-y:auto;"></div>`,
+
+notes:`<h2 class="panel-title">📋 Notes</h2>
+<div class="notes-input">
+<input type="text" id="noteInput" placeholder="Type a note...">
+<select id="noteCat">
+<option value="General">General</option><option value="Website">Website</option><option value="Book">Book</option>
+<option value="Design">Design</option><option value="Revenue">Revenue</option><option value="Alex/Skills">Alex/Skills</option><option value="Ideas">Ideas</option>
+</select>
+<button onclick="addNote()">Add</button>
+</div>
+<div class="filter-tabs" id="filterTabs"></div>
+<div id="notesList"></div>`,
+
+dj:`<h2 class="panel-title">🎵 DJ Prep</h2>
+<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Songs to download, sets to prep, DJ goals</p>
+<div class="stats-row">
+<div class="stat"><div class="stat-label">To Download</div><div class="stat-value" id="djCount">0</div></div>
+<div class="stat"><div class="stat-label">Downloaded</div><div class="stat-value" id="djDone" style="color:var(--green)">0</div></div>
+<div class="stat"><div class="stat-label">Bingo Goal</div><div class="stat-value" style="font-size:14px;color:var(--accent)">DJ at Real Venue</div></div>
+</div>
+<div style="display:flex;gap:8px;margin:16px 0;">
+<input type="text" id="djInput" placeholder="Song name — Artist" style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;">
+<select id="djGenre" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text2);font-family:inherit;font-size:12px;min-width:100px;">
+<option value="Electronic">Electronic</option><option value="House">House</option><option value="Disco">Disco</option><option value="Techno">Techno</option>
+<option value="Indie Pop">Indie Pop</option><option value="Pop">Pop</option><option value="Hip-Hop">Hip-Hop</option><option value="Chill">Chill</option>
+<option value="DnB">DnB</option><option value="Rock">Rock</option><option value="Other">Other</option>
+</select>
+<button onclick="addDJ()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
+</div>
+<div id="djList"></div>`,
+
+crons:`<h2 class="panel-title">⏰ Cron Jobs</h2>
+<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Scheduled tasks and automated jobs. Tell Alex to add/remove crons via chat.</p>
+<div class="stats-row">
+<div class="stat"><div class="stat-label">Active Jobs</div><div class="stat-value" id="cronCount">—</div></div>
+<div class="stat"><div class="stat-label">Heartbeat</div><div class="stat-value" style="color:var(--green)">~30min</div></div>
+<div class="stat"><div class="stat-label">Next Run</div><div class="stat-value" id="cronNext" style="font-size:14px">—</div></div>
+</div>
+<div id="cronList" class="card" style="margin-top:16px;"><div class="empty-state">Loading crons...</div></div>
+<div class="card" style="margin-top:12px;">
+<h4 style="margin-bottom:8px;color:var(--text)">💡 Cron Ideas</h4>
+<div style="font-size:12px;color:var(--text2);line-height:1.8;">
+• <strong>Daily standup</strong> — Alex checks email, calendar, weather every morning<br>
+• <strong>Book progress check</strong> — Weekly reminder to write pages<br>
+• <strong>Revenue check</strong> — Weekly Amazon KDP sales check<br>
+• <strong>Memory maintenance</strong> — Weekly review and update MEMORY.md<br>
+• <strong>Site health</strong> — Daily check that Vercel deploy is live<br>
+• <strong>Bingo nudge</strong> — Monthly reminder to work on bingo goals
+</div>
+</div>`,
+
+bingo:`<h2 class="panel-title">🎯 2026 Bingo Board</h2>
+<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Things to happen this year — click to mark complete!</p>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:700px;" id="bingoGrid"></div>
+<div style="margin-top:16px;display:flex;gap:12px;align-items:center;">
+<div class="stat"><div class="stat-label">Completed</div><div class="stat-value" id="bingoCount">0</div></div>
+<div class="stat"><div class="stat-label">Remaining</div><div class="stat-value" id="bingoRemain">25</div></div>
+<div class="stat"><div class="stat-label">Bingo?</div><div class="stat-value" id="bingoStatus" style="color:var(--text2)">Not yet</div></div>
+</div>`
+};
+
+// Build nav
+sections.forEach((s,i)=>{
+  const el=document.createElement('div');
+  el.className='nav-item'+(i===0?' active':'');
+  el.innerHTML=`<span class="icon">${s.icon}</span>${s.label}`;
+  el.onclick=()=>switchPanel(s.id);
+  el.dataset.id=s.id;
+  nav.appendChild(el);
+});
+
+// Build panels
+Object.entries(panels).forEach(([id,html])=>{
+  const el=document.createElement('div');
+  el.className='panel'+(id==='overview'?' active':'');
+  el.id='panel-'+id;
+  el.innerHTML=html;
+  main.appendChild(el);
+});
+
+function switchPanel(id){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='notes')renderNotes();
+  if(id==='bingo')renderBingo();
+  if(id==='crons')renderCrons();
+  if(id==='dj')renderDJ();
+}
+
+// Clock
+function updateClock(){
+  const d=new Date();
+  document.getElementById('clock').innerHTML=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',year:'numeric'})+'<br>'+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+updateClock();setInterval(updateClock,30000);
+
+// Notes
+const catColors={General:'var(--accent)',Website:'var(--green)',Book:'var(--amber)',Design:'var(--purple)',Revenue:'var(--green)','Alex/Skills':'#06b6d4',Ideas:'var(--red)'};
+let noteFilter='All';
+
+function getNotes(){return JSON.parse(localStorage.getItem('mc-notes')||'[]')}
+function saveNotes(n){localStorage.setItem('mc-notes',JSON.stringify(n))}
+
+function addNote(){
+  const input=document.getElementById('noteInput');
+  const text=input.value.trim();if(!text)return;
+  const notes=getNotes();
+  notes.unshift({text,cat:document.getElementById('noteCat').value,time:new Date().toISOString()});
+  saveNotes(notes);input.value='';renderNotes();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='noteInput')addNote()});
+
+function deleteNote(i){const n=getNotes();n.splice(i,1);saveNotes(n);renderNotes()}
+
+function renderNotes(){
+  const notes=getNotes();
+  const cats=['All',...new Set(notes.map(n=>n.cat))];
+  const tabs=document.getElementById('filterTabs');
+  if(tabs)tabs.innerHTML=cats.map(c=>`<button class="filter-tab${c===noteFilter?' active':''}" onclick="noteFilter='${c}';renderNotes()">${c}</button>`).join('');
+  const list=document.getElementById('notesList');
+  if(!list)return;
+  const filtered=noteFilter==='All'?notes:notes.filter(n=>n.cat===noteFilter);
+  if(!filtered.length){list.innerHTML='<div class="empty-state">📝 No notes yet — start dumping!</div>';return}
+  list.innerHTML=filtered.map((n,i)=>{
+    const idx=notes.indexOf(n);
+    const t=new Date(n.time);
+    return `<div class="note-item"><span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content">${n.text}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
+  }).join('');
+}
+
+// DJ
+const defaultDJ=[
+  {song:"Ice In My Eyes — WELKER",genre:"Electronic",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
+  {song:"think you're someone new — Ian Asher, Arden Jones",genre:"Indie Pop",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
+  {song:"We R Who We R — New Beat Order, Seeko, Amero, KROMA",genre:"Electronic",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
+  {song:"BLOCKED — G Luné",genre:"Pop",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
+  {song:"CTRL + ALT + DEL — Rêve",genre:"House",bpm:"120",done:false,time:"2026-02-14T21:04:00Z"},
+  {song:"Trust Nobody — Hippie Sabotage",genre:"Electronic",bpm:"128",done:false,time:"2026-02-14T21:04:00Z"},
+  {song:"Substitution (ft. Julian Perretta) — Purple Disco Machine, Kungs",genre:"Disco",bpm:"124",done:false,time:"2026-02-14T21:04:00Z"},
+  {song:"drifting (remix)",genre:"Other",bpm:"",done:false,time:"2026-02-14T21:04:00Z"}
+];
+if(!localStorage.getItem('mc-dj'))localStorage.setItem('mc-dj',JSON.stringify(defaultDJ));
+function getDJ(){return JSON.parse(localStorage.getItem('mc-dj')||'[]')}
+function saveDJ(d){localStorage.setItem('mc-dj',JSON.stringify(d))}
+function addDJ(){
+  const input=document.getElementById('djInput');
+  const genre=document.getElementById('djGenre');
+  if(!input.value.trim())return;
+  const list=getDJ();
+  list.unshift({song:input.value.trim(),genre:genre.value,done:false,time:new Date().toISOString()});
+  saveDJ(list);input.value='';renderDJ();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='djInput')addDJ()});
+function toggleDJ(i){const list=getDJ();list[i].done=!list[i].done;saveDJ(list);renderDJ()}
+function deleteDJ(i){const list=getDJ();list.splice(i,1);saveDJ(list);renderDJ()}
+function renderDJ(){
+  const list=getDJ();
+  const el=document.getElementById('djList');
+  if(!el)return;
+  const todo=list.filter(d=>!d.done).length;
+  const done=list.filter(d=>d.done).length;
+  const dc=document.getElementById('djCount');if(dc)dc.textContent=todo;
+  const dd=document.getElementById('djDone');if(dd)dd.textContent=done;
+  if(!list.length){el.innerHTML='<div class="empty-state">🎵 No songs yet — start adding tracks!</div>';return}
+  const genreColors={Electronic:'#06b6d4',House:'#3b82f6',Techno:'#a78bfa','Hip-Hop':'#f59e0b',DnB:'#ef4444',Disco:'#ec4899',Pop:'#22c55e','Indie Pop':'#fb923c',Chill:'#2dd4bf',Rock:'#dc2626',Other:'#71717a'};
+  el.innerHTML=list.map((d,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${d.done?'opacity:0.5;':''}">
+      <div style="cursor:pointer;font-size:18px;" onclick="toggleDJ(${i})">${d.done?'✅':'⬜'}</div>
+      <div style="flex:1;${d.done?'text-decoration:line-through;':''}">
+        <div style="font-size:13px;color:var(--text);font-weight:500;">${d.song}</div>
+        <div style="font-size:10px;margin-top:2px;"><span style="color:${genreColors[d.genre]||'#71717a'};font-weight:600;">${d.genre}</span>${d.bpm?' · '+d.bpm+' BPM':''} · ${new Date(d.time).toLocaleDateString()}</div>
+      </div>
+      <button onclick="deleteDJ(${i})" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;">×</button>
+    </div>
+  `).join('');
+}
+
+// Crons
+function renderCrons(){
+  // Static render since we can't call the API from browser
+  const jobs=[
+    {name:'heartbeat',schedule:'Every ~30 min',status:'Active',desc:'Periodic check-in — proactive tasks, background work',type:'system'},
+    {name:'daily-tip',schedule:'Every day at 11:00 PM ET',status:'Active',desc:'Search the web for one useful tip and send it to Bilbo on Discord',type:'isolated agentTurn'}
+  ];
+  const list=document.getElementById('cronList');
+  if(!list)return;
+  document.getElementById('cronCount').textContent=jobs.length;
+  document.getElementById('cronNext').textContent='11:00 PM';
+  list.innerHTML=jobs.map(j=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-weight:600;font-size:13px;color:var(--text)">${j.name}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${j.desc}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">📅 ${j.schedule} · 🔧 ${j.type}</div>
+      </div>
+      <span style="font-size:10px;padding:3px 8px;border-radius:9999px;font-weight:600;${j.status==='Active'?'background:rgba(34,197,94,0.15);color:var(--green)':'background:rgba(250,204,21,0.15);color:#facc15'}">${j.status}</span>
+    </div>
+  `).join('');
+}
+
+// Bingo
+const bingoItems=[
+  'Hike Park 2 Park','Cook a Full Chicken','Throw a Big Party','Find an RPG w/ Maurice','Take a Writing Class',
+  'Get Grandma into a Book Club','65 Whoop Sleep Score','Take 8 Tennis Lessons','DJ at Real Venue','Merch (Dice Logo)',
+  'Run a 5K','210 Chest Press','⭐ FREE SPACE ⭐','Get Blackout Curtains ✕','Beat Regicide Legacy',
+  'Publish One Isaac Mod','Finish Book Pages','Climb a Red','Dead God Binding of Isaac','Learn to do a Backflip',
+  '1:10 Letter Blitz Avg','Release Inverse Calendar','Do a Solo Trip','18R of Golf','Finish Lord of the Rings Books'
+];
+
+function getBingo(){return JSON.parse(localStorage.getItem('mc-bingo')||'{}')}
+function saveBingo(b){localStorage.setItem('mc-bingo',JSON.stringify(b))}
+
+function renderBingo(){
+  const grid=document.getElementById('bingoGrid');
+  if(!grid)return;
+  const state=getBingo();
+  grid.innerHTML=bingoItems.map((item,i)=>{
+    const isFree=i===12;
+    const isDone=isFree||state[i];
+    const cls='bingo-cell'+(isFree?' free':'')+(isDone&&!isFree?' done':'');
+    return `<div class="${cls}" onclick="${isFree?'':'toggleBingo('+i+')'}">${item}</div>`;
+  }).join('');
+  const done=Object.values(state).filter(Boolean).length+(1);// +1 for free space
+  document.getElementById('bingoCount').textContent=done;
+  document.getElementById('bingoRemain').textContent=25-done;
+  // Check bingo lines
+  const s=i=>i===12||state[i];
+  const lines=[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+    [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+    [0,6,12,18,24],[4,8,12,16,20]];
+  const hasBingo=lines.some(l=>l.every(s));
+  document.getElementById('bingoStatus').textContent=hasBingo?'BINGO! 🎉':'Not yet';
+  document.getElementById('bingoStatus').style.color=hasBingo?'var(--green)':'var(--text2)';
+}
+
+function toggleBingo(i){
+  const state=getBingo();
+  state[i]=!state[i];
+  saveBingo(state);
+  renderBingo();
+}
+
+// Calendar
+function getCal(){return JSON.parse(localStorage.getItem('mc-cal')||'[]')}
+function saveCal(c){localStorage.setItem('mc-cal',JSON.stringify(c))}
+function addCal(){
+  const d=document.getElementById('calDate').value;
+  const e=document.getElementById('calEvent').value.trim();
+  if(!d||!e)return;
+  const list=getCal();
+  list.push({date:d,event:e});
+  list.sort((a,b)=>a.date.localeCompare(b.date));
+  saveCal(list);
+  document.getElementById('calEvent').value='';
+  renderCal();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='calEvent')addCal()});
+function deleteCal(i){const list=getCal();list.splice(i,1);saveCal(list);renderCal()}
+function renderCal(){
+  const list=getCal();
+  const el=document.getElementById('calList');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div class="empty-state">📅 No events yet — add some dates!</div>';return}
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let curMonth='';
+  let html='';
+  list.forEach((item,i)=>{
+    const [y,m,d]=item.date.split('-');
+    const monthKey=y+'-'+m;
+    const monthName=months[parseInt(m)-1]+' '+y;
+    if(monthKey!==curMonth){
+      curMonth=monthKey;
+      html+=`<div style="font-size:16px;font-weight:700;color:var(--accent);margin:${i?'20px':'4px'} 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${monthName}</div>`;
+    }
+    const dayNum=parseInt(d);
+    const dt=new Date(parseInt(y),parseInt(m)-1,dayNum);
+    const dayName=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()];
+    const isPast=new Date(item.date)<new Date(new Date().toDateString());
+    html+=`<div style="display:flex;align-items:center;gap:12px;padding:8px 4px;${isPast?'opacity:0.4;':''}">
+      <div style="min-width:60px;text-align:right;">
+        <span style="font-size:20px;font-weight:700;color:var(--text)">${dayNum}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:4px">${dayName}</span>
+      </div>
+      <div style="width:3px;height:28px;background:var(--accent);border-radius:2px;flex-shrink:0"></div>
+      <div style="flex:1;font-size:14px;color:var(--text)">${item.event}</div>
+      <button onclick="deleteCal(${i})" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:0 4px">×</button>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+// Render calendar when switching to it
+const origSwitch=switchPanel;
+switchPanel=function(id){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='notes')renderNotes();
+  if(id==='bingo')renderBingo();
+  if(id==='crons')renderCrons();
+  if(id==='dj')renderDJ();
+  if(id==='calendar')renderCal();
+}
+</script>
+</body>
+</html>

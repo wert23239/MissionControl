@@ -23,5 +23,9 @@
     {"song": "drifting (remix)", "genre": "Other", "done": false}
   ],
   "bingo": {},
-  "notes": []
+  "notes": [
+    {"text": "Categories chapter (3A): Games as categories — blackout games, Kings Cup (party), Pizza Box (social), Red Flags (fun), Monopoly, Scythe (strategy). Circles/venn diagram of game types.", "cat": "Book", "time": "2026-02-14T23:00:00Z"},
+    {"text": "All Men Suck Percent — page about how women generalize men. Heavy asterisk (*) = second page flipping it, how men are still sexist. Both sides of the coin.", "cat": "Book", "time": "2026-02-14T21:00:00Z"},
+    {"text": "Phone auth: verify caller owns number on first call ('are you the sole owner of this phone number?'), then greet by name on callback.", "cat": "General", "time": "2026-02-14T21:00:00Z"}
+  ]
 }

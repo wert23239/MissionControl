@@ -465,8 +465,13 @@ journal:`<h2 class="panel-title">🎉 Ta-da List</h2>
 <p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Daily wins — what you actually got done today</p>
 <div class="notes-input">
 <input type="text" id="journalInput" placeholder="What did you do today?">
+<select id="journalCat">
+<option value="General">General</option><option value="OpenClaw">OpenClaw</option><option value="Book">Book</option>
+<option value="Work">Work</option><option value="Social">Social</option><option value="Workout">Workout</option><option value="Home">Home</option>
+</select>
 <button onclick="addJournalEntry()">Add</button>
 </div>
+<div class="filter-tabs" id="journalFilterTabs"></div>
 <div id="journalList"></div>`,
 
 dj:`<h2 class="panel-title">🎵 DJ Prep</h2>
@@ -631,12 +636,15 @@ function renderNotes(){
 }
 
 // Journal / Ta-da List
+const jCatColors={General:'var(--accent)',OpenClaw:'var(--purple)',Book:'var(--green)',Work:'var(--amber)',Social:'#ec4899',Workout:'var(--red)',Home:'#06b6d4'};
+let journalFilter='All';
 async function addJournalEntry(){
   const input=document.getElementById('journalInput');
   const text=input.value.trim();if(!text)return;
+  const cat=document.getElementById('journalCat').value;
   input.value='';
   const today=new Date().toISOString().slice(0,10);
-  await fetch(SB_URL+'/rest/v1/journal',{method:'POST',headers:{...sbHeaders,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({entry:text,date:today})});
+  await fetch(SB_URL+'/rest/v1/journal',{method:'POST',headers:{...sbHeaders,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({entry:text,date:today,category:cat})});
   renderJournal();
 }
 async function renderJournal(){
@@ -646,15 +654,20 @@ async function renderJournal(){
     const r=await fetch(SB_URL+'/rest/v1/journal?order=created_at.desc&limit=100',{headers:sbHeaders});
     const entries=r.ok?await r.json():[];
     if(!entries.length){list.innerHTML='<div class="empty-state">🎉 No entries yet — tell Alex what you did today!</div>';return}
+    const cats=['All',...new Set(entries.map(e=>e.category||'General'))];
+    const tabs=document.getElementById('journalFilterTabs');
+    if(tabs)tabs.innerHTML=cats.map(c=>`<button class="filter-btn${journalFilter===c?' active':''}" onclick="journalFilter='${c}';renderJournal()">${c}</button>`).join('');
+    const filtered=journalFilter==='All'?entries:entries.filter(e=>(e.category||'General')===journalFilter);
     const grouped={};
-    entries.forEach(e=>{const d=e.date||'Unknown';if(!grouped[d])grouped[d]=[];grouped[d].push(e)});
+    filtered.forEach(e=>{const d=e.date||'Unknown';if(!grouped[d])grouped[d]=[];grouped[d].push(e)});
     let html='';
     Object.keys(grouped).sort().reverse().forEach(date=>{
       const d=new Date(date+'T12:00:00');
       const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
       html+=`<div class="card" style="margin-bottom:12px;padding:12px 16px"><h4 style="color:var(--amber);margin-bottom:8px;font-size:13px">${label}</h4>`;
       grouped[date].forEach(e=>{
-        html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="color:var(--green);font-size:16px">✓</span><span style="font-size:13px;line-height:1.5">${e.entry}</span><button onclick="deleteJournal(${e.id})" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;opacity:0.5">×</button></div>`;
+        const cc=jCatColors[e.category||'General']||'var(--accent)';
+        html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="color:var(--green);font-size:16px">✓</span><span style="font-size:13px;line-height:1.5">${e.entry}</span><span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px;white-space:nowrap;margin-left:4px">${e.category||'General'}</span><button onclick="deleteJournal(${e.id})" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;opacity:0.5">×</button></div>`;
       });
       html+=`</div>`;
     });

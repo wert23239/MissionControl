@@ -207,6 +207,16 @@ ${stat('Skills Ready','17','installed & working')}
 <div id="dailyTipText" style="font-size:14px;line-height:1.6">Loading...</div>
 <div id="dailyTipDate" style="font-size:11px;color:var(--text2);margin-top:6px"></div>
 </div>
+<div class="grid2" style="margin-bottom:20px">
+<div id="todayCard" class="card" style="padding:16px 20px;border-left:3px solid var(--green)">
+<div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:6px">📅 TODAY</div>
+<div id="todayEvents" style="font-size:13px;line-height:1.8">Loading...</div>
+</div>
+<div id="tomorrowCard" class="card" style="padding:16px 20px;border-left:3px solid var(--purple)">
+<div style="font-size:11px;color:var(--purple);font-weight:600;margin-bottom:6px">📆 TOMORROW</div>
+<div id="tomorrowEvents" style="font-size:13px;line-height:1.8">Loading...</div>
+</div>
+</div>
 <h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Quick Links</h3>
 <div class="grid2" style="margin-bottom:28px">
 <a class="quick-link" href="https://github.com/wert23239/HyperReality" target="_blank">🐙 GitHub — wert23239/HyperReality</a>
@@ -557,6 +567,24 @@ async function loadDailyTip(){
   }catch(e){console.log('Tip fetch failed',e)}
 }
 loadDailyTip();
+
+// Load today/tomorrow events
+async function loadTodayTomorrow(){
+  try{
+    const now=new Date();
+    const today=now.toISOString().slice(0,10);
+    const tom=new Date(now.getTime()+86400000).toISOString().slice(0,10);
+    const r=await fetch(SB_URL+'/rest/v1/calendar?order=date',{headers:sbHeaders});
+    const events=r.ok?await r.json():[];
+    const todayEv=events.filter(e=>e.date===today);
+    const tomEv=events.filter(e=>e.date===tom);
+    const el1=document.getElementById('todayEvents');
+    const el2=document.getElementById('tomorrowEvents');
+    if(el1)el1.innerHTML=todayEv.length?todayEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:var(--text2)">Nothing scheduled</div>';
+    if(el2)el2.innerHTML=tomEv.length?tomEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:var(--text2)">Nothing scheduled</div>';
+  }catch(e){console.log('Calendar load failed',e)}
+}
+loadTodayTomorrow();
 
 // Build nav
 sections.forEach((s,i)=>{

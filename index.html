@@ -501,23 +501,27 @@ bingo:`<h2 class="panel-title">🎯 2026 Bingo Board</h2>
 </div>`
 };
 
-// GitHub sync — fetch data.json and seed localStorage
-const DATA_URL='https://raw.githubusercontent.com/wert23239/MissionControl/main/data.json';
-async function syncFromGitHub(){
+// Supabase sync
+const SB_URL='https://aihworyfcgstwbpzkzoy.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE';
+const sbHeaders={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+async function sbGet(table){const r=await fetch(SB_URL+'/rest/v1/'+table+'?order=id',{headers:sbHeaders});return r.ok?r.json():[];}
+async function sbInsert(table,data){return fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)}).then(r=>r.json());}
+async function sbDelete(table,id){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+id,{method:'DELETE',headers:sbHeaders});}
+async function sbUpdate(table,id,data){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+id,{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)});}
+
+async function syncFromSupabase(){
   try{
-    const r=await fetch(DATA_URL+'?t='+Date.now());
-    if(!r.ok)return;
-    const d=await r.json();
-    if(d.calendar)localStorage.setItem('mc-cal',JSON.stringify(d.calendar));
-    if(d.dj)localStorage.setItem('mc-dj',JSON.stringify(d.dj.map(function(s){return{song:s.song,genre:s.genre,done:s.done,time:s.time||new Date().toISOString()}})));
-    if(d.bingo)localStorage.setItem('mc-bingo',JSON.stringify(d.bingo));
-    if(d.notes)localStorage.setItem('mc-notes',JSON.stringify(d.notes));
-    // Re-render current panel
+    const [cal,notes,dj,bingo]=await Promise.all([sbGet('calendar'),sbGet('notes'),sbGet('dj'),sbGet('bingo')]);
+    if(cal.length)localStorage.setItem('mc-cal',JSON.stringify(cal));
+    if(notes.length)localStorage.setItem('mc-notes',JSON.stringify(notes.map(n=>({text:n.text,cat:n.cat,time:n.created_at,id:n.id}))));
+    if(dj.length)localStorage.setItem('mc-dj',JSON.stringify(dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id}))));
+    if(bingo.length){const state={};bingo.forEach(b=>{if(b.done)state[b.cell_index]=true});localStorage.setItem('mc-bingo',JSON.stringify(state));}
     var active=document.querySelector('.nav-item.active');
     if(active)switchPanel(active.dataset.id);
-  }catch(e){console.log('GitHub sync failed, using localStorage',e)}
+  }catch(e){console.log('Supabase sync failed, using localStorage',e)}
 }
-syncFromGitHub();
+syncFromSupabase();
 
 // Build nav
 sections.forEach((s,i)=>{

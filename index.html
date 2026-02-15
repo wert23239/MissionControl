@@ -201,6 +201,11 @@ ${stat('Tasks Done','8 / 18','44% complete')}
 ${stat('Book Progress','63%','130 / 207 pages')}
 ${stat('Skills Ready','17','installed & working')}
 </div>
+<div id="dailyTipCard" class="card" style="margin-bottom:20px;padding:16px 20px;border-left:3px solid var(--amber)">
+<div style="font-size:11px;color:var(--amber);font-weight:600;margin-bottom:6px">🧙 DAILY TIP</div>
+<div id="dailyTipText" style="font-size:14px;line-height:1.6">Loading...</div>
+<div id="dailyTipDate" style="font-size:11px;color:var(--text2);margin-top:6px"></div>
+</div>
 <h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Quick Links</h3>
 <div class="grid2" style="margin-bottom:28px">
 <a class="quick-link" href="https://github.com/wert23239/HyperReality" target="_blank">🐙 GitHub — wert23239/HyperReality</a>
@@ -524,6 +529,20 @@ async function syncFromSupabase(){
   }catch(e){console.log('Supabase sync failed, using localStorage',e)}
 }
 syncFromSupabase();
+
+// Fetch daily tip
+async function loadDailyTip(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/daily_tip?id=eq.1',{headers:sbHeaders});
+    if(r.ok){const data=await r.json();if(data.length){
+      const el=document.getElementById('dailyTipText');
+      const dt=document.getElementById('dailyTipDate');
+      if(el)el.textContent=data[0].tip;
+      if(dt)dt.textContent='Updated: '+new Date(data[0].updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    }}
+  }catch(e){console.log('Tip fetch failed',e)}
+}
+loadDailyTip();
 
 // Build nav
 sections.forEach((s,i)=>{

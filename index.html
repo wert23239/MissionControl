@@ -604,10 +604,24 @@ function renderNotes(){
 // Book Progress Tracker
 const bookData={"1A":{"name":"F.r.a.m.e.w.o.r.k.s.","titles":["Intro","Abusable","Erase","Opps","Side Quests","Book 1","Potential Energy","Hyper-Morality","Trough of Doubt","Motivation Sync"]},"1B":{"name":"Tutorial","titles":["Intro","(page 2)","(page 3)","(page 4)","(page 5)","(page 6)","(page 7)","(page 8)","(page 9)","(page 10)"]},"1C":{"name":"Box Theory","titles":["Intro","Mis-attribution","Cursed Person","Role Misalign","The Meal Box"]},"2A":{"name":"Taxes","titles":["Intro","Party Tax","Type 2 Fun","Single Tax","Ode to Taxes"]},"2B":{"name":"Pyramid Theory","titles":["Intro","Envy","Promo Rejection 2","Beyond Pyramid 2","Analysis Paralysis","Know your Role"]},"2C":{"name":"Box Theory P.2","titles":["Intro","After a split...","After a split...","Alone Box","Meal Box","Coffee Shops","Friendships","Meals(Luxury)","NY Dates"]},"3A":{"name":"Categories","titles":["Intro","(page 2)","(page 3)","(page 4)","(page 5)","(page 6)","(page 7)","(page 8)","(page 9)","(page 10)"]},"3B":{"name":"Death Theory","titles":["Intro","Love","Can is White","Damage Rolls 2","Extroversion"]},"3C":{"name":"Therapy","titles":["Intro","Escape","Pick up pieces","Work Values","Saying No"]},"4":{"name":"Hard Mode","titles":["Intro","Capitalism 2","Happiness","Other Side","1-on-1 Dates","Close Minded","Palestine","Abortion Free","Unfair Life","Men/Women","Internal Worry","Work Rewards","Consistency"]},"5":{"name":"Uniqueness","titles":["Intro","(blank)","One Pager","Abandoned 1","Abandoned 2","Half Page","Half Page 2","One Paragraph","One Para Mind","One Sentence","One Sentence 2"]},"6A":{"name":"Void Theory","titles":["Intro","Leaving Void","Void Reduction","Void Life","Void Expansion"]},"6B":{"name":"Game Theory","titles":["Intro","Pre-Destined","Aussies","Victim Card","Roster Meta"]},"6C":{"name":"Plan(e) Theory","titles":["Intro","Love NY","Tech A","Pleaser P.2","Hostel","No bad seat"]},"7A":{"name":"A Retrospective","titles":["Intro","Tax Evasion","Out of Cards","Insecurity"]},"7B":{"name":"The Simp","titles":["Intro","Other Side","Goal of sex","(untitled)","Weird rich guy","(untitled)","SUPER Straight","Pick someone"]},"7C":{"name":"A Spectrum","titles":["Intro","(blank)"]},"8A":{"name":"Mindset","titles":["Intro","Drinking ticket","Fairness","13th Reason","(untitled)","Majority wrong"]},"8B":{"name":"Social Death Penalty","titles":["Intro","Future cancel","Nuclear bomb","Complaints","Louie CK","Population"]},"8C":{"name":"Salt & Pepper","titles":["Intro","Loading Music","Raw","(untitled)"]},"9A":{"name":"The Draft","titles":["Intro","Martyr","(untitled)","(untitled)","(untitled)"]},"9B":{"name":"SDP P.2","titles":["Intro","Ukraine","(untitled)","(untitled)","(untitled)"]},"9C":{"name":"Substance Abuse","titles":["Intro","Friends","NY weekends","Lost in doing"]},"10A":{"name":"Type 2 Fun","titles":["Intro","Main page","Instant gratify","Exotic fun","Hard ≠ fun","Have you heard"]},"10B":{"name":"Endless Pattern","titles":["Intro","Unconsensual","Experimentation","Closed minded","(untitled)"]},"10C":{"name":"Default Mode","titles":["Intro","Time machine","Abusive Rel","Age is number","Block builder"]},"11":{"name":"Hyper Reality","titles":["Intro","Ring of Doubt","Waiting","Asexual","Challenge/Chore","Gratitude","Hey man","Friendships","Hard Mode","Healthy","Roster hits","Crash"]}};
 const bookOrder=['1A','1B','1C','2A','2B','2C','3A','3B','3C','4','5','6A','6B','6C','7A','7B','7C','8A','8B','8C','9A','9B','9C','10A','10B','10C','11'];
+const blankTitles=new Set(['(page 2)','(page 3)','(page 4)','(page 5)','(page 6)','(page 7)','(page 8)','(page 9)','(page 10)','(untitled)','(blank)']);
 const COLS=10;
 const states=['','💡','✍️','✅'];
 const stateBg=['#1e3a5f','#854d0e','#1e40af','#166534'];
-function getBookState(){return JSON.parse(localStorage.getItem('mc-book-state')||'{}')}
+function getBookState(){
+  const s=JSON.parse(localStorage.getItem('mc-book-state')||'{}');
+  if(!s._init){
+    bookOrder.forEach(ch=>{
+      bookData[ch].titles.forEach((t,i)=>{
+        const k=ch+'-'+i;
+        if(!(k in s)&&!blankTitles.has(t)){s[k]=2;}
+      });
+    });
+    s._init=true;
+    localStorage.setItem('mc-book-state',JSON.stringify(s));
+  }
+  return s;
+}
 function saveBookState(s){localStorage.setItem('mc-book-state',JSON.stringify(s))}
 function getBookDedicated(){return JSON.parse(localStorage.getItem('mc-book-dedicated')||'{}')}
 function saveBookDedicated(s){localStorage.setItem('mc-book-dedicated',JSON.stringify(s))}
@@ -621,7 +635,7 @@ function renderBook(){
   const ded=getBookDedicated();
   let totalPages=0,ideas=0,written=0,edited=0,dedicated=0;
   bookOrder.forEach(ch=>{totalPages+=bookData[ch].titles.length});
-  Object.values(st).forEach(v=>{if(v===1)ideas++;if(v===2)written++;if(v===3)edited++});
+  Object.entries(st).forEach(([k,v])=>{if(k==='_init')return;if(v===1)ideas++;if(v===2)written++;if(v===3)edited++});
   Object.values(ded).forEach(v=>{if(v)dedicated++});
   stats.innerHTML=`${stat('Total Pages',totalPages,'across 27 chapters')}${stat('💡 Ideas',ideas,'')}${stat('✍️ Written',written,'')}${stat('✅ Edited',edited,'')}${stat('📌 Dedicated',dedicated,'')}`;
   const univCh=['4','5','11'];
@@ -645,14 +659,14 @@ function renderBook(){
           const bg=stateBg[v];
           const title=pages[idx].replace(/"/g,'&quot;');
           const dedCheck=`<div onclick="toggleDedicated(event,'${ch}',${idx})" style="position:absolute;top:2px;right:2px;width:12px;height:12px;border:1px solid ${isDed?'var(--green)':'#555'};border-radius:2px;background:${isDed?'var(--green)':'transparent'};cursor:pointer;font-size:7px;line-height:12px;text-align:center;color:#fff">${isDed?'✓':''}</div>`;
-          cells+=`<td onclick="cycleBook('${ch}',${idx})" title="${title}" style="background:${bg};cursor:pointer;text-align:center;padding:6px 4px;border-radius:4px;font-size:11px;min-width:32px;user-select:none;transition:background .15s;position:relative"><div style="font-size:14px;line-height:1">${icon||'—'}</div><div style="font-size:9px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px" title="${title}">${title}</div>${dedCheck}</td>`;
+          cells+=`<td onclick="cycleBook('${ch}',${idx})" title="${title}" style="background:${bg};cursor:pointer;text-align:center;padding:8px 4px;border-radius:4px;width:10%;min-width:0;height:52px;user-select:none;transition:background .15s;position:relative;vertical-align:top"><div style="font-size:14px;line-height:1;margin-bottom:2px">${icon||'—'}</div><div style="font-size:9px;color:var(--text2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;word-break:break-word" title="${title}">${title}</div>${dedCheck}</td>`;
         } else {
-          cells+=`<td style="border:none"></td>`;
+          cells+=`<td style="width:10%;min-width:0"></td>`;
         }
       }
       rowsHtml+=`<tr>${cells}</tr>`;
     }
-    html+=`<div class="card" style="margin-bottom:8px;padding:10px 12px"><div style="margin-bottom:6px">${label}</div><table style="width:100%;border-collapse:separate;border-spacing:3px">${rowsHtml}</table></div>`;
+    html+=`<div class="card" style="margin-bottom:8px;padding:10px 12px"><div style="margin-bottom:6px">${label}</div><table style="width:100%;table-layout:fixed;border-collapse:separate;border-spacing:3px">${rowsHtml}</table></div>`;
   });
   grid.innerHTML=html;
 }

@@ -576,6 +576,7 @@ function addNote(){
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='noteInput')addNote()});
 
 function deleteNote(i){const n=getNotes();n.splice(i,1);saveNotes(n);renderNotes()}
+function toggleNote(i){const n=getNotes();n[i].done=!n[i].done;saveNotes(n);renderNotes()}
 
 function renderNotes(){
   const notes=getNotes();
@@ -589,7 +590,11 @@ function renderNotes(){
   list.innerHTML=filtered.map((n,i)=>{
     const idx=notes.indexOf(n);
     const t=new Date(n.time);
-    return `<div class="note-item"><span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content">${n.text}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
+    const isBook=n.cat==='Book';
+    const checked=n.done?'checked':'';
+    const strike=n.done?'text-decoration:line-through;opacity:0.5':'';
+    const cb=isBook?`<input type="checkbox" ${checked} onchange="toggleNote(${idx})" style="cursor:pointer;accent-color:var(--accent);min-width:18px;min-height:18px">`:'';
+    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content" style="${strike}">${n.text}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
   }).join('');
 }
 

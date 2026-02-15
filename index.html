@@ -48,6 +48,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
 .tag-book{background:rgba(245,158,11,.15);color:var(--amber)}
 .tag-infra{background:rgba(59,130,246,.15);color:var(--accent)}
+.tag-human{background:rgba(239,68,68,.15);color:var(--red)}
 .tag-design{background:rgba(168,85,247,.15);color:var(--purple)}
 
 /* Progress bar */
@@ -141,7 +142,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
   .stat-sub{font-size:10px}
   .grid2,.grid3{grid-template-columns:1fr;gap:10px}
   .card{padding:14px}
-  .kanban-col{margin-bottom:0}
   .ch-table{font-size:11px}
   .ch-table th,.ch-table td{padding:6px 8px}
   .notes-input{flex-wrap:wrap}
@@ -150,10 +150,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
   .quick-link{font-size:12px;padding:10px}
   .idea-item{flex-direction:column;align-items:flex-start;gap:6px}
   .skill-card{padding:10px}
-  .skill-card .skill-icon{font-size:20px}
   div[style*="grid-template-columns:repeat(5"]{grid-template-columns:repeat(3,1fr)!important}
   .bingo-cell{min-height:55px;font-size:9px;padding:6px 3px}
-  .timeline-item{font-size:12px}
   .expense-row{font-size:12px}
 }
 </style>
@@ -179,6 +177,7 @@ const sections=[
   {id:'memory',icon:'🧠',label:'Memory'},
   {id:'skills',icon:'⚡',label:'Skills'},
   {id:'money',icon:'💰',label:'Money'},
+  {id:'spending',icon:'🏦',label:'Spending'},
   {id:'calendar',icon:'📅',label:'Calendar'},
   {id:'notes',icon:'📋',label:'Notes'},
   {id:'bingo',icon:'🎯',label:'Bingo'},
@@ -216,34 +215,37 @@ ${[['1:08','Alex boot — system initialized'],['1:20','Discord connected — op
 
 tasks:`<h2 class="panel-title">🗂 Tasks (Kanban)</h2>
 <div class="stats">
-${stat('Todo','6','queued')}
-${stat('In Progress','4','active')}
-${stat('Done','8','completed ✅')}
+${stat('Todo','10','queued')}
+${stat('In Progress','2','active')}
+${stat('Done','9','completed ✅')}
 </div>
 <div class="grid3">
-<div class="kanban-col card"><h4>📋 Todo (6)</h4>
+<div class="kanban-col card"><h4>📋 Todo (10)</h4>
+${kanbanItem('Create Kalshi account + KYC','human')}
+${kanbanItem('Set up Polymarket wallet (USDC)','human')}
+${kanbanItem('Review site v3 design','human')}
+${kanbanItem('Finalize 8 survey questions','human')}
+${kanbanItem('Fiverr dice logo (~$15-80)','human')}
+${kanbanItem('Set up Vercel account + domain','human')}
+${kanbanItem('Set up Venmo payment flow','human')}
+${kanbanItem('Connect CodeRabbit to repos','human')}
+${kanbanItem('Download 3mo Chase CSV','human')}
 ${kanbanItem('Move scoring server-side','infra')}
-${kanbanItem('Fiverr dice logo','design')}
-${kanbanItem('Payment flow (Venmo)','infra')}
-${kanbanItem('Deploy to Vercel + domain','infra')}
-${kanbanItem('Mobile responsiveness','design')}
+</div>
+<div class="kanban-col card"><h4>🔄 In Progress (2)</h4>
+${kanbanItem('Homepage UX PR (#1)','design')}
 ${kanbanItem('About/FAQ page','design')}
 </div>
-<div class="kanban-col card"><h4>🔄 In Progress (4)</h4>
-${kanbanItem('Site v3 design feedback','design')}
-${kanbanItem('Survey questions (8 final)','book')}
-${kanbanItem('Kalshi + Polymarket accounts','infra')}
-${kanbanItem('Write remaining 77 pages','book')}
-</div>
-<div class="kanban-col card"><h4>✅ Done (8)</h4>
+<div class="kanban-col card"><h4>✅ Done (9)</h4>
 ${kanbanItem('Discord bot online','infra')}
-${kanbanItem('GitHub repo created','infra')}
+${kanbanItem('GitHub repos (2)','infra')}
 ${kanbanItem('Site v3 built (Next.js)','design')}
 ${kanbanItem('Brave Search API','infra')}
 ${kanbanItem('Mac app + Canvas','infra')}
 ${kanbanItem('17 skills installed','infra')}
 ${kanbanItem('Dashboard built','infra')}
 ${kanbanItem('Daily tip cron (11 PM)','infra')}
+${kanbanItem('CodeRabbit connected','infra')}
 </div>
 </div>`,
 
@@ -395,6 +397,40 @@ ${progress('Break-Even Progress',0,'var(--green)')}
 <tr><td>Feb 2026</td><td>—</td><td>—</td><td>—</td><td>—</td><td style="font-weight:700">$0</td></tr></table>
 </div>
 <div class="stat" style="text-align:center;margin-top:16px"><div class="stat-label">Lifetime Revenue</div><div class="stat-value">$0</div></div>`,
+
+spending:`<h2 class="panel-title">🏦 Spending</h2>
+<div class="stats">
+${stat('Monthly Avg','—','upload Chase CSV to populate')}
+${stat('Top Category','—','waiting for data')}
+${stat('Subscriptions','—','auto-detected')}
+${stat('Savings Found','—','potential cuts')}
+</div>
+<div class="card" style="margin-bottom:20px;text-align:center;padding:40px">
+<div style="font-size:48px;margin-bottom:12px">🏦</div>
+<div style="font-size:16px;font-weight:600;margin-bottom:8px">Upload Chase Transactions</div>
+<div style="font-size:13px;color:var(--text2);line-height:1.6;max-width:400px;margin:0 auto">
+Download your last 3 months from chase.com → Activity → Download (CSV).<br>
+Send the file to Alex on Discord and he'll analyze everything.
+</div>
+</div>
+<div class="grid2">
+<div class="card"><h3>What Alex Will Track</h3>
+<div style="font-size:13px;line-height:1.8;color:var(--text2)">
+📊 Spending by category (food, transport, subscriptions, etc.)<br>
+🔄 Recurring charges & forgotten subscriptions<br>
+📈 Month-over-month trends<br>
+💡 Savings recommendations<br>
+🎯 Budget targets
+</div></div>
+<div class="card"><h3>Future: Live Tracking</h3>
+<div style="font-size:13px;line-height:1.8;color:var(--text2)">
+🔌 Plaid API — connects directly to Chase<br>
+📱 Auto-sync transactions daily<br>
+⚠️ Alerts for unusual spending<br>
+💰 Real-time budget tracking<br>
+<span style="color:var(--amber)">Requires setup + possible cost — TBD</span>
+</div></div>
+</div>`,
 
 calendar:`<h2 class="panel-title">📅 Calendar</h2>
 <p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Upcoming events — add with the form below, scroll through your schedule.</p>
@@ -705,6 +741,7 @@ switchPanel=function(id){
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj')renderDJ();
+  if(id==='spending'){}
   if(id==='calendar')renderCal();
 }
 </script>

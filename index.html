@@ -582,6 +582,21 @@ const defaultDJ=[
   {song:"Substitution (ft. Julian Perretta) — Purple Disco Machine, Kungs",genre:"Disco",bpm:"124",done:false,time:"2026-02-14T21:04:00Z"},
   {song:"drifting (remix)",genre:"Other",bpm:"",done:false,time:"2026-02-14T21:04:00Z"}
 ];
+// Default calendar events
+if(!localStorage.getItem('mc-cal')){
+localStorage.setItem('mc-cal',JSON.stringify([
+{date:"2026-02-20",event:"Lightning talks"},
+{date:"2026-02-21",event:"Bake off"},
+{date:"2026-02-21",event:"Rave - Ferra's birthday"},
+{date:"2026-02-27",event:"Surf Bar dinner w/ Lucy - 6pm"},
+{date:"2026-03-01",event:"Ski trip (first week of March)"},
+{date:"2026-03-12",event:"Florida (2nd weekend, Thu-Mon)"},
+{date:"2026-03-21",event:"Maurice's party"},
+{date:"2026-04-10",event:"Coachella Weekend 1 (Apr 10-12)"},
+{date:"2026-06-06",event:"Victoria's wedding - Chamonix"},
+{date:"2026-07-17",event:"Tomorrowland + extra time (Jul 17-26ish)"},
+{date:"2026-09-19",event:"Car Davis wedding"}
+]));}
 if(!localStorage.getItem('mc-dj'))localStorage.setItem('mc-dj',JSON.stringify(defaultDJ));
 function getDJ(){return JSON.parse(localStorage.getItem('mc-dj')||'[]')}
 function saveDJ(d){localStorage.setItem('mc-dj',JSON.stringify(d))}

@@ -180,6 +180,7 @@ const sections=[
   {id:'spending',icon:'🏦',label:'Spending'},
   {id:'calendar',icon:'📅',label:'Calendar'},
   {id:'notes',icon:'📋',label:'Notes'},
+  {id:'journal',icon:'🎉',label:'Ta-da'},
   {id:'bingo',icon:'🎯',label:'Bingo'},
   {id:'crons',icon:'⏰',label:'Crons'},
   {id:'dj',icon:'🎵',label:'DJ'}
@@ -460,6 +461,14 @@ notes:`<h2 class="panel-title">📋 Notes</h2>
 <div class="filter-tabs" id="filterTabs"></div>
 <div id="notesList"></div>`,
 
+journal:`<h2 class="panel-title">🎉 Ta-da List</h2>
+<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Daily wins — what you actually got done today</p>
+<div class="notes-input">
+<input type="text" id="journalInput" placeholder="What did you do today?">
+<button onclick="addJournalEntry()">Add</button>
+</div>
+<div id="journalList"></div>`,
+
 dj:`<h2 class="panel-title">🎵 DJ Prep</h2>
 <p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Songs to download, sets to prep, DJ goals</p>
 <div class="stats-row">
@@ -569,6 +578,7 @@ function switchPanel(id){
   document.getElementById('panel-'+id).classList.add('active');
   if(id==='notes')renderNotes();
   if(id==='book')renderBook();
+  if(id==='journal')renderJournal();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj')renderDJ();
@@ -619,6 +629,43 @@ function renderNotes(){
     return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content" style="${strike}">${n.text}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
   }).join('');
 }
+
+// Journal / Ta-da List
+async function addJournalEntry(){
+  const input=document.getElementById('journalInput');
+  const text=input.value.trim();if(!text)return;
+  input.value='';
+  const today=new Date().toISOString().slice(0,10);
+  await fetch(SB_URL+'/rest/v1/journal',{method:'POST',headers:{...sbHeaders,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({entry:text,date:today})});
+  renderJournal();
+}
+async function renderJournal(){
+  const list=document.getElementById('journalList');
+  if(!list)return;
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/journal?order=created_at.desc&limit=100',{headers:sbHeaders});
+    const entries=r.ok?await r.json():[];
+    if(!entries.length){list.innerHTML='<div class="empty-state">🎉 No entries yet — tell Alex what you did today!</div>';return}
+    const grouped={};
+    entries.forEach(e=>{const d=e.date||'Unknown';if(!grouped[d])grouped[d]=[];grouped[d].push(e)});
+    let html='';
+    Object.keys(grouped).sort().reverse().forEach(date=>{
+      const d=new Date(date+'T12:00:00');
+      const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+      html+=`<div class="card" style="margin-bottom:12px;padding:12px 16px"><h4 style="color:var(--amber);margin-bottom:8px;font-size:13px">${label}</h4>`;
+      grouped[date].forEach(e=>{
+        html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="color:var(--green);font-size:16px">✓</span><span style="font-size:13px;line-height:1.5">${e.entry}</span><button onclick="deleteJournal(${e.id})" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;opacity:0.5">×</button></div>`;
+      });
+      html+=`</div>`;
+    });
+    list.innerHTML=html;
+  }catch(e){list.innerHTML='<div class="empty-state">Failed to load journal</div>'}
+}
+async function deleteJournal(id){
+  await fetch(SB_URL+'/rest/v1/journal?id=eq.'+id,{method:'DELETE',headers:{...sbHeaders,'Prefer':'return=minimal'}});
+  renderJournal();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='journalInput')addJournalEntry()});
 
 // Book Progress Tracker
 const bookData={"1A": {"name": "F.r.a.m.e.w.o.r.k.s.", "titles": ["Intro", "Abusable", "Erase", "Opps", "Side Quests", "Book 1", "Potential Energy", "Hyper-Morality", "Trough of Doubt", "Motivation Sync"]}, "1B": {"name": "Tutorial", "titles": ["Intro", "(page 2)", "(page 3)", "(page 4)", "(page 5)", "(page 6)", "(page 7)", "(page 8)", "(page 9)", "(page 10)"]}, "1C": {"name": "Box Theory", "titles": ["Intro", "Mis-attribution", "Cursed Person", "Role Misalign", "The Meal Box", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2A": {"name": "Taxes", "titles": ["Intro", "Party Tax", "Type 2 Fun", "Single Tax", "Ode to Taxes", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2B": {"name": "Pyramid Theory", "titles": ["Intro", "Envy", "Promo Rejection 2", "Beyond Pyramid 2", "Analysis Paralysis", "Know your Role", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2C": {"name": "Box Theory P.2", "titles": ["Intro", "After a split...", "After a split...", "Alone Box", "Meal Box", "Coffee Shops", "Friendships", "Meals(Luxury)", "NY Dates", "(blank)"]}, "3A": {"name": "Categories", "titles": ["Intro", "(page 2)", "(page 3)", "(page 4)", "(page 5)", "(page 6)", "(page 7)", "(page 8)", "(page 9)", "(page 10)"]}, "3B": {"name": "Death Theory", "titles": ["Intro", "Love", "Can is White", "Damage Rolls 2", "Extroversion", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "3C": {"name": "Therapy", "titles": ["Intro", "Escape", "Pick up pieces", "Work Values", "Saying No", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "4": {"name": "Hard Mode", "titles": ["Intro", "Capitalism 2", "Happiness", "Other Side", "1-on-1 Dates", "Close Minded", "Palestine", "Abortion Free", "Unfair Life", "Men/Women", "Internal Worry", "Work Rewards", "Consistency"]}, "5": {"name": "Uniqueness", "titles": ["Intro", "(blank)", "One Pager", "Abandoned 1", "Abandoned 2", "Half Page", "Half Page 2", "One Paragraph", "One Para Mind", "One Sentence", "One Sentence 2"]}, "6A": {"name": "Void Theory", "titles": ["Intro", "Leaving Void", "Void Reduction", "Void Life", "Void Expansion", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "6B": {"name": "Game Theory", "titles": ["Intro", "Pre-Destined", "Aussies", "Victim Card", "Roster Meta", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "6C": {"name": "Plan(e) Theory", "titles": ["Intro", "Love NY", "Tech A", "Pleaser P.2", "Hostel", "No bad seat", "(blank)", "(blank)", "(blank)", "(blank)"]}, "7A": {"name": "A Retrospective", "titles": ["Intro", "Tax Evasion", "Out of Cards", "Insecurity", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "7B": {"name": "The Simp", "titles": ["Intro", "Other Side", "Goal of sex", "Premature Victory", "Weird rich guy", "(blank)", "SUPER Straight", "Pick someone", "(blank)", "(blank)"]}, "7C": {"name": "A Spectrum", "titles": ["Intro", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8A": {"name": "Mindset", "titles": ["Secretary Problem", "Drinking ticket", "Fairness", "13th Reason", "(blank)", "Majority wrong", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8B": {"name": "Social Death Penalty", "titles": ["Intro", "Future cancel", "Nuclear bomb", "Complaints", "Louie CK", "Population", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8C": {"name": "Salt & Pepper", "titles": ["Intro", "Loading Music", "Raw", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9A": {"name": "The Draft", "titles": ["Intro", "Martyr", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9B": {"name": "SDP P.2", "titles": ["Intro", "Ukraine", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9C": {"name": "Substance Abuse", "titles": ["Intro", "Friends", "NY weekends", "Lost in doing", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10A": {"name": "Type 2 Fun", "titles": ["Intro", "Main page", "Instant gratify", "Exotic fun", "Hard ≠ fun", "Have you heard", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10B": {"name": "Endless Pattern", "titles": ["Intro", "Unconsensual", "Experimentation", "Closed minded", "(untitled)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10C": {"name": "Default Mode", "titles": ["Intro", "Time machine", "Abusive Rel", "Age is number", "Block builder", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "11": {"name": "Hyper Reality", "titles": ["Intro", "Ring of Doubt", "Waiting", "Asexual", "Challenge/Chore", "Gratitude", "Hey man", "Friendships", "Hard Mode", "Healthy", "Roster hits", "Crash"]}};
@@ -872,6 +919,7 @@ switchPanel=function(id){
   document.getElementById('panel-'+id).classList.add('active');
   if(id==='notes')renderNotes();
   if(id==='book')renderBook();
+  if(id==='journal')renderJournal();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj')renderDJ();

@@ -249,7 +249,26 @@ ${kanbanItem('CodeRabbit connected','infra')}
 </div>
 </div>`,
 
-book:(()=>{
+book:((()=>{
+
+const ch=[
+['1A','F.r.a.m.e.w.o.r.k.s.','✅',0],['1B','Tutorial','✅',0],['1C','Box Theory','✅',0],
+['2A','Taxes','🟡',2],['2B','Pyramid Theory','🟡',3],['2C','Box Theory P.2','🟡',2],
+['3A','Categories','🟡',2],['3B','Death Theory','🟡',2],['3C','Therapy','✅',0],
+['4','Hard Mode','🟡',8],['5','Uniqueness','🔴',19],
+['6A','Void Theory','✅',0],['6B','Game Theory','✅',0],['6C','Plan(e) Theory','🟡',1],
+['7A','Retrospective','🟡',1],['7B','The Simp','🟡',3],['7C','A Spectrum','🟡',1],
+['8A','Mindset','🟡',2],['8B','Social Death Penalty','✅',0],['8C','Salt & Pepper','🟡',2],
+['9A','The Draft','🟡',6],['9B','Social Death Penalty P.2','🟡',4],['9C','Substance Abuse','🟡',3],
+['10A','Type 2 Fun','✅',0],['10B','Endless Pattern','🟡',3],['10C','Default Mode','🟡',3],
+['11','Hyper Reality','🔴',10]
+];
+const chTable=`<div class="card" style="overflow-x:auto;margin-bottom:16px">
+<table class="ch-table">
+<tr><th>Ch</th><th>Title</th><th>Status</th><th>Pages Left</th></tr>
+${ch.map(([c,t,s,p])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+t+'</td><td>'+s+'</td><td>'+(p||'—')+'</td></tr>').join('')}
+</table>
+</div>`;
 return `<h2 class="panel-title">📖 Book Progress</h2>
 <div class="stats">
 <div id="bookStats"></div>
@@ -257,8 +276,10 @@ return `<h2 class="panel-title">📖 Book Progress</h2>
 <div style="margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
 <span style="font-size:12px;color:var(--text2)">Click cells to cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">—</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ written</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · <span style="color:var(--green)">☐</span> = dedicated (top-right checkbox)</span>
 </div>
+${chTable}
+<h3 style="margin:16px 0 8px;color:var(--text)">Page-Level Tracker</h3>
 <div id="bookGrid"></div>`;
-})(),
+})()),
 
 memory:`<h2 class="panel-title">🧠 Memory</h2>
 <div class="stats">

@@ -1,0 +1,27 @@
+{
+  "calendar": [
+    {"date": "2026-02-20", "event": "Lightning talks"},
+    {"date": "2026-02-21", "event": "Bake off"},
+    {"date": "2026-02-21", "event": "Rave - Ferra's birthday"},
+    {"date": "2026-02-27", "event": "Surf Bar dinner w/ Lucy - 6pm"},
+    {"date": "2026-03-01", "event": "Ski trip (first week of March)"},
+    {"date": "2026-03-12", "event": "Florida (2nd weekend, Thu-Mon)"},
+    {"date": "2026-03-21", "event": "Maurice's party"},
+    {"date": "2026-04-10", "event": "Coachella Weekend 1 (Apr 10-12)"},
+    {"date": "2026-06-06", "event": "Victoria's wedding - Chamonix"},
+    {"date": "2026-07-17", "event": "Tomorrowland + extra time (Jul 17-26ish)"},
+    {"date": "2026-09-19", "event": "Car Davis wedding"}
+  ],
+  "dj": [
+    {"song": "Ice In My Eyes — WELKER", "genre": "Electronic", "done": false},
+    {"song": "think you're someone new — Ian Asher, Arden Jones", "genre": "Indie Pop", "done": false},
+    {"song": "We R Who We R — New Beat Order, Seeko, Amero, KROMA", "genre": "Electronic", "done": false},
+    {"song": "BLOCKED — G Luné", "genre": "Pop", "done": false},
+    {"song": "CTRL + ALT + DEL — Rêve", "genre": "House", "done": false},
+    {"song": "Trust Nobody — Hippie Sabotage", "genre": "Electronic", "done": false},
+    {"song": "Substitution (ft. Julian Perretta) — Purple Disco Machine, Kungs", "genre": "Disco", "done": false},
+    {"song": "drifting (remix)", "genre": "Other", "done": false}
+  ],
+  "bingo": {},
+  "notes": []
+}

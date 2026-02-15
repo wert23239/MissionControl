@@ -501,6 +501,24 @@ bingo:`<h2 class="panel-title">🎯 2026 Bingo Board</h2>
 </div>`
 };
 
+// GitHub sync — fetch data.json and seed localStorage
+const DATA_URL='https://raw.githubusercontent.com/wert23239/MissionControl/main/data.json';
+async function syncFromGitHub(){
+  try{
+    const r=await fetch(DATA_URL+'?t='+Date.now());
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d.calendar)localStorage.setItem('mc-cal',JSON.stringify(d.calendar));
+    if(d.dj)localStorage.setItem('mc-dj',JSON.stringify(d.dj.map(function(s){return{song:s.song,genre:s.genre,done:s.done,time:s.time||new Date().toISOString()}})));
+    if(d.bingo)localStorage.setItem('mc-bingo',JSON.stringify(d.bingo));
+    if(d.notes)localStorage.setItem('mc-notes',JSON.stringify(d.notes));
+    // Re-render current panel
+    var active=document.querySelector('.nav-item.active');
+    if(active)switchPanel(active.dataset.id);
+  }catch(e){console.log('GitHub sync failed, using localStorage',e)}
+}
+syncFromGitHub();
+
 // Build nav
 sections.forEach((s,i)=>{
   const el=document.createElement('div');

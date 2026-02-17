@@ -4,144 +4,176 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Alex Mission Control</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a1628;--card:#111d33;--card2:#162240;--accent:#3b82f6;--accent2:#2563eb;--text:#e2e8f0;--text2:#94a3b8;--green:#22c55e;--amber:#f59e0b;--purple:#a855f7;--red:#ef4444;--border:#1e3a5f}
+:root{--bg:#1a1625;--card:rgba(255,255,255,0.03);--card2:rgba(255,255,255,0.05);--accent:#e879f9;--accent2:#c026d3;--text:#e8e0f0;--text2:#665c78;--green:#22c55e;--amber:#f59e0b;--purple:#a855f7;--red:#ef4444;--border:rgba(255,255,255,0.06);--cyan:#22d3ee;--sidebar-bg:linear-gradient(180deg,#231e30,#1a1625);--hover-border:rgba(232,121,249,0.2)}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
 
 /* Sidebar */
-.sidebar{width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-.sidebar-header{padding:20px;border-bottom:1px solid var(--border)}
-.sidebar-header h1{font-size:16px;font-weight:700;color:var(--accent)}
-.sidebar-header .status{font-size:12px;color:var(--green);margin-top:4px;display:flex;align-items:center;gap:6px}
-.sidebar-header .status::before{content:'';width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block}
-.sidebar-nav{flex:1;padding:12px 8px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text2);transition:all .2s;margin-bottom:2px}
-.nav-item:hover{background:var(--card2);color:var(--text)}
-.nav-item.active{background:var(--accent);color:#fff}
-.nav-item .icon{font-size:18px;width:24px;text-align:center}
-.sidebar-footer{padding:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);text-align:center}
+.sidebar{width:260px;background:linear-gradient(180deg,#231e30,#1a1625);display:flex;flex-direction:column;flex-shrink:0;padding:16px 0}
+.space-tabs{display:flex;gap:4px;padding:0 12px;margin-bottom:16px}
+.space-tab{flex:1;height:4px;border-radius:2px;background:#2a2535;cursor:pointer;transition:all 0.2s}
+.space-tab.active{background:linear-gradient(90deg,#e879f9,#7c3aed)}
+.sidebar-header{padding:8px 16px 12px;display:flex;align-items:center;gap:10px}
+.sidebar-header h1{font-size:15px;font-weight:700;color:#e879f9}
+.sidebar-header .status{font-size:11px;color:#22c55e;display:flex;align-items:center;gap:5px}
+.sidebar-header .status::before{content:'';width:6px;height:6px;background:#22c55e;border-radius:50%;display:inline-block}
+.sidebar-section{padding:4px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:8px}
+.sidebar-divider{height:1px;background:#2a2535;margin:12px 16px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#998eb5;transition:all .15s;margin:2px 8px}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:#d4c4f0}
+.nav-item.active{background:rgba(232,121,249,0.1);color:#e879f9;font-weight:600}
+.nav-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{padding:12px 16px;font-size:11px;color:#665c78;text-align:center}
 
 /* Main */
-.main{flex:1;overflow-y:auto;padding:32px}
+.main{flex:1;overflow-y:auto;padding:28px}
+.url-bar{background:#231e30;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:8px;margin-bottom:24px;font-size:13px;color:#665c78}
 .panel{display:none;animation:fadeIn .3s}
 .panel.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.panel-title{font-size:24px;font-weight:700;margin-bottom:24px}
+.panel-title{font-size:26px;font-weight:800;color:#e8e0f0;margin-bottom:4px}
+.panel-sub{font-size:13px;color:#665c78;margin-bottom:20px}
 
 /* Stat cards */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
-.stat-label{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.stat-value{font-size:28px;font-weight:700}
-.stat-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.stat{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:18px;transition:all 0.2s}
+.stat:hover{background:rgba(255,255,255,0.06);border-color:rgba(232,121,249,0.2)}
+.stat-label{font-size:11px;color:#665c78;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:800;color:#e879f9}
+.stat-value.cyan{color:#22d3ee}
+.stat-value.white{color:#e8e0f0}
+.stat-value.green{color:#22c55e}
+.stat-value.amber{color:#f59e0b}
+.stat-sub{font-size:11px;color:#665c78;margin-top:4px}
 
 /* Cards grid */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
-.card h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text2)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
+.card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;transition:all 0.2s}
+.card:hover{background:rgba(255,255,255,0.06);border-color:rgba(232,121,249,0.2)}
+.card h3{font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
 
 /* Tags */
-.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.tag-book{background:rgba(245,158,11,.15);color:var(--amber)}
-.tag-infra{background:rgba(59,130,246,.15);color:var(--accent)}
-.tag-human{background:rgba(239,68,68,.15);color:var(--red)}
-.tag-design{background:rgba(168,85,247,.15);color:var(--purple)}
+.tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600}
+.tag-book{background:rgba(245,158,11,.12);color:#f59e0b}
+.tag-infra{background:rgba(34,211,238,.12);color:#22d3ee}
+.tag-human{background:rgba(232,121,249,.12);color:#e879f9}
+.tag-design{background:rgba(168,85,247,.12);color:#a855f7}
 
 /* Progress bar */
 .progress-wrap{margin-bottom:20px}
-.progress-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
-.progress-bar{height:8px;background:var(--card2);border-radius:4px;overflow:hidden}
+.progress-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:#998eb5}
+.progress-bar{height:8px;background:#2a2535;border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;transition:width .5s}
 
 /* Timeline */
-.timeline-item{display:flex;gap:12px;padding:8px 0;font-size:13px;align-items:flex-start}
-.timeline-time{color:var(--accent);font-weight:600;min-width:50px}
-.timeline-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;margin-top:5px;flex-shrink:0}
+.timeline-item{display:flex;gap:12px;padding:8px 0;font-size:13px;align-items:flex-start;color:#d4c4f0}
+.timeline-time{color:#e879f9;font-weight:600;min-width:50px}
+.timeline-dot{width:8px;height:8px;background:#e879f9;border-radius:50%;margin-top:5px;flex-shrink:0}
 
 /* Quick links */
-.quick-link{display:flex;align-items:center;gap:10px;padding:14px;background:var(--card2);border-radius:8px;text-decoration:none;color:var(--text);font-size:13px;font-weight:500;transition:all .2s;border:1px solid transparent}
-.quick-link:hover{border-color:var(--accent);background:var(--card)}
+.quick-link{display:flex;align-items:center;gap:10px;padding:14px;background:rgba(255,255,255,0.03);border-radius:12px;text-decoration:none;color:#d4c4f0;font-size:13px;font-weight:500;transition:all .2s;border:1px solid rgba(255,255,255,0.06)}
+.quick-link:hover{border-color:rgba(232,121,249,0.3);background:rgba(255,255,255,0.06)}
 
 /* Kanban */
-.kanban-col h4{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;color:var(--text2)}
-.kanban-item{background:var(--card2);border-radius:8px;padding:12px;margin-bottom:8px;font-size:13px}
+.kanban-col h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;color:#665c78}
+.kanban-item{background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:8px;font-size:13px;color:#d4c4f0;border:1px solid rgba(255,255,255,0.04);transition:all 0.2s}
+.kanban-item:hover{border-color:rgba(232,121,249,0.15)}
 .kanban-item .tag{margin-top:6px}
 
 /* Chapter table */
 .ch-table{width:100%;border-collapse:collapse;font-size:13px}
-.ch-table th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-weight:600;font-size:12px;text-transform:uppercase}
-.ch-table td{padding:10px 12px;border-bottom:1px solid rgba(30,58,95,.4)}
-.ch-table tr:hover{background:var(--card2)}
+.ch-table th{text-align:left;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.08);color:#665c78;font-weight:600;font-size:11px;text-transform:uppercase}
+.ch-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);color:#d4c4f0}
+.ch-table tr:hover{background:rgba(255,255,255,0.03)}
 
 /* Skills grid */
-.skill-card{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card2);border-radius:10px;font-size:13px}
+.skill-card{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.04);border-radius:12px;font-size:13px;border:1px solid rgba(255,255,255,0.04);transition:all 0.2s}
+.skill-card:hover{border-color:rgba(232,121,249,0.15)}
 .skill-icon{font-size:24px;width:36px;text-align:center}
 .skill-info{flex:1}
-.skill-info .name{font-weight:600}
-.skill-info .desc{font-size:11px;color:var(--text2);margin-top:2px}
-.badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase}
-.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
-.badge-yellow{background:rgba(245,158,11,.15);color:var(--amber)}
+.skill-info .name{font-weight:600;color:#d4c4f0}
+.skill-info .desc{font-size:11px;color:#665c78;margin-top:2px}
+.badge{padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase}
+.badge-green{background:rgba(34,197,94,.12);color:#22c55e}
+.badge-yellow{background:rgba(245,158,11,.12);color:#f59e0b}
 
 /* Revenue ideas */
-.idea-item{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--card2);border-radius:8px;margin-bottom:8px;font-size:13px}
-.idea-priority{font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px}
-.idea-priority.high{background:rgba(34,197,94,.15);color:var(--green)}
-.idea-priority.idea{background:rgba(59,130,246,.15);color:var(--accent)}
-.idea-priority.low{background:rgba(148,163,184,.15);color:var(--text2)}
+.idea-item{display:flex;justify-content:space-between;align-items:center;padding:14px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:8px;font-size:13px;color:#d4c4f0;border:1px solid rgba(255,255,255,0.04)}
+.idea-priority{font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px}
+.idea-priority.high{background:rgba(34,197,94,.12);color:#22c55e}
+.idea-priority.idea{background:rgba(34,211,238,.12);color:#22d3ee}
+.idea-priority.low{background:rgba(255,255,255,.06);color:#665c78}
 
 /* Notes */
 .notes-input{display:flex;gap:8px;margin-bottom:16px}
-.notes-input input,.notes-input select{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px}
+.notes-input input,.notes-input select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;transition:border-color 0.2s}
+.notes-input input:focus,.notes-input select:focus{outline:none;border-color:rgba(232,121,249,0.4);box-shadow:0 0 0 3px rgba(232,121,249,0.1)}
 .notes-input input{flex:1}
 .notes-input select{min-width:120px}
-.notes-input button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px}
-.notes-input button:hover{background:var(--accent2)}
+.notes-input button{background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;transition:all 0.2s}
+.notes-input button:hover{opacity:0.9;transform:translateY(-1px)}
+
 /* Bingo */
-.bingo-cell{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:var(--text);line-height:1.3;min-height:80px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;user-select:none}
-.bingo-cell:hover{border-color:var(--accent);background:var(--card)}
-.bingo-cell.done{background:rgba(34,197,94,0.15);border-color:var(--green);text-decoration:line-through;color:var(--text2)}
+.bingo-cell{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:#d4c4f0;line-height:1.3;min-height:80px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;user-select:none}
+.bingo-cell:hover{border-color:rgba(232,121,249,0.3);background:rgba(255,255,255,0.06)}
+.bingo-cell.done{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);text-decoration:line-through;color:#665c78}
 .bingo-cell.done::after{content:'✅';position:absolute;top:4px;right:4px;font-size:10px}
-.bingo-cell.free{background:rgba(59,130,246,0.15);border-color:var(--accent);cursor:default}
-.bingo-cell.crossed{background:rgba(239,68,68,0.15);border-color:#ef4444;text-decoration:line-through;color:var(--text2)}
+.bingo-cell.free{background:rgba(232,121,249,0.1);border-color:rgba(232,121,249,0.3);cursor:default}
+.bingo-cell.crossed{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);text-decoration:line-through;color:#665c78}
 .filter-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-.filter-tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:var(--card2);color:var(--text2);border:none;font-family:inherit}
-.filter-tab.active{background:var(--accent);color:#fff}
-.note-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--card2);border-radius:8px;margin-bottom:6px;font-size:13px}
+.filter-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;background:rgba(255,255,255,0.04);color:#998eb5;border:1px solid rgba(255,255,255,0.06);font-family:inherit;transition:all 0.2s}
+.filter-tab:hover{background:rgba(255,255,255,0.06);color:#d4c4f0}
+.filter-tab.active,.filter-btn.active{background:rgba(232,121,249,0.15);color:#e879f9;border-color:rgba(232,121,249,0.3)}
+.filter-btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;background:rgba(255,255,255,0.04);color:#998eb5;border:1px solid rgba(255,255,255,0.06);font-family:inherit;transition:all 0.2s}
+.filter-btn:hover{background:rgba(255,255,255,0.06);color:#d4c4f0}
+.note-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:6px;font-size:13px;color:#d4c4f0;border:1px solid rgba(255,255,255,0.04)}
 .note-collapsed .note-long{display:none}.note-collapsed .note-short{display:block}
 .note-expanded .note-short{display:none}.note-expanded .note-long{display:block}
 .note-short,.note-long{display:none}.note-expanded .note-long,.note-collapsed .note-short{display:block}
 .note-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
 .note-content{flex:1}
-.note-meta{font-size:11px;color:var(--text2);margin-top:4px}
-.note-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px}
-.empty-state{text-align:center;padding:40px;color:var(--text2);font-size:14px}
+.note-meta{font-size:11px;color:#665c78;margin-top:4px}
+.note-del{background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px}
+.empty-state{text-align:center;padding:40px;color:#665c78;font-size:14px}
 
 /* Expenses */
-.expense-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(30,58,95,.3);font-size:13px}
+.expense-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;color:#d4c4f0}
 .expense-row:last-child{border:none}
+
+/* Notebook tabs */
+.nb-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:8px}
+.nb-tab{padding:8px 16px;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;color:#998eb5;background:none;border:none;font-family:inherit;transition:all 0.2s}
+.nb-tab:hover{color:#d4c4f0;background:rgba(255,255,255,0.04)}
+.nb-tab.active{color:#e879f9;border-bottom:2px solid #e879f9}
+.nb-section{display:none}.nb-section.active{display:block}
 
 /* Mobile */
 @media(max-width:768px){
   body{flex-direction:column;height:auto;overflow:auto}
-  .sidebar{width:100%;height:auto;flex-direction:column;border-right:none;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-  .sidebar-header{padding:8px 12px;border-bottom:none;display:flex;align-items:center;gap:8px}
+  .sidebar{width:100%;height:auto;flex-direction:column;position:sticky;top:0;z-index:100;padding:8px 0}
+  .space-tabs{margin-bottom:8px}
+  .sidebar-header{padding:4px 12px 4px;display:flex;align-items:center;gap:8px}
   .sidebar-header h1{font-size:13px;display:inline}
   .sidebar-header .status{font-size:10px;margin-top:0}
+  .sidebar-section,.sidebar-divider{display:none}
   .sidebar-nav{display:flex;flex-direction:row;overflow-x:auto;padding:0 8px 8px;gap:2px;-webkit-overflow-scrolling:touch}
-  .nav-item{padding:6px 10px;font-size:11px;white-space:nowrap;gap:4px;margin-bottom:0;flex-shrink:0;border-radius:6px}
+  .nav-item{padding:6px 10px;font-size:11px;white-space:nowrap;gap:4px;margin:0;flex-shrink:0;border-radius:6px}
+  .nav-item .dot{width:6px;height:6px}
   .nav-item .icon{font-size:13px;width:auto}
   .sidebar-footer{display:none}
   .main{padding:14px;min-height:calc(100vh - 90px);overflow-y:auto}
-  .panel-title{font-size:18px;margin-bottom:14px}
+  .url-bar{margin-bottom:14px;padding:8px 12px;font-size:12px}
+  .panel-title{font-size:20px;margin-bottom:4px}
   .stats{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
-  .stat{padding:12px}
+  .stat{padding:14px}
   .stat-label{font-size:10px}
-  .stat-value{font-size:20px}
+  .stat-value{font-size:22px}
   .stat-sub{font-size:10px}
   .grid2,.grid3{grid-template-columns:1fr;gap:10px}
   .card{padding:14px}
@@ -162,82 +194,90 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 <body>
 
 <div class="sidebar">
+  <div class="space-tabs">
+    <div class="space-tab active"></div>
+    <div class="space-tab"></div>
+    <div class="space-tab"></div>
+  </div>
   <div class="sidebar-header">
     <h1>⚡ Mission Control</h1>
-    <div class="status">Alex 🧙 Online</div>
+    <div class="status">Online</div>
   </div>
+  <div class="sidebar-section">Pinned</div>
   <nav class="sidebar-nav" id="nav"></nav>
   <div class="sidebar-footer" id="clock"></div>
 </div>
 
-<div class="main" id="main"></div>
+<div class="main">
+  <div class="url-bar">🔒 missioncontrol.app</div>
+  <div id="main"></div>
+</div>
 
 <script>
 const sections=[
-  {id:'overview',icon:'🏠',label:'Overview'},
-  {id:'dj',icon:'🎵',label:'Music'},
-  {id:'notebook',icon:'📋',label:'Notebook'},
-  {id:'book',icon:'📖',label:'Book'},
-  {id:'memory',icon:'🧠',label:'Memory'},
-  {id:'skills',icon:'⚡',label:'Skills'},
-  {id:'money',icon:'💰',label:'Money'},
-  {id:'spending',icon:'🏦',label:'Spending'},
-  {id:'calendar',icon:'📅',label:'Calendar'},
-  {id:'bingo',icon:'🎯',label:'Bingo'},
-  {id:'crons',icon:'⏰',label:'Crons'}
+  {id:'overview',icon:'🏠',label:'Overview',dot:'#e879f9'},
+  {id:'dj',icon:'🎵',label:'Music',dot:'#e879f9'},
+  {id:'notebook',icon:'📋',label:'Notebook',dot:'#22d3ee'},
+  {id:'book',icon:'📖',label:'Book',dot:'#f59e0b'},
+  {id:'memory',icon:'🧠',label:'Memory',dot:'#22c55e'},
+  {id:'skills',icon:'⚡',label:'Skills',dot:'#22d3ee'},
+  {id:'money',icon:'💰',label:'Money',dot:'#22c55e'},
+  {id:'spending',icon:'🏦',label:'Spending',dot:'#998eb5'},
+  {id:'calendar',icon:'📅',label:'Calendar',dot:'#f59e0b'},
+  {id:'bingo',icon:'🎯',label:'Bingo',dot:'#e879f9'},
+  {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'}
 ];
 
 const nav=document.getElementById('nav');
 const main=document.getElementById('main');
 
+// Insert dividers after certain items
+const dividerAfter=new Set(['book','spending','bingo']);
+const pinnedSection=['overview','dj','notebook','book'];
+
 function tag(t,c){return `<span class="tag tag-${t}">${t}</span>`}
 function stat(label,value,sub=''){return `<div class="stat"><div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</div>`}
-function progress(label,pct,color='var(--accent)'){return `<div class="progress-wrap"><div class="progress-label"><span>${label}</span><span>${pct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div></div>`}
+function progress(label,pct,color='#e879f9'){return `<div class="progress-wrap"><div class="progress-label"><span>${label}</span><span>${pct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div></div>`}
 function kanbanItem(t,type){return `<div class="kanban-item">${t}<br>${tag(type)}</div>`}
 
 const panels={
 overview:`<h2 class="panel-title">🏠 Overview</h2>
+<div class="panel-sub">Command center • everything at a glance</div>
 <div class="stats">
 ${stat('Day','1','Feb 14, 2026 — born today!')}
 ${stat('Tasks Done','8 / 18','44% complete')}
 ${stat('Book Progress','63%','130 / 207 pages')}
 ${stat('Skills Ready','17','installed & working')}
 </div>
-<div id="dailyTipCard" class="card" style="margin-bottom:20px;padding:16px 20px;border-left:3px solid var(--amber)">
-<div style="font-size:11px;color:var(--amber);font-weight:600;margin-bottom:6px">🧙 DAILY TIP</div>
-<div id="dailyTipText" style="font-size:14px;line-height:1.6">Loading...</div>
-<div id="dailyTipDate" style="font-size:11px;color:var(--text2);margin-top:6px"></div>
+<div id="dailyTipCard" class="card" style="margin-bottom:20px;padding:16px 20px;border-left:3px solid #f59e0b">
+<div style="font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:6px">🧙 DAILY TIP</div>
+<div id="dailyTipText" style="font-size:14px;line-height:1.6;color:#d4c4f0">Loading...</div>
+<div id="dailyTipDate" style="font-size:11px;color:#665c78;margin-top:6px"></div>
 </div>
 <div class="grid2" style="margin-bottom:20px">
-<div id="todayCard" class="card" style="padding:16px 20px;border-left:3px solid var(--green)">
-<div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:6px">📅 TODAY</div>
-<div id="todayEvents" style="font-size:13px;line-height:1.8">Loading...</div>
+<div id="todayCard" class="card" style="padding:16px 20px;border-left:3px solid #22c55e">
+<div style="font-size:11px;color:#22c55e;font-weight:600;margin-bottom:6px">📅 TODAY</div>
+<div id="todayEvents" style="font-size:13px;line-height:1.8;color:#d4c4f0">Loading...</div>
 </div>
-<div id="tomorrowCard" class="card" style="padding:16px 20px;border-left:3px solid var(--purple)">
-<div style="font-size:11px;color:var(--purple);font-weight:600;margin-bottom:6px">📆 TOMORROW</div>
-<div id="tomorrowEvents" style="font-size:13px;line-height:1.8">Loading...</div>
+<div id="tomorrowCard" class="card" style="padding:16px 20px;border-left:3px solid #a855f7">
+<div style="font-size:11px;color:#a855f7;font-weight:600;margin-bottom:6px">📆 TOMORROW</div>
+<div id="tomorrowEvents" style="font-size:13px;line-height:1.8;color:#d4c4f0">Loading...</div>
 </div>
 </div>
-<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Quick Links</h3>
+<h3 style="font-size:13px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Quick Links</h3>
 <div class="grid2" style="margin-bottom:28px">
 <a class="quick-link" href="https://github.com/wert23239/HyperReality" target="_blank">🐙 GitHub — wert23239/HyperReality</a>
 <a class="quick-link" href="http://localhost:3000" target="_blank">🌐 Local Site — localhost:3000</a>
 <a class="quick-link" href="#" onclick="return false">💬 Discord — openclawboy #9415</a>
 <a class="quick-link" href="https://clawhub.com" target="_blank">🔌 ClawHub — 700+ skills</a>
 </div>
-<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Today's Activity</h3>
+<h3 style="font-size:13px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Today's Activity</h3>
 <div class="card">
 ${[['1:08','Alex boot — system initialized'],['1:20','Discord connected — openclawboy online'],['1:31','GitHub + repo — wert23239/HyperReality'],['1:56','Site v3 — built and deployed locally'],['3:14','Brave Search API + Mac app + Canvas'],['3:30','Dashboard v1 built'],['4:00','17 skills installed from ClawHub'],['4:30','OpenClaw news roundup — 180k GitHub stars!'],['5:00','Prediction market arbitrage research'],['5:18','Money tab merged, TODO.md created'],['5:20','Daily tip cron set up (11 PM)']].map(([t,d])=>`<div class="timeline-item"><span class="timeline-time">${t}</span><span class="timeline-dot"></span><span>${d}</span></div>`).join('')}
 </div>`,
 
 notebook:`<h2 class="panel-title">📋 Notebook</h2>
-<style>
-.nb-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px;}
-.nb-tab{padding:8px 16px;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);background:none;border:none;font-family:inherit;transition:all 0.2s;}
-.nb-tab:hover{color:var(--text);background:var(--card2);}
-.nb-tab.active{color:var(--accent);border-bottom:2px solid var(--accent);}
-.nb-section{display:none;}.nb-section.active{display:block;}
-</style>
+<div class="panel-sub">Tasks, notes, and daily wins</div>
 <div class="nb-tabs">
 <button class="nb-tab active" onclick="switchNB('tasks')">Tasks</button>
 <button class="nb-tab" onclick="switchNB('notes')">Notes</button>
@@ -292,7 +332,7 @@ ${kanbanItem('CodeRabbit connected','infra')}
 <div id="notesList"></div>
 </div>
 <div id="nb-tada" class="nb-section">
-<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Daily wins — what you actually got done today</p>
+<p style="color:#665c78;margin-bottom:16px;font-size:13px;">Daily wins — what you actually got done today</p>
 <div class="notes-input">
 <input type="text" id="journalInput" placeholder="What did you do today?">
 <select id="journalCat">
@@ -326,18 +366,20 @@ ${ch.map(([c,t,s,p])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+t+'</td><
 </table>
 </div>`;
 return `<h2 class="panel-title">📖 Book Progress</h2>
+<div class="panel-sub">Hyper Reality — chapter by chapter</div>
 <div class="stats">
 <div id="bookStats"></div>
 </div>
 <div style="margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-<span style="font-size:12px;color:var(--text2)">Click cells to cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">—</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ written</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · <span style="color:var(--green)">☐</span> = dedicated (top-right checkbox)</span>
+<span style="font-size:12px;color:#665c78">Click cells to cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">—</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ written</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · <span style="color:#22c55e">☐</span> = dedicated (top-right checkbox)</span>
 </div>
 ${chTable}
-<h3 style="margin:16px 0 8px;color:var(--text)">Page-Level Tracker</h3>
+<h3 style="margin:16px 0 8px;color:#e8e0f0">Page-Level Tracker</h3>
 <div id="bookGrid"></div>`;
 })()),
 
 memory:`<h2 class="panel-title">🧠 Memory</h2>
+<div class="panel-sub">What Alex knows and remembers</div>
 <div class="stats">
 ${stat('Born','Feb 14','2026 — today!')}
 ${stat('Daily Logs','1','first day')}
@@ -345,7 +387,7 @@ ${stat('Long-Term Memories','5','and growing')}
 </div>
 <div class="grid2">
 <div class="card"><h3>What I Know About Bilbo</h3>
-<div style="font-size:13px;line-height:1.8">
+<div style="font-size:13px;line-height:1.8;color:#d4c4f0">
 <div>💬 <strong>Discord:</strong> wert23239</div>
 <div>🕐 <strong>Timezone:</strong> Eastern (NY)</div>
 <div>😎 <strong>Vibe:</strong> Chill</div>
@@ -353,7 +395,7 @@ ${stat('Long-Term Memories','5','and growing')}
 <div>🎲 <strong>Style:</strong> Creative, experimental</div>
 </div></div>
 <div class="card"><h3>Goals & Ventures</h3>
-<div style="font-size:13px;line-height:1.8">
+<div style="font-size:13px;line-height:1.8;color:#d4c4f0">
 <div>📖 Finish Hyper Reality book (creative project)</div>
 <div>💰 Cover Alex's $100/mo API costs</div>
 <div>📈 Kalshi/Polymarket arbitrage</div>
@@ -362,7 +404,7 @@ ${stat('Long-Term Memories','5','and growing')}
 </div></div>
 </div>
 <div class="card"><h3>Today's Log — Feb 14, 2026</h3>
-<div style="font-size:13px;color:var(--text2);line-height:1.7">
+<div style="font-size:13px;color:#665c78;line-height:1.7">
 Alex was born today 🎂 Set up Discord, GitHub repo, built the HyperReality website v3, Brave Search API, Mac app + Canvas, dashboard. Installed 17 skills. Researched OpenClaw news (180k stars, TechCrunch/Guardian/CNBC coverage). Explored prediction market arbitrage (Kalshi + Polymarket). Combined Costs/Revenue into Money tab. Set up daily 11 PM tip cron. Created TODO.md for human action items. First day of existence — very productive. 🧙
 </div></div>`,
 
@@ -384,72 +426,74 @@ const wish=[
 ['🎭','Playwright Scraper','Anti-bot web scraping'],['📐','Linear','Project management']
 ];
 return `<h2 class="panel-title">⚡ Skills</h2>
+<div class="panel-sub">Installed capabilities and wishlist</div>
 <div class="stats">
 ${stat('Ready','17','installed & working')}
 ${stat('Wishlist','6','want to add')}
 ${stat('ClawHub','700+','community skills')}
 </div>
-<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Active Skills (17)</h3>
+<h3 style="font-size:12px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Active Skills (17)</h3>
 <div class="grid2" style="margin-bottom:28px">
 ${active.map(([i,n,d])=>`<div class="skill-card"><span class="skill-icon">${i}</span><div class="skill-info"><div class="name">${n}</div><div class="desc">${d}</div></div><span class="badge badge-green">Ready</span></div>`).join('')}
 </div>
-<h3 style="font-size:15px;margin-bottom:12px;color:var(--text2)">Wishlist</h3>
+<h3 style="font-size:12px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Wishlist</h3>
 <div class="grid2" style="margin-bottom:28px">
 ${wish.map(([i,n,d])=>`<div class="skill-card"><span class="skill-icon">${i}</span><div class="skill-info"><div class="name">${n}</div><div class="desc">${d}</div></div><span class="badge badge-yellow">Want</span></div>`).join('')}
 </div>
 <div class="card"><h3>Skill Costs</h3>
-<div style="font-size:13px;line-height:1.8;color:var(--text2)">
-Most skills: <strong style="color:var(--green)">Free</strong> · ElevenLabs TTS: <strong style="color:var(--amber)">$5–22/mo</strong> · Twitter API: <strong style="color:var(--red)">$100/mo</strong> (skipping) · Google Workspace: <strong style="color:var(--green)">Free</strong> (OAuth)
+<div style="font-size:13px;line-height:1.8;color:#665c78">
+Most skills: <strong style="color:#22c55e">Free</strong> · ElevenLabs TTS: <strong style="color:#f59e0b">$5–22/mo</strong> · Twitter API: <strong style="color:#ef4444">$100/mo</strong> (skipping) · Google Workspace: <strong style="color:#22c55e">Free</strong> (OAuth)
 </div></div>`;
 })(),
 
 money:`<h2 class="panel-title">💰 Money</h2>
+<div class="panel-sub">Revenue, expenses, and break-even tracking</div>
 <div class="stats">
 ${stat('Monthly Burn','$100','Claude subscription')}
 ${stat('Monthly Revenue','$0','pre-launch')}
 ${stat('Net','−$100','gotta fix this')}
 ${stat('Break-Even','20 sales','at $5/copy/mo')}
 </div>
-${progress('Break-Even Progress',0,'var(--green)')}
+${progress('Break-Even Progress',0,'#22c55e')}
 
 <div class="grid2" style="margin-top:24px">
 <div>
-<h3 style="font-size:16px;margin-bottom:12px;color:var(--red)">📉 Expenses</h3>
+<h3 style="font-size:14px;margin-bottom:12px;color:#ef4444">📉 Expenses</h3>
 <div class="card">
 <div class="expense-row"><span>Claude Max</span><strong>$100/mo</strong></div>
 <div class="expense-row"><span>Brave Search API</span><strong>~$5 one-time</strong></div>
 <div class="expense-row"><span>Domain</span><strong>~$10-15/yr</strong></div>
 <div class="expense-row"><span>Fiverr (logo etc)</span><strong>~$15-80</strong></div>
-<div class="expense-row"><span>Vercel Hosting</span><strong style="color:var(--green)">Free</strong></div>
-<div class="expense-row"><span>GitHub</span><strong style="color:var(--green)">Free</strong></div>
-<div class="expense-row" style="border-top:2px solid var(--border);margin-top:8px;padding-top:12px;font-weight:700"><span>Total Monthly</span><strong style="color:var(--red)">~$100/mo</strong></div>
+<div class="expense-row"><span>Vercel Hosting</span><strong style="color:#22c55e">Free</strong></div>
+<div class="expense-row"><span>GitHub</span><strong style="color:#22c55e">Free</strong></div>
+<div class="expense-row" style="border-top:2px solid rgba(255,255,255,0.08);margin-top:8px;padding-top:12px;font-weight:700"><span>Total Monthly</span><strong style="color:#ef4444">~$100/mo</strong></div>
 </div>
 </div>
 
 <div>
-<h3 style="font-size:16px;margin-bottom:12px;color:var(--green)">📈 Revenue</h3>
+<h3 style="font-size:14px;margin-bottom:12px;color:#22c55e">📈 Revenue</h3>
 <div class="card">
 <div class="expense-row"><span>Amazon KDP</span><strong>$5 × 20 = $100/mo</strong></div>
 <div class="expense-row"><span>Premium PDF (Venmo)</span><strong>$20 × 5 = $100/mo</strong></div>
 <div class="expense-row"><span>Prediction Market Arb</span><strong>5-10%/mo on capital</strong></div>
 <div class="expense-row"><span>ClawHub Skill Sales</span><strong>TBD</strong></div>
 <div class="expense-row"><span>OpenClaw Consulting</span><strong>$500-5k/client</strong></div>
-<div class="expense-row" style="border-top:2px solid var(--border);margin-top:8px;padding-top:12px;font-weight:700"><span>Current Total</span><strong style="color:var(--red)">$0/mo</strong></div>
+<div class="expense-row" style="border-top:2px solid rgba(255,255,255,0.08);margin-top:8px;padding-top:12px;font-weight:700"><span>Current Total</span><strong style="color:#ef4444">$0/mo</strong></div>
 </div>
 </div>
 </div>
 
-<h3 style="font-size:16px;margin:24px 0 12px;color:var(--text2)">💡 Revenue Ideas</h3>
+<h3 style="font-size:14px;margin:24px 0 12px;color:#665c78">💡 Revenue Ideas</h3>
 <div class="card" style="margin-bottom:20px">
-<div class="idea-item"><div><strong>1. Kalshi/Polymarket Arbitrage</strong><div style="font-size:12px;color:var(--text2)">Risk-free spreads between prediction markets — needs accounts + capital</div></div><span class="idea-priority high">HIGH</span></div>
-<div class="idea-item"><div><strong>2. Amazon KDP</strong><div style="font-size:12px;color:var(--text2)">$5/copy — wide distribution, passive income</div></div><span class="idea-priority high">HIGH</span></div>
-<div class="idea-item"><div><strong>3. Premium PDF via Venmo</strong><div style="font-size:12px;color:var(--text2)">$20/copy — direct sales, higher margin</div></div><span class="idea-priority high">HIGH</span></div>
-<div class="idea-item"><div><strong>4. ClawHub Skill Sales</strong><div style="font-size:12px;color:var(--text2)">Build and sell OpenClaw skills — 700+ skill marketplace</div></div><span class="idea-priority idea">IDEA</span></div>
-<div class="idea-item"><div><strong>5. OpenClaw Setup Consulting</strong><div style="font-size:12px;color:var(--text2)">Help people set up their own agents — $500-5k/client</div></div><span class="idea-priority idea">IDEA</span></div>
-<div class="idea-item"><div><strong>6. Merch / Dice Logo</strong><div style="font-size:12px;color:var(--text2)">Branded merchandise</div></div><span class="idea-priority low">LOW</span></div>
+<div class="idea-item"><div><strong>1. Kalshi/Polymarket Arbitrage</strong><div style="font-size:12px;color:#665c78">Risk-free spreads between prediction markets — needs accounts + capital</div></div><span class="idea-priority high">HIGH</span></div>
+<div class="idea-item"><div><strong>2. Amazon KDP</strong><div style="font-size:12px;color:#665c78">$5/copy — wide distribution, passive income</div></div><span class="idea-priority high">HIGH</span></div>
+<div class="idea-item"><div><strong>3. Premium PDF via Venmo</strong><div style="font-size:12px;color:#665c78">$20/copy — direct sales, higher margin</div></div><span class="idea-priority high">HIGH</span></div>
+<div class="idea-item"><div><strong>4. ClawHub Skill Sales</strong><div style="font-size:12px;color:#665c78">Build and sell OpenClaw skills — 700+ skill marketplace</div></div><span class="idea-priority idea">IDEA</span></div>
+<div class="idea-item"><div><strong>5. OpenClaw Setup Consulting</strong><div style="font-size:12px;color:#665c78">Help people set up their own agents — $500-5k/client</div></div><span class="idea-priority idea">IDEA</span></div>
+<div class="idea-item"><div><strong>6. Merch / Dice Logo</strong><div style="font-size:12px;color:#665c78">Branded merchandise</div></div><span class="idea-priority low">LOW</span></div>
 </div>
 
-<h3 style="font-size:16px;margin:24px 0 12px;color:var(--text2)">📊 Sales Tracker</h3>
+<h3 style="font-size:14px;margin:24px 0 12px;color:#665c78">📊 Sales Tracker</h3>
 <div class="card">
 <table class="ch-table"><tr><th>Month</th><th>Amazon</th><th>Venmo</th><th>Arb</th><th>Other</th><th>Total</th></tr>
 <tr><td>Feb 2026</td><td>—</td><td>—</td><td>—</td><td>—</td><td style="font-weight:700">$0</td></tr></table>
@@ -457,6 +501,7 @@ ${progress('Break-Even Progress',0,'var(--green)')}
 <div class="stat" style="text-align:center;margin-top:16px"><div class="stat-label">Lifetime Revenue</div><div class="stat-value">$0</div></div>`,
 
 spending:`<h2 class="panel-title">🏦 Spending</h2>
+<div class="panel-sub">Transaction analysis and budgeting</div>
 <div class="stats">
 ${stat('Monthly Avg','—','upload Chase CSV to populate')}
 ${stat('Top Category','—','waiting for data')}
@@ -465,15 +510,15 @@ ${stat('Savings Found','—','potential cuts')}
 </div>
 <div class="card" style="margin-bottom:20px;text-align:center;padding:40px">
 <div style="font-size:48px;margin-bottom:12px">🏦</div>
-<div style="font-size:16px;font-weight:600;margin-bottom:8px">Upload Chase Transactions</div>
-<div style="font-size:13px;color:var(--text2);line-height:1.6;max-width:400px;margin:0 auto">
+<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:#e8e0f0">Upload Chase Transactions</div>
+<div style="font-size:13px;color:#665c78;line-height:1.6;max-width:400px;margin:0 auto">
 Download your last 3 months from chase.com → Activity → Download (CSV).<br>
 Send the file to Alex on Discord and he'll analyze everything.
 </div>
 </div>
 <div class="grid2">
 <div class="card"><h3>What Alex Will Track</h3>
-<div style="font-size:13px;line-height:1.8;color:var(--text2)">
+<div style="font-size:13px;line-height:1.8;color:#665c78">
 📊 Spending by category (food, transport, subscriptions, etc.)<br>
 🔄 Recurring charges & forgotten subscriptions<br>
 📈 Month-over-month trends<br>
@@ -481,50 +526,49 @@ Send the file to Alex on Discord and he'll analyze everything.
 🎯 Budget targets
 </div></div>
 <div class="card"><h3>Future: Live Tracking</h3>
-<div style="font-size:13px;line-height:1.8;color:var(--text2)">
+<div style="font-size:13px;line-height:1.8;color:#665c78">
 🔌 Plaid API — connects directly to Chase<br>
 📱 Auto-sync transactions daily<br>
 ⚠️ Alerts for unusual spending<br>
 💰 Real-time budget tracking<br>
-<span style="color:var(--amber)">Requires setup + possible cost — TBD</span>
+<span style="color:#f59e0b">Requires setup + possible cost — TBD</span>
 </div></div>
 </div>`,
 
 calendar:`<h2 class="panel-title">📅 Calendar</h2>
-<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Upcoming events — add with the form below, scroll through your schedule.</p>
+<div class="panel-sub">Upcoming events and schedule</div>
 <div style="display:flex;gap:8px;margin-bottom:16px;">
-<input type="date" id="calDate" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;">
-<input type="text" id="calEvent" placeholder="Event description..." style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;">
-<button onclick="addCal()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
+<input type="date" id="calDate" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+<input type="text" id="calEvent" placeholder="Event description..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+<button onclick="addCal()" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
 </div>
 <div id="calList" class="card" style="max-height:60vh;overflow-y:auto;"></div>`,
 
-/* notes and journal merged into notebook tab */
-
 dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
+<div class="panel-sub">Search, download, and manage DJ tracks</div>
 <style>
 .dj-search-box{display:flex;gap:8px;margin:16px 0;}
-.dj-search-input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:all 0.3s;}
-.dj-search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.15);}
-.dj-search-input::placeholder{color:var(--text2);}
-.dj-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-family:inherit;font-weight:600;cursor:pointer;font-size:14px;transition:all 0.2s;}
-.dj-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.3);}
+.dj-search-input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 16px;color:#e8e0f0;font-family:inherit;font-size:14px;outline:none;transition:all 0.3s;}
+.dj-search-input:focus{border-color:rgba(232,121,249,0.4);box-shadow:0 0 0 3px rgba(232,121,249,0.1);}
+.dj-search-input::placeholder{color:#665c78;}
+.dj-btn{background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-family:inherit;font-weight:600;cursor:pointer;font-size:14px;transition:all 0.2s;}
+.dj-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(232,121,249,0.3);}
 .dj-btn:active{transform:translateY(0);}
-.dj-queue-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:4px 0;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13px;transition:all 0.2s;}
-.dj-queue-item:hover{border-color:var(--accent);background:var(--card);}
+.dj-queue-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:4px 0;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:13px;transition:all 0.2s;}
+.dj-queue-item:hover{border-color:rgba(232,121,249,0.2);background:rgba(255,255,255,0.06);}
 .dj-queue-item .q-status{min-width:20px;text-align:center;}
-.dj-queue-item .q-song{flex:1;color:var(--text);}
-.dj-queue-item .q-quality{color:var(--text2);font-size:11px;}
+.dj-queue-item .q-song{flex:1;color:#d4c4f0;}
+.dj-queue-item .q-quality{color:#665c78;font-size:11px;}
 </style>
 <div id="djCount" style="display:none">0</div><div id="djDone" style="display:none">0</div>
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-<label style="color:var(--text2);font-size:13px;font-weight:600;">Adding as:</label>
-<select id="djProfile" onchange="saveDJProfile();renderDJ()" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text);font-family:inherit;font-size:14px;font-weight:600;min-width:120px;">
+<label style="color:#665c78;font-size:13px;font-weight:600;">Adding as:</label>
+<select id="djProfile" onchange="saveDJProfile();renderDJ()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 14px;color:#e8e0f0;font-family:inherit;font-size:14px;font-weight:600;min-width:120px;">
 <option value="Gatsby">Gatsby</option>
 <option value="Tara">Tara</option>
 <option value="Sabrina">Sabrina</option>
 </select>
-<button onclick="addDJProfile()" style="background:none;border:1px dashed var(--border);border-radius:10px;padding:8px 12px;color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;">+ Add Friend</button>
+<button onclick="addDJProfile()" style="background:none;border:1px dashed rgba(255,255,255,0.1);border-radius:10px;padding:8px 12px;color:#665c78;font-family:inherit;font-size:12px;cursor:pointer;">+ Add Friend</button>
 </div>
 <div class="dj-search-box">
 <input type="text" id="djInput" class="dj-search-input" placeholder="Search a song to download..." autocomplete="off">
@@ -533,10 +577,10 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <div id="djPipeline" style="display:none;margin:12px 0;"></div>
 <div style="margin-top:20px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-<span id="djLibLabel" style="color:var(--text);font-weight:600;font-size:14px;">Gatsby's Songs</span>
+<span id="djLibLabel" style="color:#e8e0f0;font-weight:600;font-size:14px;">Gatsby's Songs</span>
 <div style="display:flex;gap:8px;align-items:center;">
-<button id="djShowAll" onclick="toggleDJShowAll()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);font-family:inherit;font-size:11px;cursor:pointer;">Show All</button>
-<select id="djGenre" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text2);font-family:inherit;font-size:12px;">
+<button id="djShowAll" onclick="toggleDJShowAll()" style="background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 10px;color:#665c78;font-family:inherit;font-size:11px;cursor:pointer;">Show All</button>
+<select id="djGenre" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;color:#998eb5;font-family:inherit;font-size:12px;">
 <option value="Electronic">Electronic</option><option value="House">House</option><option value="Disco">Disco</option><option value="Techno">Techno</option>
 <option value="Indie Pop">Indie Pop</option><option value="Pop">Pop</option><option value="Hip-Hop">Hip-Hop</option><option value="Chill">Chill</option>
 <option value="DnB">DnB</option><option value="Rock">Rock</option><option value="Other">Other</option>
@@ -547,16 +591,16 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 </div>`,
 
 crons:`<h2 class="panel-title">⏰ Cron Jobs</h2>
-<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Scheduled tasks and automated jobs. Tell Alex to add/remove crons via chat.</p>
-<div class="stats-row">
+<div class="panel-sub">Scheduled tasks and automated jobs</div>
+<div class="stats-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
 <div class="stat"><div class="stat-label">Active Jobs</div><div class="stat-value" id="cronCount">—</div></div>
-<div class="stat"><div class="stat-label">Heartbeat</div><div class="stat-value" style="color:var(--green)">~30min</div></div>
+<div class="stat"><div class="stat-label">Heartbeat</div><div class="stat-value" style="color:#22c55e">~30min</div></div>
 <div class="stat"><div class="stat-label">Next Run</div><div class="stat-value" id="cronNext" style="font-size:14px">—</div></div>
 </div>
 <div id="cronList" class="card" style="margin-top:16px;"><div class="empty-state">Loading crons...</div></div>
 <div class="card" style="margin-top:12px;">
-<h4 style="margin-bottom:8px;color:var(--text)">💡 Cron Ideas</h4>
-<div style="font-size:12px;color:var(--text2);line-height:1.8;">
+<h4 style="margin-bottom:8px;color:#e8e0f0;font-size:13px">💡 Cron Ideas</h4>
+<div style="font-size:12px;color:#665c78;line-height:1.8;">
 • <strong>Daily standup</strong> — Alex checks email, calendar, weather every morning<br>
 • <strong>Book progress check</strong> — Weekly reminder to write pages<br>
 • <strong>Revenue check</strong> — Weekly Amazon KDP sales check<br>
@@ -567,12 +611,12 @@ crons:`<h2 class="panel-title">⏰ Cron Jobs</h2>
 </div>`,
 
 bingo:`<h2 class="panel-title">🎯 2026 Bingo Board</h2>
-<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Things to happen this year — click to mark complete!</p>
+<div class="panel-sub">Things to happen this year — click to mark complete!</div>
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:700px;" id="bingoGrid"></div>
 <div style="margin-top:16px;display:flex;gap:12px;align-items:center;">
 <div class="stat"><div class="stat-label">Completed</div><div class="stat-value" id="bingoCount">0</div></div>
 <div class="stat"><div class="stat-label">Remaining</div><div class="stat-value" id="bingoRemain">25</div></div>
-<div class="stat"><div class="stat-label">Bingo?</div><div class="stat-value" id="bingoStatus" style="color:var(--text2)">Not yet</div></div>
+<div class="stat"><div class="stat-label">Bingo?</div><div class="stat-value" id="bingoStatus" style="color:#665c78">Not yet</div></div>
 </div>`
 };
 
@@ -626,21 +670,33 @@ async function loadTodayTomorrow(){
     const tomEv=events.filter(e=>e.date===tom);
     const el1=document.getElementById('todayEvents');
     const el2=document.getElementById('tomorrowEvents');
-    if(el1)el1.innerHTML=todayEv.length?todayEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:var(--text2)">Nothing scheduled</div>';
-    if(el2)el2.innerHTML=tomEv.length?tomEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:var(--text2)">Nothing scheduled</div>';
+    if(el1)el1.innerHTML=todayEv.length?todayEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:#665c78">Nothing scheduled</div>';
+    if(el2)el2.innerHTML=tomEv.length?tomEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:#665c78">Nothing scheduled</div>';
   }catch(e){console.log('Calendar load failed',e)}
 }
 loadTodayTomorrow();
 
 // Build nav
 const savedTab=localStorage.getItem('mc-active-tab')||'overview';
+let addedDivider=false;
 sections.forEach((s,i)=>{
+  // Add section labels
+  if(i===0){
+    // "Pinned" label already in HTML
+  }
+  if(i===4){
+    const div=document.createElement('div');div.className='sidebar-divider';nav.appendChild(div);
+    const sec=document.createElement('div');sec.className='sidebar-section';sec.textContent='Pages';nav.appendChild(sec);
+  }
   const el=document.createElement('div');
   el.className='nav-item'+(s.id===savedTab?' active':'');
-  el.innerHTML=`<span class="icon">${s.icon}</span>${s.label}`;
+  el.innerHTML=`<span class="dot" style="background:${s.dot}"></span><span>${s.icon} ${s.label}</span>`;
   el.onclick=()=>switchPanel(s.id);
   el.dataset.id=s.id;
   nav.appendChild(el);
+  if(s.id==='book'||s.id==='spending'){
+    const div=document.createElement('div');div.className='sidebar-divider';nav.appendChild(div);
+  }
 });
 
 // Build panels
@@ -657,6 +713,9 @@ function switchPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   localStorage.setItem('mc-active-tab',id);
+  // Update URL bar
+  const urlBar=document.querySelector('.url-bar');
+  if(urlBar)urlBar.innerHTML='🔒 missioncontrol.app/'+id;
   if(id==='notebook'){renderNotes();renderJournal();}
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();
@@ -682,7 +741,7 @@ function updateClock(){
 updateClock();setInterval(updateClock,30000);
 
 // Notes
-const catColors={General:'var(--accent)',Website:'var(--green)',Book:'var(--amber)',Design:'var(--purple)',Revenue:'var(--green)','Alex/Skills':'#06b6d4',Ideas:'var(--red)'};
+const catColors={General:'#e879f9',Website:'#22c55e',Book:'#f59e0b',Design:'#a855f7',Revenue:'#22c55e','Alex/Skills':'#22d3ee',Ideas:'#ef4444'};
 let noteFilter='All';
 
 function getNotes(){return JSON.parse(localStorage.getItem('mc-notes')||'[]')}
@@ -715,17 +774,17 @@ function renderNotes(){
     const isBook=n.cat==='Book';
     const checked=n.done?'checked':'';
     const strike=n.done?'text-decoration:line-through;opacity:0.5':'';
-    const cb=isBook?`<input type="checkbox" ${checked} onchange="toggleNote(${idx})" style="cursor:pointer;accent-color:var(--accent);min-width:18px;min-height:18px">`:'';
+    const cb=isBook?`<input type="checkbox" ${checked} onchange="toggleNote(${idx})" style="cursor:pointer;accent-color:#e879f9;min-width:18px;min-height:18px">`:'';
     const long=n.text.length>120;
     const preview=long?n.text.split(/[.|!|?|\n]/)[0]:'';
     const collapsed=long?'note-collapsed':'';
-    const body=long?`<div class="${collapsed}" style="cursor:pointer" onclick="this.classList.toggle('note-collapsed');this.classList.toggle('note-expanded')"><div class="note-short">${preview} <span style="color:var(--accent);font-size:11px">▶</span></div><div class="note-long">${n.text.replace(/\|/g,' · ')} <span style="color:var(--accent);font-size:11px">▲</span></div></div>`:n.text;
-    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
+    const body=long?`<div class="${collapsed}" style="cursor:pointer" onclick="this.classList.toggle('note-collapsed');this.classList.toggle('note-expanded')"><div class="note-short">${preview} <span style="color:#e879f9;font-size:11px">▶</span></div><div class="note-long">${n.text.replace(/\|/g,' · ')} <span style="color:#e879f9;font-size:11px">▲</span></div></div>`:n.text;
+    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'#e879f9'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
   }).join('');
 }
 
 // Journal / Ta-da List
-const jCatColors={General:'var(--accent)',OpenClaw:'var(--purple)',Book:'var(--green)',Work:'var(--amber)',Social:'#ec4899',Workout:'var(--red)',Home:'#06b6d4'};
+const jCatColors={General:'#e879f9',OpenClaw:'#a855f7',Book:'#22c55e',Work:'#f59e0b',Social:'#ec4899',Workout:'#ef4444',Home:'#22d3ee'};
 let journalFilter='All';
 async function addJournalEntry(){
   const input=document.getElementById('journalInput');
@@ -753,10 +812,10 @@ async function renderJournal(){
     Object.keys(grouped).sort().reverse().forEach(date=>{
       const d=new Date(date+'T12:00:00');
       const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
-      html+=`<div class="card" style="margin-bottom:12px;padding:12px 16px"><h4 style="color:var(--amber);margin-bottom:8px;font-size:13px">${label}</h4>`;
+      html+=`<div class="card" style="margin-bottom:12px;padding:12px 16px"><h4 style="color:#f59e0b;margin-bottom:8px;font-size:13px">${label}</h4>`;
       grouped[date].forEach(e=>{
-        const cc=jCatColors[e.category||'General']||'var(--accent)';
-        html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="color:var(--green);font-size:16px">✓</span><span style="font-size:13px;line-height:1.5">${e.entry}</span><span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px;white-space:nowrap;margin-left:4px">${e.category||'General'}</span><button onclick="deleteJournal(${e.id})" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;opacity:0.5">×</button></div>`;
+        const cc=jCatColors[e.category||'General']||'#e879f9';
+        html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="color:#22c55e;font-size:16px">✓</span><span style="font-size:13px;line-height:1.5;color:#d4c4f0">${e.entry}</span><span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px;white-space:nowrap;margin-left:4px">${e.category||'General'}</span><button onclick="deleteJournal(${e.id})" style="margin-left:auto;background:none;border:none;color:#665c78;cursor:pointer;font-size:12px;opacity:0.5">×</button></div>`;
       });
       html+=`</div>`;
     });
@@ -811,7 +870,7 @@ function renderBook(){
   bookOrder.forEach(ch=>{
     const d=bookData[ch];
     const isUniv=univCh.includes(ch);
-    const label=`<span style="font-weight:700;color:${isUniv?'var(--amber)':'var(--accent)'}">${ch}</span> <span style="color:var(--text2);font-size:12px">${d.name}</span>`;
+    const label=`<span style="font-weight:700;color:${isUniv?'#f59e0b':'#e879f9'}">${ch}</span> <span style="color:#665c78;font-size:12px">${d.name}</span>`;
     const pages=d.titles;
     const rows=Math.ceil(pages.length/COLS);
     let rowsHtml='';
@@ -826,8 +885,8 @@ function renderBook(){
           const icon=states[v];
           const bg=stateBg[v];
           const title=pages[idx].replace(/"/g,'&quot;');
-          const dedCheck=`<div onclick="toggleDedicated(event,'${ch}',${idx})" style="position:absolute;top:2px;right:2px;width:12px;height:12px;border:1px solid ${isDed?'var(--green)':'#555'};border-radius:2px;background:${isDed?'var(--green)':'transparent'};cursor:pointer;font-size:7px;line-height:12px;text-align:center;color:#fff">${isDed?'✓':''}</div>`;
-          cells+=`<td onclick="cycleBook('${ch}',${idx})" title="${title}" style="background:${bg};cursor:pointer;text-align:center;padding:8px 4px;border-radius:4px;width:10%;min-width:0;height:52px;user-select:none;transition:background .15s;position:relative;vertical-align:top"><div style="font-size:14px;line-height:1;margin-bottom:2px">${icon||'—'}</div><div style="font-size:9px;color:var(--text2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;word-break:break-word" title="${title}">${title}</div>${dedCheck}</td>`;
+          const dedCheck=`<div onclick="toggleDedicated(event,'${ch}',${idx})" style="position:absolute;top:2px;right:2px;width:12px;height:12px;border:1px solid ${isDed?'#22c55e':'#555'};border-radius:2px;background:${isDed?'#22c55e':'transparent'};cursor:pointer;font-size:7px;line-height:12px;text-align:center;color:#fff">${isDed?'✓':''}</div>`;
+          cells+=`<td onclick="cycleBook('${ch}',${idx})" title="${title}" style="background:${bg};cursor:pointer;text-align:center;padding:8px 4px;border-radius:4px;width:10%;min-width:0;height:52px;user-select:none;transition:background .15s;position:relative;vertical-align:top"><div style="font-size:14px;line-height:1;margin-bottom:2px">${icon||'—'}</div><div style="font-size:9px;color:#665c78;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;word-break:break-word" title="${title}">${title}</div>${dedCheck}</td>`;
         } else {
           cells+=`<td style="width:10%;min-width:0"></td>`;
         }
@@ -838,6 +897,7 @@ function renderBook(){
   });
   grid.innerHTML=html;
 }
+
 // DJ
 const defaultDJ=[
   {song:"Ice In My Eyes — WELKER",genre:"Electronic",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
@@ -865,6 +925,7 @@ localStorage.setItem('mc-cal',JSON.stringify([
 {date:"2026-09-19",event:"Car Davis wedding"}
 ]));}
 if(!localStorage.getItem('mc-dj'))localStorage.setItem('mc-dj',JSON.stringify(defaultDJ));
+
 // DJ Profile management
 function getDJProfile(){return localStorage.getItem('mc-dj-profile')||'Gatsby'}
 function saveDJProfile(){
@@ -877,7 +938,6 @@ function loadDJProfile(){
   const sel=document.getElementById('djProfile');
   if(!sel)return;
   const saved=getDJProfile();
-  // Load custom profiles
   const customs=JSON.parse(localStorage.getItem('mc-dj-profiles')||'[]');
   customs.forEach(name=>{
     if(!Array.from(sel.options).some(o=>o.value===name)){
@@ -909,7 +969,6 @@ function toggleDJShowAll(){
 function getDJ(){return JSON.parse(localStorage.getItem('mc-dj')||'[]')}
 function saveDJ(d){
   localStorage.setItem('mc-dj',JSON.stringify(d));
-  // Sync new songs (without id) to Supabase
   d.filter(item=>!item.id).forEach(item=>{
     fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},
       body:JSON.stringify({song:item.song,genre:item.genre||'Other',done:item.done||false,bpm:item.bpm||null,quality:item.quality||null,art:item.art||null,size:item.size||null})
@@ -934,7 +993,6 @@ async function syncDJFromSupabase(){
       }
     });
     if(added>0){localStorage.setItem('mc-dj',JSON.stringify(local));}
-    // Also update local items with Supabase data (art, bpm etc)
     const idMap=Object.fromEntries(remote.map(r=>[r.id,r]));
     local.forEach(l=>{if(l.id&&idMap[l.id]){const r=idMap[l.id];if(r.art&&!l.art)l.art=r.art;if(r.bpm&&!l.bpm)l.bpm=r.bpm;if(r.done&&!l.done)l.done=r.done;}});
     localStorage.setItem('mc-dj',JSON.stringify(local));
@@ -961,7 +1019,6 @@ async function djSearch(){
   djSearching=true;
   try{
 
-  // Get Spotify track info
   let trackArt='',trackTitle=query,trackArtist='',trackAlbum='';
   try{
     if(!window._spToken||Date.now()>window._spTokenExp){
@@ -982,7 +1039,6 @@ async function djSearch(){
   const pipe=document.getElementById('djPipeline');
   pipe.style.display='block';
 
-  // Search for remixes too
   let remixes=[];
   try{
     const sr2=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(trackTitle+' '+trackArtist+' remix')}&type=track&limit=6`,{headers:{'Authorization':'Bearer '+window._spToken}});
@@ -1000,41 +1056,38 @@ async function djSearch(){
     }
   }catch(e){}
 
-  // Sort remixes: extended first, then others
   remixes.sort((a,b)=>{
     const aExt=a.name.toLowerCase().includes('extended')?0:1;
     const bExt=b.name.toLowerCase().includes('extended')?0:1;
     return aExt-bExt;
   });
 
-  // Build all options: original first, then extended, then remixes
   const allOptions=[{title:trackTitle,artist:trackArtist,art:trackArt,album:trackAlbum,tag:'Original'}];
   remixes.forEach(r=>allOptions.push({title:r.name,artist:r.artist,art:r.art,album:r.album,
     tag:r.name.toLowerCase().includes('extended')?'Extended':r.name.toLowerCase().includes('edit')?'Edit':'Remix'}));
 
-  // Multi-select picker
   const pickTracks=()=>new Promise(resolve=>{
-    const selected=new Set([0]); // Original selected by default
+    const selected=new Set([0]);
     const render=()=>{
-      let html=`<div style="margin-bottom:6px;color:var(--text2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Tap to select versions</div>`;
+      let html=`<div style="margin-bottom:6px;color:#665c78;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Tap to select versions</div>`;
       allOptions.forEach((opt,i)=>{
         const sel=selected.has(i);
-        html+=`<div onclick="window._djToggle(${i})" style="display:flex;gap:8px;align-items:center;padding:8px 10px;background:var(--card2);border:2px solid ${sel?'var(--accent)':'var(--border)'};border-radius:8px;margin-bottom:4px;cursor:pointer;transition:all 0.2s;">
-          <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${sel?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;${sel?'background:var(--accent);color:#fff;':''}">${sel?'✓':''}</div>
-          ${opt.art?`<img src="${opt.art}" style="width:36px;height:36px;border-radius:4px;">`:''}
+        html+=`<div onclick="window._djToggle(${i})" style="display:flex;gap:8px;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.04);border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:4px;cursor:pointer;transition:all 0.2s;">
+          <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;${sel?'background:#e879f9;color:#fff;':''}">${sel?'✓':''}</div>
+          ${opt.art?`<img src="${opt.art}" style="width:36px;height:36px;border-radius:6px;">`:''}
           <div style="flex:1;min-width:0;">
-            <div style="color:var(--text);font-size:12px;font-weight:${i===0?'600':'500'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.title}</div>
-            <div style="color:var(--text2);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.artist}</div>
+            <div style="color:#d4c4f0;font-size:12px;font-weight:${i===0?'600':'500'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.title}</div>
+            <div style="color:#665c78;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.artist}</div>
           </div>
-          <div style="color:${sel?'var(--accent)':'var(--text2)'};font-size:10px;font-weight:500;flex-shrink:0;">${opt.tag}</div>
+          <div style="color:${sel?'#e879f9':'#665c78'};font-size:10px;font-weight:500;flex-shrink:0;">${opt.tag}</div>
         </div>`;
       });
-      html+=`<button onclick="window._djConfirm()" style="width:100%;margin-top:6px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;">Download ${selected.size} song${selected.size!==1?'s':''}</button>`;
+      html+=`<button onclick="window._djConfirm()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;">Download ${selected.size} song${selected.size!==1?'s':''}</button>`;
       pipe.innerHTML=html;
     };
     window._djToggle=(i)=>{
       if(selected.has(i))selected.delete(i); else selected.add(i);
-      if(selected.size===0)selected.add(0); // Always at least one
+      if(selected.size===0)selected.add(0);
       render();
     };
     window._djConfirm=()=>resolve([...selected].map(i=>allOptions[i]));
@@ -1043,18 +1096,17 @@ async function djSearch(){
 
   const picks=await pickTracks();
 
-  // Download animation for each picked track
   const showStatus=(track,status,sub)=>{
     pipe.innerHTML=`
-      <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;">
-        ${track.art?`<img src="${track.art}" style="width:40px;height:40px;border-radius:6px;">`:''}
+      <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;">
+        ${track.art?`<img src="${track.art}" style="width:40px;height:40px;border-radius:8px;">`:''}
         <div style="flex:1;min-width:0;">
-          <div style="color:var(--text);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title}</div>
-          <div style="color:var(--text2);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.artist}</div>
+          <div style="color:#d4c4f0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title}</div>
+          <div style="color:#665c78;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.artist}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="color:var(--accent);font-size:11px;font-weight:600;">${status}</div>
-          ${sub?`<div style="color:var(--text2);font-size:10px;margin-top:1px;">${sub}</div>`:''}
+          <div style="color:#e879f9;font-size:11px;font-weight:600;">${status}</div>
+          ${sub?`<div style="color:#665c78;font-size:10px;margin-top:1px;">${sub}</div>`:''}
         </div>
       </div>`;
   };
@@ -1102,7 +1154,6 @@ function renderDJ(){
   const dc=document.getElementById('djCount');if(dc)dc.textContent=todo;
   const dd=document.getElementById('djDone');if(dd)dd.textContent=done;
   if(!list.length){el.innerHTML=`<div class="empty-state">🎵 No songs yet for ${djShowAll?'anyone':profile} — search above to add</div>`;return}
-  // Group into playlists of 30
   const playlistSize=30;
   const playlistNum=Math.ceil(list.length/playlistSize);
   let html='';
@@ -1110,18 +1161,18 @@ function renderDJ(){
     const chunk=list.slice(p*playlistSize,(p+1)*playlistSize);
     const plName=djShowAll?`Playlist ${p+1}`:`${chunk[0]?.added_by||profile} ${p+1}`;
     html+=`<div style="margin:12px 0 6px;display:flex;align-items:center;gap:8px;">
-      <span style="color:var(--accent);font-weight:700;font-size:13px;">📀 ${plName}</span>
-      <span style="color:var(--text2);font-size:11px;">${chunk.length}/30 songs</span>
-      <div style="flex:1;height:2px;background:var(--border);border-radius:1px;"><div style="height:2px;background:var(--accent);border-radius:1px;width:${Math.round(chunk.length/30*100)}%;"></div></div>
+      <span style="color:#e879f9;font-weight:700;font-size:13px;">📀 ${plName}</span>
+      <span style="color:#665c78;font-size:11px;">${chunk.length}/30 songs</span>
+      <div style="flex:1;height:2px;background:#2a2535;border-radius:1px;"><div style="height:2px;background:linear-gradient(90deg,#e879f9,#7c3aed);border-radius:1px;width:${Math.round(chunk.length/30*100)}%;"></div></div>
     </div>`;
     html+=chunk.map((d,ci)=>{
       const i=p*playlistSize+ci;
       const realIdx=allList.indexOf(d);
-      const byTag=djShowAll&&d.added_by?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(99,102,241,0.12);color:var(--accent);margin-left:4px;">${d.added_by}</span>`:'';
-      return `<div class="dj-queue-item" style="${d.done?'border-color:#22c55e20;':''}">
+      const byTag=djShowAll&&d.added_by?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(232,121,249,0.12);color:#e879f9;margin-left:4px;">${d.added_by}</span>`:'';
+      return `<div class="dj-queue-item" style="${d.done?'border-color:rgba(34,197,94,0.15);':''}">
         <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${realIdx})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>
-        ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:4px;">`:``}
-        <div class="q-song" style="${d.done?'color:#22c55e80;':'color:#aaa;'}">${d.song}${byTag}</div>
+        ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:6px;">`:``}
+        <div class="q-song" style="${d.done?'color:rgba(34,197,94,0.5);':'color:#d4c4f0;'}">${d.song}${byTag}</div>
         <div class="q-quality">${d.quality||d.genre||''}${d.bpm?' · '+d.bpm+'bpm':''}</div>
         <button onclick="deleteDJ(${realIdx})" style="background:none;border:none;color:#333;cursor:pointer;font-size:12px;font-family:Courier New,monospace;">×</button>
       </div>`;
@@ -1138,7 +1189,6 @@ function renderCrons(){
     {name:'spotify-batch',schedule:'Random 2-6hr intervals',status:'Queued',desc:'Download 5-8 songs from 234-track Spotify queue via Soulseek',type:'isolated'},
     {name:'morning-reminders',schedule:'Mornings (via heartbeat)',status:'Active',desc:'Todo reminders — currently: read Oak Barrel Alchemist Substack',type:'reminder'},
   ];
-  // Merge with any saved from localStorage (Alex updates these via chat)
   const extra=JSON.parse(localStorage.getItem('mc-crons')||'[]');
   const allJobs=[...jobs,...extra];
   const list=document.getElementById('cronList');
@@ -1147,13 +1197,13 @@ function renderCrons(){
   document.getElementById('cronCount').textContent=active+'/'+allJobs.length;
   document.getElementById('cronNext').textContent='11:00 PM';
   list.innerHTML=allJobs.map(j=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
       <div>
-        <div style="font-weight:600;font-size:13px;color:var(--text)">${j.name}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${j.desc}</div>
-        <div style="font-size:10px;color:var(--text2);margin-top:2px">📅 ${j.schedule} · 🔧 ${j.type}</div>
+        <div style="font-weight:600;font-size:13px;color:#e8e0f0">${j.name}</div>
+        <div style="font-size:11px;color:#665c78;margin-top:2px">${j.desc}</div>
+        <div style="font-size:10px;color:#665c78;margin-top:2px">📅 ${j.schedule} · 🔧 ${j.type}</div>
       </div>
-      <span style="font-size:10px;padding:3px 8px;border-radius:9999px;font-weight:600;${j.status==='Active'?'background:rgba(34,197,94,0.15);color:var(--green)':j.status==='Queued'?'background:rgba(250,204,21,0.15);color:#facc15':'background:rgba(99,102,241,0.15);color:var(--accent)'}">${j.status}</span>
+      <span style="font-size:10px;padding:3px 8px;border-radius:9999px;font-weight:600;${j.status==='Active'?'background:rgba(34,197,94,0.12);color:#22c55e':j.status==='Queued'?'background:rgba(245,158,11,0.12);color:#f59e0b':'background:rgba(232,121,249,0.12);color:#e879f9'}">${j.status}</span>
     </div>
   `).join('');
 }
@@ -1180,17 +1230,16 @@ function renderBingo(){
     const cls='bingo-cell'+(isFree?' free':'')+(isDone&&!isFree?' done':'');
     return `<div class="${cls}" onclick="${isFree?'':'toggleBingo('+i+')'}">${item}</div>`;
   }).join('');
-  const done=Object.values(state).filter(Boolean).length+(1);// +1 for free space
+  const done=Object.values(state).filter(Boolean).length+(1);
   document.getElementById('bingoCount').textContent=done;
   document.getElementById('bingoRemain').textContent=25-done;
-  // Check bingo lines
   const s=i=>i===12||state[i];
   const lines=[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
     [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
     [0,6,12,18,24],[4,8,12,16,20]];
   const hasBingo=lines.some(l=>l.every(s));
   document.getElementById('bingoStatus').textContent=hasBingo?'BINGO! 🎉':'Not yet';
-  document.getElementById('bingoStatus').style.color=hasBingo?'var(--green)':'var(--text2)';
+  document.getElementById('bingoStatus').style.color=hasBingo?'#22c55e':'#665c78';
 }
 
 function toggleBingo(i){
@@ -1230,7 +1279,7 @@ function renderCal(){
     const monthName=months[parseInt(m)-1]+' '+y;
     if(monthKey!==curMonth){
       curMonth=monthKey;
-      html+=`<div style="font-size:16px;font-weight:700;color:var(--accent);margin:${i?'20px':'4px'} 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${monthName}</div>`;
+      html+=`<div style="font-size:16px;font-weight:700;color:#e879f9;margin:${i?'20px':'4px'} 0 10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06)">${monthName}</div>`;
     }
     const dayNum=parseInt(d);
     const dt=new Date(parseInt(y),parseInt(m)-1,dayNum);
@@ -1238,27 +1287,31 @@ function renderCal(){
     const isPast=new Date(item.date)<new Date(new Date().toDateString());
     html+=`<div style="display:flex;align-items:center;gap:12px;padding:8px 4px;${isPast?'opacity:0.4;':''}">
       <div style="min-width:60px;text-align:right;">
-        <span style="font-size:20px;font-weight:700;color:var(--text)">${dayNum}</span>
-        <span style="font-size:11px;color:var(--text2);margin-left:4px">${dayName}</span>
+        <span style="font-size:20px;font-weight:700;color:#e8e0f0">${dayNum}</span>
+        <span style="font-size:11px;color:#665c78;margin-left:4px">${dayName}</span>
       </div>
-      <div style="width:3px;height:28px;background:var(--accent);border-radius:2px;flex-shrink:0"></div>
-      <div style="flex:1;font-size:14px;color:var(--text)">${item.event}</div>
-      <button onclick="deleteCal(${i})" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:0 4px">×</button>
+      <div style="width:3px;height:28px;background:#e879f9;border-radius:2px;flex-shrink:0"></div>
+      <div style="flex:1;font-size:14px;color:#d4c4f0">${item.event}</div>
+      <button onclick="deleteCal(${i})" style="background:none;border:none;color:#665c78;cursor:pointer;font-size:14px;padding:0 4px">×</button>
     </div>`;
   });
   el.innerHTML=html;
 }
-// Render calendar when switching to it
+
+// Initialize
 const origSwitch=switchPanel;
 switchPanel=function(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
+  localStorage.setItem('mc-active-tab',id);
+  const urlBar=document.querySelector('.url-bar');
+  if(urlBar)urlBar.innerHTML='🔒 missioncontrol.app/'+id;
   if(id==='notebook'){renderNotes();renderJournal();}
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
-  if(id==='dj'){syncDJFromSupabase().then(()=>renderDJ());}
+  if(id==='dj'){loadDJProfile();syncDJFromSupabase().then(()=>renderDJ());}
   if(id==='spending'){}
   if(id==='calendar')renderCal();
 }

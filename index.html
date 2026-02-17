@@ -957,7 +957,8 @@ async function djSearch(){
   djPipelineStep([
     {icon:'🔍',label:'Searching Soulseek',state:'active',status:'Searching...'},
     {icon:'⬇️',label:'Downloading',state:'',status:''},
-    {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+    {icon:'🎛️',label:'Rekordbox',state:'',status:''},
+    {icon:'💾',label:'Save to USB',state:'',status:''}
   ]);
   djLog(`Searching Soulseek...`,'info');
   await new Promise(r=>setTimeout(r,1500+Math.random()*1000));
@@ -965,7 +966,8 @@ async function djSearch(){
   djPipelineStep([
     {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'⬇️',label:'Downloading',state:'',status:''},
-    {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+    {icon:'🎛️',label:'Rekordbox',state:'',status:''},
+    {icon:'💾',label:'Save to USB',state:'',status:''}
   ]);
   await new Promise(r=>setTimeout(r,400));
 
@@ -976,7 +978,8 @@ async function djSearch(){
     djPipelineStep([
       {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
       {icon:'⬇️',label:'Downloading',state:'active',status:`${Math.floor(prog)}%`,progress:prog},
-      {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+      {icon:'🎛️',label:'Rekordbox',state:'',status:''},
+      {icon:'💾',label:'Save to USB',state:'',status:''}
     ]);
     await new Promise(r=>setTimeout(r,120+Math.random()*180));
   }
@@ -984,7 +987,8 @@ async function djSearch(){
   djPipelineStep([
     {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+    {icon:'🎛️',label:'Rekordbox',state:'',status:''},
+    {icon:'💾',label:'Save to USB',state:'',status:''}
   ]);
   await new Promise(r=>setTimeout(r,400));
 
@@ -992,15 +996,35 @@ async function djSearch(){
   djPipelineStep([
     {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'🎛️',label:'Rekordbox',state:'active',status:'Analyzing...'}
+    {icon:'🎛️',label:'Rekordbox',state:'active',status:'Analyzing...'},
+    {icon:'💾',label:'Save to USB',state:'',status:''}
   ]);
   djLog(`Analyzing...`,'info');
   await new Promise(r=>setTimeout(r,1200+Math.random()*800));
-  djLog(`${rBpm} BPM · ${rKey} · Ready ✓`,'success');
+  djLog(`${rBpm} BPM · ${rKey}`,'success');
   djPipelineStep([
     {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`}
+    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`},
+    {icon:'💾',label:'Save to USB',state:'',status:''}
+  ]);
+  await new Promise(r=>setTimeout(r,400));
+
+  // Step 4: USB
+  djPipelineStep([
+    {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
+    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`},
+    {icon:'💾',label:'Save to USB',state:'active',status:'Writing...'}
+  ]);
+  djLog(`Saving to USB...`,'info');
+  await new Promise(r=>setTimeout(r,800+Math.random()*600));
+  djLog(`Saved to USB ✓`,'success');
+  djPipelineStep([
+    {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
+    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`},
+    {icon:'✅',label:'Saved to USB',state:'done',status:'Ready to play'}
   ]);
   await new Promise(r=>setTimeout(r,800));
   setTimeout(()=>{const p=document.getElementById('djPipeline');if(p)p.style.display='none';},2500);

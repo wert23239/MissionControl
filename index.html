@@ -564,15 +564,8 @@ async function syncFromSupabase(){
     const [cal,notes,dj,bingo]=await Promise.all([sbGet('calendar'),sbGet('notes'),sbGet('dj'),sbGet('bingo')]);
     if(cal.length)localStorage.setItem('mc-cal',JSON.stringify(cal));
     if(notes.length)localStorage.setItem('mc-notes',JSON.stringify(notes.map(n=>({text:n.text,cat:n.cat,time:n.created_at,id:n.id}))));
-    if(dj.length){
-      const existing=JSON.parse(localStorage.getItem('mc-dj')||'[]');
-      const sbSongs=dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id}));
-      // Merge: keep local songs not in Supabase, add Supabase songs not in local
-      const localNames=new Set(existing.map(e=>e.song));
-      const sbNames=new Set(sbSongs.map(s=>s.song));
-      const merged=[...existing.filter(e=>!sbNames.has(e.song)||localNames.has(e.song))];
-      sbSongs.forEach(s=>{if(!localNames.has(s.song))merged.push(s);});
-      localStorage.setItem('mc-dj',JSON.stringify(merged));
+    if(dj.length&&!localStorage.getItem('mc-dj')){
+      localStorage.setItem('mc-dj',JSON.stringify(dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id}))));
     }
     if(bingo.length){const state={};bingo.forEach(b=>{if(b.done)state[b.cell_index]=true});localStorage.setItem('mc-bingo',JSON.stringify(state));}
     var active=document.querySelector('.nav-item.active');

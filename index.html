@@ -225,7 +225,8 @@ const sections=[
   {id:'spending',icon:'🏦',label:'Spending',dot:'#998eb5'},
   {id:'calendar',icon:'📅',label:'Calendar',dot:'#f59e0b'},
   {id:'bingo',icon:'🎯',label:'Bingo',dot:'#e879f9'},
-  {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'}
+  {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'},
+  {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'}
 ];
 
 const nav=document.getElementById('nav');
@@ -617,6 +618,54 @@ bingo:`<h2 class="panel-title">🎯 2026 Bingo Board</h2>
 <div class="stat"><div class="stat-label">Completed</div><div class="stat-value" id="bingoCount">0</div></div>
 <div class="stat"><div class="stat-label">Remaining</div><div class="stat-value" id="bingoRemain">25</div></div>
 <div class="stat"><div class="stat-label">Bingo?</div><div class="stat-value" id="bingoStatus" style="color:#665c78">Not yet</div></div>
+</div>`,
+isaac:`<h2 class="panel-title">👹 Twisted R Key Mod</h2>
+<div class="panel-sub">Binding of Isaac modding project · <a href="https://github.com/wert23239/TwistedRKey" target="_blank" style="color:#e879f9;text-decoration:none;border-bottom:1px solid rgba(232,121,249,0.3);">GitHub Repo ↗</a></div>
+
+<div class="card" style="margin-bottom:20px">
+<h3>💡 Concept</h3>
+<div style="font-size:14px;color:#d4c4f0;line-height:1.6">New item that appears after endgame bosses — teleports you back to stage 1 but <span style="color:#ef4444;font-weight:600">strips all your items</span>. Goal: beat all bosses in one mega-run.</div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🎭 Character Setups</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Isaac</span><br>Mom's Knife + Soy Milk</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Jacob & Esau</span><br>Dr. Fetus + My Reflection + No. 2</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Isaac</span><br>Inverse Sacred Orb (Sacred Orb x3)</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Azazel</span><br>Rock Bottom (one stat)</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Eden</span><br>Experimental Treatment + extra boss, single Eden Blessing</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Lost</span><br>Grounded (can't fly), one flight item</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Lost</span><br>Little Baggy, Planetariums</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Cain</span><br>All items become pickups, The Shovel</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Keeper</span><br>No shop doors, Cursed Penny + Magnet</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Eden</span><br>TM Trainer, one inverse R key on death</div>
+<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Jacob</span><br>Birthright</div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🏆 Boss Checklist</h3>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+<div class="kanban-item" style="text-align:center;font-size:12px">👩 Mom</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">❤️ Mom's Heart / It Lives</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">😇 Isaac</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">💀 ???</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">😈 Satan</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">🐑 The Lamb</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">👿 Mega Satan</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">🤫 Hush</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">🌀 Delirium</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">🪱 Mother</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">🐕 Dogma</div>
+<div class="kanban-item" style="text-align:center;font-size:12px">🐉 The Beast</div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🛠️ Dev Setup Status</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+<div class="stat"><div class="stat-label">UTM</div><div class="stat-value green" style="font-size:16px">Installed ✅</div></div>
+<div class="stat"><div class="stat-label">Steam</div><div class="stat-value green" style="font-size:16px">Installed ✅</div></div>
+<div class="stat"><div class="stat-label">CrystalFetch</div><div class="stat-value green" style="font-size:16px">Installed ✅</div></div>
+<div class="stat"><div class="stat-label">Windows 11 VM</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
+<div class="stat"><div class="stat-label">Isaac + Repentogon</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
+<div class="stat"><div class="stat-label">Mod Testing</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
 </div>`
 };
 

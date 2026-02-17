@@ -176,15 +176,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 const sections=[
   {id:'overview',icon:'🏠',label:'Overview'},
   {id:'dj',icon:'🎵',label:'Music'},
-  {id:'tasks',icon:'🗂',label:'Tasks'},
+  {id:'notebook',icon:'📋',label:'Notebook'},
   {id:'book',icon:'📖',label:'Book'},
   {id:'memory',icon:'🧠',label:'Memory'},
   {id:'skills',icon:'⚡',label:'Skills'},
   {id:'money',icon:'💰',label:'Money'},
   {id:'spending',icon:'🏦',label:'Spending'},
   {id:'calendar',icon:'📅',label:'Calendar'},
-  {id:'notes',icon:'📋',label:'Notes'},
-  {id:'journal',icon:'🎉',label:'Ta-da'},
   {id:'bingo',icon:'🎯',label:'Bingo'},
   {id:'crons',icon:'⏰',label:'Crons'}
 ];
@@ -232,7 +230,20 @@ ${stat('Skills Ready','17','installed & working')}
 ${[['1:08','Alex boot — system initialized'],['1:20','Discord connected — openclawboy online'],['1:31','GitHub + repo — wert23239/HyperReality'],['1:56','Site v3 — built and deployed locally'],['3:14','Brave Search API + Mac app + Canvas'],['3:30','Dashboard v1 built'],['4:00','17 skills installed from ClawHub'],['4:30','OpenClaw news roundup — 180k GitHub stars!'],['5:00','Prediction market arbitrage research'],['5:18','Money tab merged, TODO.md created'],['5:20','Daily tip cron set up (11 PM)']].map(([t,d])=>`<div class="timeline-item"><span class="timeline-time">${t}</span><span class="timeline-dot"></span><span>${d}</span></div>`).join('')}
 </div>`,
 
-tasks:`<h2 class="panel-title">🗂 Tasks (Kanban)</h2>
+notebook:`<h2 class="panel-title">📋 Notebook</h2>
+<style>
+.nb-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+.nb-tab{padding:8px 16px;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);background:none;border:none;font-family:inherit;transition:all 0.2s;}
+.nb-tab:hover{color:var(--text);background:var(--card2);}
+.nb-tab.active{color:var(--accent);border-bottom:2px solid var(--accent);}
+.nb-section{display:none;}.nb-section.active{display:block;}
+</style>
+<div class="nb-tabs">
+<button class="nb-tab active" onclick="switchNB('tasks')">Tasks</button>
+<button class="nb-tab" onclick="switchNB('notes')">Notes</button>
+<button class="nb-tab" onclick="switchNB('tada')">Ta-da</button>
+</div>
+<div id="nb-tasks" class="nb-section active">
 <div class="stats">
 ${stat('Todo','10','queued')}
 ${stat('In Progress','2','active')}
@@ -266,6 +277,32 @@ ${kanbanItem('Dashboard built','infra')}
 ${kanbanItem('Daily tip cron (11 PM)','infra')}
 ${kanbanItem('CodeRabbit connected','infra')}
 </div>
+</div>
+</div>
+<div id="nb-notes" class="nb-section">
+<div class="notes-input">
+<input type="text" id="noteInput" placeholder="Type a note...">
+<select id="noteCat">
+<option value="General">General</option><option value="Website">Website</option><option value="Book">Book</option>
+<option value="Design">Design</option><option value="Revenue">Revenue</option><option value="Alex/Skills">Alex/Skills</option><option value="Ideas">Ideas</option>
+</select>
+<button onclick="addNote()">Add</button>
+</div>
+<div class="filter-tabs" id="filterTabs"></div>
+<div id="notesList"></div>
+</div>
+<div id="nb-tada" class="nb-section">
+<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Daily wins — what you actually got done today</p>
+<div class="notes-input">
+<input type="text" id="journalInput" placeholder="What did you do today?">
+<select id="journalCat">
+<option value="General">General</option><option value="OpenClaw">OpenClaw</option><option value="Book">Book</option>
+<option value="Work">Work</option><option value="Social">Social</option><option value="Workout">Workout</option><option value="Home">Home</option>
+</select>
+<button onclick="addJournalEntry()">Add</button>
+</div>
+<div class="filter-tabs" id="journalFilterTabs"></div>
+<div id="journalList"></div>
 </div>`,
 
 book:((()=>{
@@ -462,30 +499,7 @@ calendar:`<h2 class="panel-title">📅 Calendar</h2>
 </div>
 <div id="calList" class="card" style="max-height:60vh;overflow-y:auto;"></div>`,
 
-notes:`<h2 class="panel-title">📋 Notes</h2>
-<div class="notes-input">
-<input type="text" id="noteInput" placeholder="Type a note...">
-<select id="noteCat">
-<option value="General">General</option><option value="Website">Website</option><option value="Book">Book</option>
-<option value="Design">Design</option><option value="Revenue">Revenue</option><option value="Alex/Skills">Alex/Skills</option><option value="Ideas">Ideas</option>
-</select>
-<button onclick="addNote()">Add</button>
-</div>
-<div class="filter-tabs" id="filterTabs"></div>
-<div id="notesList"></div>`,
-
-journal:`<h2 class="panel-title">🎉 Ta-da List</h2>
-<p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Daily wins — what you actually got done today</p>
-<div class="notes-input">
-<input type="text" id="journalInput" placeholder="What did you do today?">
-<select id="journalCat">
-<option value="General">General</option><option value="OpenClaw">OpenClaw</option><option value="Book">Book</option>
-<option value="Work">Work</option><option value="Social">Social</option><option value="Workout">Workout</option><option value="Home">Home</option>
-</select>
-<button onclick="addJournalEntry()">Add</button>
-</div>
-<div class="filter-tabs" id="journalFilterTabs"></div>
-<div id="journalList"></div>`,
+/* notes and journal merged into notebook tab */
 
 dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <style>
@@ -643,12 +657,21 @@ function switchPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   localStorage.setItem('mc-active-tab',id);
-  if(id==='notes')renderNotes();
+  if(id==='notebook'){renderNotes();renderJournal();}
   if(id==='book')renderBook();
-  if(id==='journal')renderJournal();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj'){loadDJProfile();syncDJFromSupabase().then(()=>renderDJ());}
+}
+
+function switchNB(tab){
+  document.querySelectorAll('.nb-tab').forEach(t=>t.classList.toggle('active',t.textContent.toLowerCase().replace('-','').includes(tab)));
+  document.querySelectorAll('.nb-section').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('nb-'+tab);
+  if(el)el.classList.add('active');
+  if(tab==='notes')renderNotes();
+  if(tab==='tada')renderJournal();
+  localStorage.setItem('mc-nb-tab',tab);
 }
 
 // Clock
@@ -1226,9 +1249,8 @@ switchPanel=function(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
-  if(id==='notes')renderNotes();
+  if(id==='notebook'){renderNotes();renderJournal();}
   if(id==='book')renderBook();
-  if(id==='journal')renderJournal();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj'){syncDJFromSupabase().then(()=>renderDJ());}

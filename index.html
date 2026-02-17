@@ -503,19 +503,31 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 .dj-queue-item .q-quality{color:var(--text2);font-size:11px;}
 </style>
 <div id="djCount" style="display:none">0</div><div id="djDone" style="display:none">0</div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+<label style="color:var(--text2);font-size:13px;font-weight:600;">Adding as:</label>
+<select id="djProfile" onchange="saveDJProfile();renderDJ()" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text);font-family:inherit;font-size:14px;font-weight:600;min-width:120px;">
+<option value="Gatsby">🎧 Gatsby</option>
+<option value="Tara">💜 Tara</option>
+<option value="Sabrina">🌸 Sabrina</option>
+</select>
+<button onclick="addDJProfile()" style="background:none;border:1px dashed var(--border);border-radius:10px;padding:8px 12px;color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;">+ Add Friend</button>
+</div>
 <div class="dj-search-box">
 <input type="text" id="djInput" class="dj-search-input" placeholder="Search a song to download..." autocomplete="off">
-<button onclick="djSearch()" class="dj-btn">Download</button>
+<button onclick="djSearch()" class="dj-btn">Add Song</button>
 </div>
 <div id="djPipeline" style="display:none;margin:12px 0;"></div>
 <div style="margin-top:20px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-<span style="color:var(--text);font-weight:600;font-size:14px;">Library</span>
+<span id="djLibLabel" style="color:var(--text);font-weight:600;font-size:14px;">Gatsby's Songs</span>
+<div style="display:flex;gap:8px;align-items:center;">
+<button id="djShowAll" onclick="toggleDJShowAll()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);font-family:inherit;font-size:11px;cursor:pointer;">Show All</button>
 <select id="djGenre" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text2);font-family:inherit;font-size:12px;">
 <option value="Electronic">Electronic</option><option value="House">House</option><option value="Disco">Disco</option><option value="Techno">Techno</option>
 <option value="Indie Pop">Indie Pop</option><option value="Pop">Pop</option><option value="Hip-Hop">Hip-Hop</option><option value="Chill">Chill</option>
 <option value="DnB">DnB</option><option value="Rock">Rock</option><option value="Other">Other</option>
 </select>
+</div>
 </div>
 <div id="djList"></div>
 </div>`,
@@ -636,7 +648,7 @@ function switchPanel(id){
   if(id==='journal')renderJournal();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
-  if(id==='dj'){syncDJFromSupabase().then(()=>renderDJ());}
+  if(id==='dj'){loadDJProfile();syncDJFromSupabase().then(()=>renderDJ());}
 }
 
 // Clock
@@ -830,6 +842,47 @@ localStorage.setItem('mc-cal',JSON.stringify([
 {date:"2026-09-19",event:"Car Davis wedding"}
 ]));}
 if(!localStorage.getItem('mc-dj'))localStorage.setItem('mc-dj',JSON.stringify(defaultDJ));
+// DJ Profile management
+function getDJProfile(){return localStorage.getItem('mc-dj-profile')||'Gatsby'}
+function saveDJProfile(){
+  const sel=document.getElementById('djProfile');
+  if(sel)localStorage.setItem('mc-dj-profile',sel.value);
+  const label=document.getElementById('djLibLabel');
+  if(label)label.textContent=getDJProfile()+"'s Songs";
+}
+function loadDJProfile(){
+  const sel=document.getElementById('djProfile');
+  if(!sel)return;
+  const saved=getDJProfile();
+  // Load custom profiles
+  const customs=JSON.parse(localStorage.getItem('mc-dj-profiles')||'[]');
+  customs.forEach(name=>{
+    if(!Array.from(sel.options).some(o=>o.value===name)){
+      const opt=document.createElement('option');opt.value=name;opt.textContent='🎵 '+name;sel.appendChild(opt);
+    }
+  });
+  sel.value=saved;
+  const label=document.getElementById('djLibLabel');
+  if(label)label.textContent=saved+"'s Songs";
+}
+function addDJProfile(){
+  const name=prompt('Friend\'s name:');
+  if(!name||!name.trim())return;
+  const customs=JSON.parse(localStorage.getItem('mc-dj-profiles')||'[]');
+  if(!customs.includes(name.trim())){customs.push(name.trim());localStorage.setItem('mc-dj-profiles',JSON.stringify(customs));}
+  const sel=document.getElementById('djProfile');
+  const opt=document.createElement('option');opt.value=name.trim();opt.textContent='🎵 '+name.trim();sel.appendChild(opt);
+  sel.value=name.trim();saveDJProfile();renderDJ();
+}
+let djShowAll=false;
+function toggleDJShowAll(){
+  djShowAll=!djShowAll;
+  const btn=document.getElementById('djShowAll');
+  if(btn)btn.textContent=djShowAll?'Show Mine':'Show All';
+  const label=document.getElementById('djLibLabel');
+  if(label)label.textContent=djShowAll?'Everyone\'s Songs':getDJProfile()+"'s Songs";
+  renderDJ();
+}
 function getDJ(){return JSON.parse(localStorage.getItem('mc-dj')||'[]')}
 function saveDJ(d){
   localStorage.setItem('mc-dj',JSON.stringify(d));
@@ -869,7 +922,8 @@ function addDJ(){
   const genre=document.getElementById('djGenre');
   if(!input.value.trim())return;
   const list=getDJ();
-  list.unshift({song:input.value.trim(),genre:genre.value,done:false,time:new Date().toISOString()});
+  const profile=getDJProfile();
+  list.unshift({song:input.value.trim(),genre:genre.value,done:false,added_by:profile,time:new Date().toISOString()});
   saveDJ(list);input.value='';renderDJ();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='djInput')djSearch()});
@@ -1004,7 +1058,7 @@ async function djSearch(){
     showStatus(picked,'✓ Ready',thisBpm+' BPM · '+thisKey);
     await new Promise(r=>setTimeout(r,1000));
 
-    list.unshift({song:displayName,genre:genre,bpm:String(thisBpm),done:true,time:new Date().toISOString(),quality:'WAV',size:thisSize+'MB',art:picked.art});
+    list.unshift({song:displayName,genre:genre,bpm:String(thisBpm),done:true,added_by:getDJProfile(),time:new Date().toISOString(),quality:'WAV',size:thisSize+'MB',art:picked.art});
   }
 
   saveDJ(list);renderDJ();
@@ -1015,23 +1069,42 @@ async function djSearch(){
 }
 
 function renderDJ(){
-  const list=getDJ();
+  const allList=getDJ();
   const el=document.getElementById('djList');
   if(!el)return;
+  const profile=getDJProfile();
+  const list=djShowAll?allList:allList.filter(d=>(d.added_by||'Gatsby')===profile);
   const todo=list.filter(d=>!d.done).length;
   const done=list.filter(d=>d.done).length;
   const dc=document.getElementById('djCount');if(dc)dc.textContent=todo;
   const dd=document.getElementById('djDone');if(dd)dd.textContent=done;
-  if(!list.length){el.innerHTML='<div class="empty-state">🎵 No songs yet — search above to start downloading</div>';return}
-  el.innerHTML=list.map((d,i)=>`
-    <div class="dj-queue-item" style="${d.done?'border-color:#22c55e20;':''}">
-      <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${i})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>
-      ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:4px;">`:``}
-      <div class="q-song" style="${d.done?'color:#22c55e80;':'color:#aaa;'}">${d.song}</div>
-      <div class="q-quality">${d.quality||d.genre}${d.bpm?' · '+d.bpm+'bpm':''}</div>
-      <button onclick="deleteDJ(${i})" style="background:none;border:none;color:#333;cursor:pointer;font-size:12px;font-family:Courier New,monospace;">×</button>
-    </div>
-  `).join('');
+  if(!list.length){el.innerHTML=`<div class="empty-state">🎵 No songs yet for ${djShowAll?'anyone':profile} — search above to add</div>`;return}
+  // Group into playlists of 30
+  const playlistSize=30;
+  const playlistNum=Math.ceil(list.length/playlistSize);
+  let html='';
+  for(let p=0;p<playlistNum;p++){
+    const chunk=list.slice(p*playlistSize,(p+1)*playlistSize);
+    const plName=djShowAll?`Playlist ${p+1}`:`${chunk[0]?.added_by||profile} ${p+1}`;
+    html+=`<div style="margin:12px 0 6px;display:flex;align-items:center;gap:8px;">
+      <span style="color:var(--accent);font-weight:700;font-size:13px;">📀 ${plName}</span>
+      <span style="color:var(--text2);font-size:11px;">${chunk.length}/30 songs</span>
+      <div style="flex:1;height:2px;background:var(--border);border-radius:1px;"><div style="height:2px;background:var(--accent);border-radius:1px;width:${Math.round(chunk.length/30*100)}%;"></div></div>
+    </div>`;
+    html+=chunk.map((d,ci)=>{
+      const i=p*playlistSize+ci;
+      const realIdx=allList.indexOf(d);
+      const byTag=djShowAll&&d.added_by?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(99,102,241,0.12);color:var(--accent);margin-left:4px;">${d.added_by}</span>`:'';
+      return `<div class="dj-queue-item" style="${d.done?'border-color:#22c55e20;':''}">
+        <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${realIdx})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>
+        ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:4px;">`:``}
+        <div class="q-song" style="${d.done?'color:#22c55e80;':'color:#aaa;'}">${d.song}${byTag}</div>
+        <div class="q-quality">${d.quality||d.genre||''}${d.bpm?' · '+d.bpm+'bpm':''}</div>
+        <button onclick="deleteDJ(${realIdx})" style="background:none;border:none;color:#333;cursor:pointer;font-size:12px;font-family:Courier New,monospace;">×</button>
+      </div>`;
+    }).join('');
+  }
+  el.innerHTML=html;
 }
 
 // Crons

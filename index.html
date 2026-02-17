@@ -880,28 +880,80 @@ async function djSearch(){
     }
   }catch(e){console.log('Spotify lookup failed',e)}
 
-  const displayName=trackArt?`${trackTitle} — ${trackArtist}`:query;
   const pipe=document.getElementById('djPipeline');
   pipe.style.display='block';
+
+  // Search for remixes too
+  let remixes=[];
+  try{
+    const sr2=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(trackTitle+' '+trackArtist+' remix')}&type=track&limit=6`,{headers:{'Authorization':'Bearer '+window._spToken}});
+    const sd2=await sr2.json();
+    if(sd2.tracks&&sd2.tracks.items.length){
+      remixes=sd2.tracks.items.filter(t=>{
+        const name=t.name.toLowerCase();
+        return name.includes('remix') || name.includes('edit') || name.includes('mix');
+      }).slice(0,4).map(t=>({
+        name:t.name,
+        artist:t.artists.map(a=>a.name).join(', '),
+        art:t.album.images[0]?.url||'',
+        album:t.album.name
+      }));
+    }
+  }catch(e){}
+
+  // Show original + remix options
+  const pickTrack=()=>new Promise(resolve=>{
+    let html=`<div style="margin-bottom:8px;color:var(--text2);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Choose version</div>`;
+    // Original
+    html+=`<div class="dj-pick" onclick="window._djPick(0)" style="display:flex;gap:12px;align-items:center;padding:12px;background:var(--card2);border:2px solid var(--accent);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:all 0.2s;">
+      ${trackArt?`<img src="${trackArt}" style="width:44px;height:44px;border-radius:6px;">`:''}
+      <div style="flex:1;">
+        <div style="color:var(--text);font-size:14px;font-weight:600;">${trackTitle}</div>
+        <div style="color:var(--text2);font-size:12px;">${trackArtist}</div>
+      </div>
+      <div style="color:var(--accent);font-size:11px;font-weight:600;">Original</div>
+    </div>`;
+    // Remixes
+    remixes.forEach((r,i)=>{
+      html+=`<div class="dj-pick" onclick="window._djPick(${i+1})" style="display:flex;gap:12px;align-items:center;padding:12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        ${r.art?`<img src="${r.art}" style="width:44px;height:44px;border-radius:6px;">`:''}
+        <div style="flex:1;">
+          <div style="color:var(--text);font-size:13px;font-weight:500;">${r.name}</div>
+          <div style="color:var(--text2);font-size:11px;">${r.artist}</div>
+        </div>
+        <div style="color:var(--text2);font-size:10px;">Remix</div>
+      </div>`;
+    });
+    // No remix option
+    html+=`<div onclick="window._djPick(0)" style="text-align:center;padding:8px;color:var(--text2);font-size:12px;cursor:pointer;opacity:0.6;">Just the original →</div>`;
+    pipe.innerHTML=html;
+    
+    window._djPick=(idx)=>{
+      if(idx===0) resolve({title:trackTitle,artist:trackArtist,art:trackArt,album:trackAlbum});
+      else{
+        const r=remixes[idx-1];
+        resolve({title:r.name,artist:r.artist,art:r.art,album:r.album});
+      }
+    };
+  });
+
+  const picked=await pickTrack();
+  const displayName=`${picked.title} — ${picked.artist}`;
 
   // Status helper
   const showStatus=(status,sub)=>{
     pipe.innerHTML=`
-      ${trackArt?`<div style="display:flex;gap:14px;align-items:center;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;">
-        <img src="${trackArt}" style="width:56px;height:56px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
+        ${picked.art?`<img src="${picked.art}" style="width:56px;height:56px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">`:''}
         <div style="flex:1;">
-          <div style="color:var(--text);font-size:15px;font-weight:600;">${trackTitle}</div>
-          <div style="color:var(--text2);font-size:13px;">${trackArtist}</div>
-          <div style="color:var(--text2);font-size:11px;opacity:0.6;">${trackAlbum}</div>
+          <div style="color:var(--text);font-size:15px;font-weight:600;">${picked.title}</div>
+          <div style="color:var(--text2);font-size:13px;">${picked.artist}</div>
         </div>
         <div style="text-align:right;">
           <div style="color:var(--accent);font-size:12px;font-weight:600;">${status}</div>
           ${sub?`<div style="color:var(--text2);font-size:11px;margin-top:2px;">${sub}</div>`:''}
         </div>
-      </div>`:`<div style="padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
-        <div style="color:var(--text);font-size:14px;font-weight:500;">${query}</div>
-        <div style="color:var(--accent);font-size:12px;font-weight:600;">${status}</div>
-      </div>`}`;
+      </div>`;
   };
 
   showStatus('Searching Soulseek...','');
@@ -921,7 +973,7 @@ async function djSearch(){
   // Add to queue as done
   const list=getDJ();
   const genre=document.getElementById('djGenre').value;
-  list.unshift({song:displayName,genre:genre,bpm:String(rBpm),done:true,time:new Date().toISOString(),quality:rExt,size:rSize+'MB',art:trackArt});
+  list.unshift({song:displayName,genre:genre,bpm:String(rBpm),done:true,time:new Date().toISOString(),quality:'WAV',size:rSize+'MB',art:picked.art});
   saveDJ(list);renderDJ();
   input.value='';
   djSearching=false;

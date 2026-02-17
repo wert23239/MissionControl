@@ -626,9 +626,10 @@ async function loadTodayTomorrow(){
 loadTodayTomorrow();
 
 // Build nav
+const savedTab=localStorage.getItem('mc-active-tab')||'overview';
 sections.forEach((s,i)=>{
   const el=document.createElement('div');
-  el.className='nav-item'+(i===0?' active':'');
+  el.className='nav-item'+(s.id===savedTab?' active':'');
   el.innerHTML=`<span class="icon">${s.icon}</span>${s.label}`;
   el.onclick=()=>switchPanel(s.id);
   el.dataset.id=s.id;
@@ -638,7 +639,7 @@ sections.forEach((s,i)=>{
 // Build panels
 Object.entries(panels).forEach(([id,html])=>{
   const el=document.createElement('div');
-  el.className='panel'+(id==='overview'?' active':'');
+  el.className='panel'+(id===savedTab?' active':'');
   el.id='panel-'+id;
   el.innerHTML=html;
   main.appendChild(el);
@@ -648,6 +649,7 @@ function switchPanel(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
+  localStorage.setItem('mc-active-tab',id);
   if(id==='notes')renderNotes();
   if(id==='book')renderBook();
   if(id==='journal')renderJournal();

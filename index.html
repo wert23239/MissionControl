@@ -1136,7 +1136,7 @@ function renderCrons(){
     {name:'heartbeat',schedule:'Every ~30 min',status:'Active',desc:'Periodic check-in — proactive tasks, background work',type:'system'},
     {name:'daily-tip',schedule:'Every day 11:00 PM ET',status:'Active',desc:'Search the web for a useful tip and send to Discord',type:'isolated'},
     {name:'spotify-batch',schedule:'Random 2-6hr intervals',status:'Queued',desc:'Download 5-8 songs from 234-track Spotify queue via Soulseek',type:'isolated'},
-    {name:'read-substack',schedule:'Feb 17 @ 2:00 PM ET',status:'Active',desc:'Reminder to read Oak Barrel Alchemist Substack',type:'one-shot'},
+    {name:'morning-reminders',schedule:'Mornings (via heartbeat)',status:'Active',desc:'Todo reminders — currently: read Oak Barrel Alchemist Substack',type:'reminder'},
   ];
   // Merge with any saved from localStorage (Alex updates these via chat)
   const extra=JSON.parse(localStorage.getItem('mc-crons')||'[]');

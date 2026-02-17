@@ -7,7 +7,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 .hero{text-align:center;padding:60px 20px 40px;}
 .hero h1{font-size:36px;font-weight:800;background:linear-gradient(135deg,#6366f1,#ec4899,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
@@ -17,119 +17,172 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#0a0a0a;c
 
 .theme-card{border-radius:16px;overflow:hidden;border:2px solid #222;transition:all 0.3s;}
 .theme-card:hover{border-color:#444;transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.5);}
-.theme-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;background:#111;}
+.theme-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;background:#111;flex-wrap:wrap;gap:12px;}
 .theme-header h2{font-size:20px;font-weight:700;}
 .theme-header .tags{display:flex;gap:6px;}
 .theme-header .tag{font-size:11px;padding:4px 10px;border-radius:99px;font-weight:600;}
-.theme-preview{height:520px;position:relative;overflow:hidden;}
+.theme-preview{height:560px;position:relative;overflow:hidden;}
 
-/* Vote button */
 .vote-btn{padding:10px 28px;border-radius:10px;border:2px solid #333;background:none;color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;}
 .vote-btn:hover{background:#6366f1;border-color:#6366f1;}
 .vote-btn.picked{background:#6366f1;border-color:#6366f1;}
 
-/* ===== THEME 1: Midnight Glass ===== */
-.t1{background:#0c0c1a;}
-.t1 .sidebar{position:absolute;left:0;top:0;bottom:0;width:220px;background:rgba(15,15,35,0.9);backdrop-filter:blur(20px);border-right:1px solid rgba(99,102,241,0.15);padding:20px 0;}
-.t1 .sidebar .logo{padding:0 20px 20px;font-size:18px;font-weight:800;color:#6366f1;}
-.t1 .sidebar .nav-item{padding:10px 20px;font-size:13px;color:#666;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;}
-.t1 .sidebar .nav-item.active{color:#fff;background:linear-gradient(90deg,rgba(99,102,241,0.15),transparent);border-left:3px solid #6366f1;}
-.t1 .content{margin-left:220px;padding:24px;}
-.t1 .content h2{font-size:22px;font-weight:700;margin-bottom:16px;}
-.t1 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.t1 .card{background:rgba(20,20,45,0.8);backdrop-filter:blur(10px);border:1px solid rgba(99,102,241,0.1);border-radius:12px;padding:16px;}
-.t1 .card .label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;}
-.t1 .card .value{font-size:28px;font-weight:800;margin-top:4px;background:linear-gradient(135deg,#6366f1,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.t1 .songlist{margin-top:16px;display:flex;flex-direction:column;gap:6px;}
-.t1 .song{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(20,20,45,0.6);border:1px solid rgba(99,102,241,0.08);border-radius:10px;font-size:12px;}
-.t1 .song .dot{width:8px;height:8px;border-radius:50%;background:#6366f1;}
-.t1 .song .name{flex:1;color:#ccc;}
-.t1 .song .meta{color:#555;font-size:11px;}
+/* ===== THEME 1: Fitness Dark (inspired by Dribbble fitness tracker) ===== */
+.t1{background:#0f0f13;padding:0;}
+.t1 .sidebar{position:absolute;left:0;top:0;bottom:0;width:72px;background:#16161d;display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:8px;}
+.t1 .sidebar .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#2dd4bf);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;margin-bottom:16px;}
+.t1 .sidebar .icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#555;transition:all 0.2s;}
+.t1 .sidebar .icon.active{background:rgba(124,58,237,0.15);color:#a78bfa;}
+.t1 .main{margin-left:72px;padding:24px 28px;}
+.t1 .main .greeting{font-size:13px;color:#666;margin-bottom:4px;}
+.t1 .main h2{font-size:24px;font-weight:800;color:#fff;margin-bottom:20px;}
+.t1 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.t1 .stat-card{border-radius:20px;padding:20px;position:relative;overflow:hidden;}
+.t1 .stat-card.purple{background:linear-gradient(135deg,#7c3aed,#6d28d9);}
+.t1 .stat-card.teal{background:linear-gradient(135deg,#0d9488,#14b8a6);}
+.t1 .stat-card.orange{background:linear-gradient(135deg,#ea580c,#f97316);}
+.t1 .stat-card.dark{background:#1e1e28;border:1px solid #2a2a35;}
+.t1 .stat-card .label{font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+.t1 .stat-card .val{font-size:32px;font-weight:900;color:#fff;margin-top:6px;}
+.t1 .stat-card .ring{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;border:4px solid rgba(255,255,255,0.15);}
+.t1 .stat-card .ring::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:4px solid transparent;border-top-color:rgba(255,255,255,0.8);transform:rotate(45deg);}
+.t1 .stat-card.dark .val{color:#a78bfa;}
+.t1 .song-section{background:#16161d;border-radius:20px;padding:20px;}
+.t1 .song-section h3{font-size:14px;font-weight:700;color:#888;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;}
+.t1 .song{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1e1e28;}
+.t1 .song:last-child{border-bottom:none;}
+.t1 .song .art{width:44px;height:44px;border-radius:10px;flex-shrink:0;}
+.t1 .song .info{flex:1;}
+.t1 .song .name{font-size:13px;font-weight:600;color:#eee;}
+.t1 .song .artist{font-size:11px;color:#666;margin-top:2px;}
+.t1 .song .badge{font-size:10px;padding:3px 8px;border-radius:8px;font-weight:600;}
 
-/* ===== THEME 2: Warm Cream ===== */
-.t2{background:#faf8f4;}
-.t2 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid #e8e4dd;}
-.t2 .topbar .logo{font-size:18px;font-weight:800;color:#1a1a1a;}
-.t2 .topbar .tabs{display:flex;gap:4px;}
-.t2 .topbar .tab{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;color:#999;background:none;border:none;cursor:pointer;}
-.t2 .topbar .tab.active{color:#1a1a1a;background:#ede9e0;}
-.t2 .content{padding:24px;max-width:900px;margin:0 auto;}
-.t2 .content h2{font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:16px;}
-.t2 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
-.t2 .card{background:#fff;border:1px solid #e8e4dd;border-radius:12px;padding:16px;}
-.t2 .card .label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.5px;}
-.t2 .card .value{font-size:26px;font-weight:800;color:#1a1a1a;margin-top:4px;}
-.t2 .songlist{display:flex;flex-direction:column;gap:4px;}
-.t2 .song{display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border:1px solid #e8e4dd;border-radius:10px;font-size:13px;}
-.t2 .song .num{width:24px;height:24px;border-radius:6px;background:#ede9e0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#666;}
-.t2 .song .name{flex:1;color:#1a1a1a;font-weight:500;}
-.t2 .song .meta{color:#999;font-size:12px;}
+/* ===== THEME 2: Revolut Fintech ===== */
+.t2{background:#0a0a0a;}
+.t2 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid #1a1a1a;}
+.t2 .topbar .logo{font-size:20px;font-weight:900;letter-spacing:-0.5px;}
+.t2 .topbar .tabs{display:flex;gap:2px;background:#141414;border-radius:12px;padding:3px;}
+.t2 .topbar .tab{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#666;background:none;border:none;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.t2 .topbar .tab.active{color:#fff;background:#222;}
+.t2 .main{max-width:960px;margin:0 auto;padding:28px;}
+.t2 .main h2{font-size:28px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px;}
+.t2 .main .sub{font-size:14px;color:#555;margin-bottom:24px;}
+.t2 .hero-card{background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:28px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.t2 .hero-card .big-num{font-size:48px;font-weight:900;color:#fff;}
+.t2 .hero-card .big-label{font-size:13px;color:#666;margin-top:4px;}
+.t2 .hero-card .side-stats{display:flex;gap:24px;}
+.t2 .hero-card .mini{text-align:center;}
+.t2 .hero-card .mini .v{font-size:22px;font-weight:800;color:#fff;}
+.t2 .hero-card .mini .l{font-size:11px;color:#555;margin-top:2px;}
+.t2 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.t2 .card{background:#141414;border-radius:16px;padding:20px;border:1px solid #1a1a1a;transition:border-color 0.2s;}
+.t2 .card:hover{border-color:#333;}
+.t2 .card .label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;}
+.t2 .card .value{font-size:24px;font-weight:800;margin-top:6px;}
+.t2 .card .green{color:#22c55e;}
+.t2 .card .blue{color:#3b82f6;}
+.t2 .song-list{background:#141414;border-radius:16px;padding:4px;border:1px solid #1a1a1a;}
+.t2 .song{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;transition:background 0.2s;}
+.t2 .song:hover{background:#1a1a1a;}
+.t2 .song .num{width:24px;font-size:14px;color:#444;font-weight:700;text-align:right;}
+.t2 .song .art{width:40px;height:40px;border-radius:8px;flex-shrink:0;}
+.t2 .song .info{flex:1;}
+.t2 .song .name{font-size:13px;font-weight:600;color:#eee;}
+.t2 .song .artist{font-size:11px;color:#555;margin-top:1px;}
+.t2 .song .tag{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:#1a1a1a;color:#888;}
 
-/* ===== THEME 3: Neon Terminal ===== */
-.t3{background:#0d1117;font-family:'JetBrains Mono','Fira Code',monospace;}
-.t3 .topbar{display:flex;align-items:center;padding:12px 20px;background:#161b22;border-bottom:1px solid #21262d;}
-.t3 .topbar .logo{font-size:14px;font-weight:700;color:#58a6ff;}
-.t3 .topbar .tabs{display:flex;gap:2px;margin-left:24px;}
-.t3 .topbar .tab{padding:6px 14px;font-size:12px;color:#484f58;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;}
-.t3 .topbar .tab.active{color:#c9d1d9;border-bottom-color:#58a6ff;}
-.t3 .content{padding:20px;}
-.t3 .content h2{font-size:14px;font-weight:700;color:#c9d1d9;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
-.t3 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
-.t3 .card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px;}
-.t3 .card .label{font-size:10px;color:#484f58;text-transform:uppercase;}
-.t3 .card .value{font-size:22px;font-weight:700;color:#39d353;margin-top:4px;}
-.t3 .songlist{display:flex;flex-direction:column;gap:2px;}
-.t3 .song{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12px;color:#c9d1d9;border-left:2px solid transparent;}
-.t3 .song:hover{background:#161b22;border-left-color:#58a6ff;}
-.t3 .song .prompt{color:#39d353;}
-.t3 .song .name{flex:1;}
-.t3 .song .meta{color:#484f58;}
+/* ===== THEME 3: Notion Minimal ===== */
+.t3{background:#191919;}
+.t3 .sidebar{position:absolute;left:0;top:0;bottom:0;width:240px;background:#202020;padding:16px 0;}
+.t3 .sidebar .workspace{padding:8px 16px;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.t3 .sidebar .ws-icon{width:28px;height:28px;border-radius:6px;background:#333;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.t3 .sidebar .ws-name{font-size:14px;font-weight:700;color:#ddd;}
+.t3 .sidebar .section{padding:4px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:12px;}
+.t3 .sidebar .item{padding:6px 16px;font-size:13px;color:#888;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:4px;margin:1px 8px;transition:all 0.15s;}
+.t3 .sidebar .item:hover{background:#2a2a2a;color:#ddd;}
+.t3 .sidebar .item.active{background:#2a2a2a;color:#fff;}
+.t3 .main{margin-left:240px;padding:32px 40px;}
+.t3 .main .breadcrumb{font-size:12px;color:#555;margin-bottom:8px;}
+.t3 .main h2{font-size:32px;font-weight:700;color:#eee;margin-bottom:4px;}
+.t3 .main .desc{font-size:14px;color:#666;margin-bottom:24px;}
+.t3 .props{display:flex;gap:24px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #2a2a2a;}
+.t3 .prop{display:flex;align-items:center;gap:6px;font-size:12px;color:#888;}
+.t3 .prop .k{color:#555;}
+.t3 .table{width:100%;}
+.t3 .table .row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #222;font-size:13px;}
+.t3 .table .row:hover{background:#1e1e1e;}
+.t3 .table .cell{padding:4px 8px;}
+.t3 .table .c-name{flex:2;color:#ddd;font-weight:500;}
+.t3 .table .c-tag{flex:1;}
+.t3 .table .c-meta{flex:1;color:#555;font-size:12px;}
+.t3 .table .pill{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;}
+.t3 .table .header{font-size:11px;color:#555;text-transform:uppercase;font-weight:700;border-bottom:2px solid #2a2a2a;}
 
-/* ===== THEME 4: Soft Gradient ===== */
-.t4{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);}
-.t4 .sidebar{position:absolute;left:0;top:0;bottom:0;width:64px;background:rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:4px;}
-.t4 .sidebar .icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all 0.2s;color:#666;}
-.t4 .sidebar .icon.active{background:rgba(167,139,250,0.2);color:#a78bfa;}
-.t4 .content{margin-left:64px;padding:24px;}
-.t4 .content h2{font-size:24px;font-weight:800;color:#e2e8f0;margin-bottom:4px;}
-.t4 .content .sub{font-size:13px;color:#64748b;margin-bottom:20px;}
-.t4 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
-.t4 .card{background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;}
-.t4 .card .label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;}
-.t4 .card .value{font-size:28px;font-weight:800;color:#e2e8f0;margin-top:4px;}
-.t4 .card .accent{color:#a78bfa;}
-.t4 .songlist{display:flex;flex-direction:column;gap:6px;}
-.t4 .song{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;font-size:13px;}
-.t4 .song .art{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#a78bfa);flex-shrink:0;}
-.t4 .song .name{flex:1;color:#e2e8f0;font-weight:500;}
-.t4 .song .meta{color:#64748b;font-size:12px;}
+/* ===== THEME 4: Apple Music ===== */
+.t4{background:#000;}
+.t4 .topbar{display:flex;align-items:center;gap:20px;padding:14px 24px;background:rgba(20,20,20,0.9);backdrop-filter:blur(20px);border-bottom:1px solid #222;}
+.t4 .topbar .logo{font-size:18px;font-weight:800;color:#fa2d48;letter-spacing:-0.3px;}
+.t4 .topbar .nav{display:flex;gap:4px;}
+.t4 .topbar .nav a{font-size:13px;font-weight:600;color:#888;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all 0.2s;}
+.t4 .topbar .nav a.active{color:#fff;background:#333;}
+.t4 .topbar .search{margin-left:auto;background:#1c1c1e;border:none;border-radius:8px;padding:8px 14px;color:#888;font-size:13px;font-family:inherit;width:200px;}
+.t4 .main{padding:24px;}
+.t4 .main h2{font-size:26px;font-weight:800;color:#fff;margin-bottom:4px;}
+.t4 .main .sub{font-size:14px;color:#888;margin-bottom:20px;}
+.t4 .featured{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.t4 .featured .item{border-radius:12px;height:120px;position:relative;overflow:hidden;cursor:pointer;}
+.t4 .featured .item .overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,0.8));padding:12px;display:flex;flex-direction:column;justify-content:flex-end;}
+.t4 .featured .item .ftitle{font-size:14px;font-weight:700;color:#fff;}
+.t4 .featured .item .fsub{font-size:11px;color:rgba(255,255,255,0.6);}
+.t4 .tracklist{background:#1c1c1e;border-radius:14px;overflow:hidden;}
+.t4 .tracklist .header{display:flex;padding:10px 16px;border-bottom:1px solid #2a2a2a;font-size:11px;color:#555;text-transform:uppercase;font-weight:700;}
+.t4 .tracklist .header .h-num{width:30px;}
+.t4 .tracklist .header .h-title{flex:2;}
+.t4 .tracklist .header .h-genre{flex:1;}
+.t4 .tracklist .header .h-added{flex:1;text-align:right;}
+.t4 .song{display:flex;align-items:center;padding:10px 16px;transition:background 0.15s;}
+.t4 .song:hover{background:#2a2a2a;}
+.t4 .song .num{width:30px;font-size:13px;color:#555;}
+.t4 .song .art{width:36px;height:36px;border-radius:6px;margin-right:12px;flex-shrink:0;}
+.t4 .song .info{flex:2;}
+.t4 .song .name{font-size:13px;font-weight:600;color:#fff;}
+.t4 .song .artist{font-size:11px;color:#888;margin-top:1px;}
+.t4 .song .genre{flex:1;font-size:12px;color:#666;}
+.t4 .song .added{flex:1;font-size:12px;color:#555;text-align:right;}
 
-/* ===== THEME 5: Spotify Dark ===== */
-.t5{background:#121212;}
-.t5 .sidebar{position:absolute;left:0;top:0;bottom:0;width:240px;background:#000;padding:20px 0;}
-.t5 .sidebar .logo{padding:0 20px 24px;font-size:20px;font-weight:800;color:#fff;}
-.t5 .sidebar .nav-item{padding:10px 20px;font-size:14px;color:#b3b3b3;display:flex;align-items:center;gap:12px;cursor:pointer;transition:color 0.2s;font-weight:600;}
-.t5 .sidebar .nav-item.active{color:#fff;}
-.t5 .sidebar .divider{height:1px;background:#282828;margin:12px 20px;}
-.t5 .sidebar .playlist-label{padding:4px 20px;font-size:11px;color:#b3b3b3;text-transform:uppercase;letter-spacing:1px;font-weight:700;}
-.t5 .content{margin-left:240px;padding:24px;background:linear-gradient(180deg,#1a1a2e 0%,#121212 300px);}
-.t5 .content h2{font-size:28px;font-weight:800;color:#fff;margin-bottom:4px;}
-.t5 .content .sub{font-size:13px;color:#a7a7a7;margin-bottom:20px;}
-.t5 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
-.t5 .card{background:#181818;border-radius:8px;padding:16px;transition:background 0.3s;}
-.t5 .card:hover{background:#282828;}
-.t5 .card .label{font-size:11px;color:#a7a7a7;text-transform:uppercase;letter-spacing:0.5px;}
-.t5 .card .value{font-size:26px;font-weight:800;color:#fff;margin-top:4px;}
-.t5 .card .green{color:#1db954;}
-.t5 .songlist{display:flex;flex-direction:column;gap:2px;}
-.t5 .song{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:4px;font-size:13px;transition:background 0.2s;}
-.t5 .song:hover{background:#282828;}
-.t5 .song .num{width:20px;color:#a7a7a7;font-size:14px;text-align:right;}
-.t5 .song .art{width:40px;height:40px;border-radius:4px;background:#282828;flex-shrink:0;}
+/* ===== THEME 5: Arc Browser ===== */
+.t5{background:#1a1625;overflow:hidden;}
+.t5 .sidebar{position:absolute;left:0;top:0;bottom:0;width:260px;background:linear-gradient(180deg,#231e30,#1a1625);padding:16px 0;}
+.t5 .sidebar .space-tabs{display:flex;gap:4px;padding:0 12px;margin-bottom:16px;}
+.t5 .sidebar .space{flex:1;height:4px;border-radius:2px;background:#2a2535;cursor:pointer;}
+.t5 .sidebar .space.active{background:linear-gradient(90deg,#e879f9,#7c3aed);}
+.t5 .sidebar .pinned{padding:4px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:8px;}
+.t5 .sidebar .item{padding:8px 16px;font-size:13px;color:#998eb5;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:8px;margin:2px 8px;transition:all 0.15s;}
+.t5 .sidebar .item:hover{background:rgba(255,255,255,0.05);color:#d4c4f0;}
+.t5 .sidebar .item.active{background:rgba(232,121,249,0.1);color:#e879f9;font-weight:600;}
+.t5 .sidebar .item .dot{width:8px;height:8px;border-radius:50%;}
+.t5 .sidebar .divider{height:1px;background:#2a2535;margin:12px 16px;}
+.t5 .main{margin-left:260px;padding:28px;}
+.t5 .main .url-bar{background:#231e30;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:8px;margin-bottom:24px;font-size:13px;color:#666;}
+.t5 .main h2{font-size:26px;font-weight:800;color:#e8e0f0;margin-bottom:4px;}
+.t5 .main .sub{font-size:13px;color:#665c78;margin-bottom:20px;}
+.t5 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.t5 .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:18px;transition:all 0.2s;}
+.t5 .card:hover{background:rgba(255,255,255,0.06);border-color:rgba(232,121,249,0.2);}
+.t5 .card .label{font-size:11px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+.t5 .card .value{font-size:28px;font-weight:800;margin-top:4px;}
+.t5 .card .pink{color:#e879f9;}
+.t5 .card .cyan{color:#22d3ee;}
+.t5 .card .white{color:#e8e0f0;}
+.t5 .song-section{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:16px;overflow:hidden;}
+.t5 .song-section h3{font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;padding:14px 16px 8px;}
+.t5 .song{display:flex;align-items:center;gap:12px;padding:10px 16px;transition:background 0.15s;}
+.t5 .song:hover{background:rgba(255,255,255,0.03);}
+.t5 .song .art{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
 .t5 .song .info{flex:1;}
-.t5 .song .name{color:#fff;font-weight:500;}
-.t5 .song .artist{color:#a7a7a7;font-size:12px;margin-top:1px;}
-.t5 .song .meta{color:#a7a7a7;font-size:12px;}
+.t5 .song .name{font-size:13px;font-weight:600;color:#d4c4f0;}
+.t5 .song .artist{font-size:11px;color:#665c78;margin-top:1px;}
+.t5 .song .tag{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;}
 
 .picked-banner{display:none;text-align:center;padding:20px;background:#6366f1;color:#fff;font-weight:700;font-size:16px;position:fixed;bottom:0;left:0;right:0;z-index:99;border-radius:16px 16px 0 0;}
 .picked-banner.show{display:block;}
@@ -138,62 +191,57 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#0a0a0a;c
 <body>
 
 <div class="hero">
-<h1>Pick a Vibe</h1>
-<p>5 dashboard themes — tap "This One" on whichever you like, then tell Alex</p>
+<h1>Pick a Vibe v2</h1>
+<p>5 fresh themes — tap "This One" and tell Alex the number</p>
 </div>
 
 <div class="themes">
 
-<!-- THEME 1: Midnight Glass -->
+<!-- THEME 1: Fitness Dark -->
 <div class="theme-card">
 <div class="theme-header">
-<div>
-<h2>1. Midnight Glass</h2>
-<span style="color:#666;font-size:13px;">Glassmorphism + deep indigo</span>
-</div>
+<div><h2>1. Fitness Dark</h2><span style="color:#666;font-size:13px;">Rounded stat cards, gradient accents, progress rings</span></div>
 <div style="display:flex;align-items:center;gap:12px;">
-<div class="tags"><span class="tag" style="background:rgba(99,102,241,0.15);color:#818cf8;">Dark</span><span class="tag" style="background:rgba(99,102,241,0.15);color:#818cf8;">Glass</span></div>
+<div class="tags"><span class="tag" style="background:rgba(124,58,237,0.15);color:#a78bfa;">Dark</span><span class="tag" style="background:rgba(45,212,191,0.15);color:#2dd4bf;">Fitness</span></div>
 <button class="vote-btn" onclick="pick(1,this)">This One</button>
 </div>
 </div>
 <div class="theme-preview t1">
 <div class="sidebar">
-<div class="logo">⚡ Mission Control</div>
-<div class="nav-item active">🏠 Overview</div>
-<div class="nav-item" style="color:#fff;">🎵 Music</div>
-<div class="nav-item">📋 Notebook</div>
-<div class="nav-item">📖 Book</div>
-<div class="nav-item">💰 Money</div>
-<div class="nav-item">📅 Calendar</div>
+<div class="logo">M</div>
+<div class="icon active">🏠</div>
+<div class="icon" style="color:#2dd4bf;">🎵</div>
+<div class="icon">📋</div>
+<div class="icon">📖</div>
+<div class="icon">💰</div>
+<div class="icon">📅</div>
 </div>
-<div class="content">
-<h2>🎵 Music</h2>
-<div class="cards">
-<div class="card"><div class="label">Queued</div><div class="value">234</div></div>
-<div class="card"><div class="label">Downloaded</div><div class="value">10</div></div>
-<div class="card"><div class="label">Playlist</div><div class="value">Gatsby 1</div></div>
+<div class="main">
+<div class="greeting">Good evening,</div>
+<h2>Gatsby's Music</h2>
+<div class="stat-grid">
+<div class="stat-card purple"><div class="label">Queued</div><div class="val">234</div><div class="ring"></div></div>
+<div class="stat-card teal"><div class="label">Downloaded</div><div class="val">10</div><div class="ring"></div></div>
+<div class="stat-card orange"><div class="label">Playlists</div><div class="val">1</div><div class="ring"></div></div>
+<div class="stat-card dark"><div class="label">Current</div><div class="val" style="font-size:18px;">Gatsby 1</div></div>
 </div>
-<div style="margin-top:12px;font-size:13px;font-weight:600;color:#888;">Gatsby's Songs</div>
-<div class="songlist">
-<div class="song"><div class="dot"></div><div class="name">Hung Up (SDP Extended Vocal) — Madonna</div><div class="meta">Dance/Pop</div></div>
-<div class="song"><div class="dot"></div><div class="name">Substitution — Purple Disco Machine, Kungs</div><div class="meta">Disco</div></div>
-<div class="song"><div class="dot"></div><div class="name">CTRL + ALT + DEL — Rêve</div><div class="meta">House</div></div>
-<div class="song"><div class="dot"></div><div class="name">Trust Nobody — Hippie Sabotage</div><div class="meta">Electronic</div></div>
-<div class="song"><div class="dot"></div><div class="name">Ice In My Eyes — WELKER</div><div class="meta">Electronic</div></div>
+<div class="song-section">
+<h3>Recently Added</h3>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#e91e63,#9c27b0);"></div><div class="info"><div class="name">Hung Up (SDP Extended Vocal)</div><div class="artist">Madonna</div></div><span class="badge" style="background:rgba(45,212,191,0.15);color:#2dd4bf;">Dance</span></div>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#ff9800,#e91e63);"></div><div class="info"><div class="name">Substitution</div><div class="artist">Purple Disco Machine, Kungs</div></div><span class="badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;">Disco</span></div>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#00bcd4,#3f51b5);"></div><div class="info"><div class="name">CTRL + ALT + DEL</div><div class="artist">Rêve</div></div><span class="badge" style="background:rgba(234,88,12,0.15);color:#f97316;">House</span></div>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#4caf50,#009688);"></div><div class="info"><div class="name">Trust Nobody</div><div class="artist">Hippie Sabotage</div></div><span class="badge" style="background:rgba(45,212,191,0.15);color:#2dd4bf;">Electronic</span></div>
 </div>
 </div>
 </div>
 </div>
 
-<!-- THEME 2: Warm Cream -->
+<!-- THEME 2: Revolut Fintech -->
 <div class="theme-card">
 <div class="theme-header">
-<div>
-<h2>2. Warm Cream</h2>
-<span style="color:#666;font-size:13px;">Clean light mode, paper vibes</span>
-</div>
+<div><h2>2. Revolut Fintech</h2><span style="color:#666;font-size:13px;">Sleek black, pill tabs, bold numbers, card-based</span></div>
 <div style="display:flex;align-items:center;gap:12px;">
-<div class="tags"><span class="tag" style="background:rgba(245,158,11,0.15);color:#f59e0b;">Light</span><span class="tag" style="background:rgba(245,158,11,0.15);color:#f59e0b;">Minimal</span></div>
+<div class="tags"><span class="tag" style="background:rgba(59,130,246,0.15);color:#3b82f6;">Dark</span><span class="tag" style="background:rgba(59,130,246,0.15);color:#3b82f6;">Fintech</span></div>
 <button class="vote-btn" onclick="pick(2,this)">This One</button>
 </div>
 </div>
@@ -206,143 +254,163 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#0a0a0a;c
 <button class="tab">Notebook</button>
 <button class="tab">Book</button>
 <button class="tab">Money</button>
-<button class="tab">Calendar</button>
 </div>
 </div>
-<div class="content">
+<div class="main">
 <h2>Music</h2>
-<div class="cards">
-<div class="card"><div class="label">Queued</div><div class="value">234</div></div>
-<div class="card"><div class="label">Downloaded</div><div class="value">10</div></div>
-<div class="card"><div class="label">Current Playlist</div><div class="value">Gatsby 1</div></div>
+<div class="sub">Gatsby's playlist • 10/30 songs</div>
+<div class="hero-card">
+<div><div class="big-num">234</div><div class="big-label">tracks in queue</div></div>
+<div class="side-stats">
+<div class="mini"><div class="v">10</div><div class="l">Downloaded</div></div>
+<div class="mini"><div class="v" style="color:#22c55e;">4%</div><div class="l">Complete</div></div>
+<div class="mini"><div class="v">1</div><div class="l">Playlists</div></div>
 </div>
-<div class="songlist">
-<div class="song"><div class="num">1</div><div class="name">Hung Up (SDP Extended Vocal) — Madonna</div><div class="meta">Dance/Pop</div></div>
-<div class="song"><div class="num">2</div><div class="name">Substitution — Purple Disco Machine, Kungs</div><div class="meta">Disco</div></div>
-<div class="song"><div class="num">3</div><div class="name">CTRL + ALT + DEL — Rêve</div><div class="meta">House</div></div>
-<div class="song"><div class="num">4</div><div class="name">Trust Nobody — Hippie Sabotage</div><div class="meta">Electronic</div></div>
-<div class="song"><div class="num">5</div><div class="name">Ice In My Eyes — WELKER</div><div class="meta">Electronic</div></div>
+</div>
+<div class="song-list">
+<div class="song"><div class="num">1</div><div class="art" style="background:linear-gradient(135deg,#e91e63,#9c27b0);"></div><div class="info"><div class="name">Hung Up (SDP Extended Vocal)</div><div class="artist">Madonna</div></div><div class="tag">Dance/Pop</div></div>
+<div class="song"><div class="num">2</div><div class="art" style="background:linear-gradient(135deg,#ff9800,#e91e63);"></div><div class="info"><div class="name">Substitution</div><div class="artist">Purple Disco Machine, Kungs</div></div><div class="tag">Disco</div></div>
+<div class="song"><div class="num">3</div><div class="art" style="background:linear-gradient(135deg,#00bcd4,#3f51b5);"></div><div class="info"><div class="name">CTRL + ALT + DEL</div><div class="artist">Rêve</div></div><div class="tag">House</div></div>
+<div class="song"><div class="num">4</div><div class="art" style="background:linear-gradient(135deg,#4caf50,#009688);"></div><div class="info"><div class="name">Trust Nobody</div><div class="artist">Hippie Sabotage</div></div><div class="tag">Electronic</div></div>
+<div class="song"><div class="num">5</div><div class="art" style="background:linear-gradient(135deg,#2196f3,#673ab7);"></div><div class="info"><div class="name">Ice In My Eyes</div><div class="artist">WELKER</div></div><div class="tag">Electronic</div></div>
 </div>
 </div>
 </div>
 </div>
 
-<!-- THEME 3: Neon Terminal -->
+<!-- THEME 3: Notion Minimal -->
 <div class="theme-card">
 <div class="theme-header">
-<div>
-<h2>3. GitHub Terminal</h2>
-<span style="color:#666;font-size:13px;">Dev-coded, monospace, matrix green</span>
-</div>
+<div><h2>3. Notion Minimal</h2><span style="color:#666;font-size:13px;">Database-style, clean rows, workspace sidebar</span></div>
 <div style="display:flex;align-items:center;gap:12px;">
-<div class="tags"><span class="tag" style="background:rgba(57,211,83,0.15);color:#39d353;">Dark</span><span class="tag" style="background:rgba(57,211,83,0.15);color:#39d353;">Terminal</span></div>
+<div class="tags"><span class="tag" style="background:rgba(255,255,255,0.08);color:#aaa;">Dark</span><span class="tag" style="background:rgba(255,255,255,0.08);color:#aaa;">Notion</span></div>
 <button class="vote-btn" onclick="pick(3,this)">This One</button>
 </div>
 </div>
 <div class="theme-preview t3">
-<div class="topbar">
-<div class="logo">$ mission-control</div>
-<div class="tabs">
-<button class="tab">overview</button>
-<button class="tab active">music</button>
-<button class="tab">notebook</button>
-<button class="tab">book</button>
-<button class="tab">money</button>
+<div class="sidebar">
+<div class="workspace"><div class="ws-icon">🎧</div><div class="ws-name">Gatsby's Space</div></div>
+<div class="section">Favorites</div>
+<div class="item active">🎵 Music</div>
+<div class="item">📋 Notebook</div>
+<div class="item">📖 Book Progress</div>
+<div class="section">Pages</div>
+<div class="item">🏠 Overview</div>
+<div class="item">💰 Money</div>
+<div class="item">📅 Calendar</div>
+<div class="item">🎯 Bingo</div>
+<div class="item">⏰ Crons</div>
+<div class="divider" style="height:1px;background:#2a2a2a;margin:8px 16px;"></div>
+<div class="section">Playlists</div>
+<div class="item">📀 Gatsby 1</div>
+<div class="item" style="color:#555;">📀 Tara 1</div>
+<div class="item" style="color:#555;">📀 Sabrina 1</div>
 </div>
+<div class="main">
+<div class="breadcrumb">Music / Gatsby 1</div>
+<h2>🎵 Music Queue</h2>
+<div class="desc">Track downloads and playlist management</div>
+<div class="props">
+<div class="prop"><span class="k">Status</span> 🟢 Active</div>
+<div class="prop"><span class="k">Songs</span> 10/30</div>
+<div class="prop"><span class="k">Adding as</span> Gatsby</div>
+<div class="prop"><span class="k">Queue</span> 234 remaining</div>
 </div>
-<div class="content">
-<h2>// music.queue</h2>
-<div class="cards">
-<div class="card"><div class="label">queued</div><div class="value">234</div></div>
-<div class="card"><div class="label">downloaded</div><div class="value" style="color:#58a6ff;">10</div></div>
-<div class="card"><div class="label">playlist</div><div class="value" style="color:#d2a8ff;font-size:16px;">gatsby_1</div></div>
-<div class="card"><div class="label">status</div><div class="value" style="font-size:14px;">IDLE</div></div>
-</div>
-<div class="songlist">
-<div class="song"><span class="prompt">❯</span><span class="name">hung_up_sdp_extended -- madonna</span><span class="meta">dance</span></div>
-<div class="song"><span class="prompt">&nbsp;</span><span class="name">substitution -- purple_disco_machine</span><span class="meta">disco</span></div>
-<div class="song"><span class="prompt">&nbsp;</span><span class="name">ctrl_alt_del -- reve</span><span class="meta">house</span></div>
-<div class="song"><span class="prompt">&nbsp;</span><span class="name">trust_nobody -- hippie_sabotage</span><span class="meta">electronic</span></div>
-<div class="song"><span class="prompt">&nbsp;</span><span class="name">ice_in_my_eyes -- welker</span><span class="meta">electronic</span></div>
+<div class="table">
+<div class="row header"><div class="cell c-name">Song</div><div class="cell c-tag">Genre</div><div class="cell c-meta">Added by</div><div class="cell c-meta">Status</div></div>
+<div class="row"><div class="cell c-name">Hung Up (SDP Extended Vocal) — Madonna</div><div class="cell c-tag"><span class="pill" style="background:rgba(232,121,249,0.15);color:#e879f9;">Dance</span></div><div class="cell c-meta">Gatsby</div><div class="cell c-meta">✅</div></div>
+<div class="row"><div class="cell c-name">Substitution — Purple Disco Machine</div><div class="cell c-tag"><span class="pill" style="background:rgba(245,158,11,0.15);color:#f59e0b;">Disco</span></div><div class="cell c-meta">Gatsby</div><div class="cell c-meta">○</div></div>
+<div class="row"><div class="cell c-name">CTRL + ALT + DEL — Rêve</div><div class="cell c-tag"><span class="pill" style="background:rgba(59,130,246,0.15);color:#3b82f6;">House</span></div><div class="cell c-meta">Gatsby</div><div class="cell c-meta">○</div></div>
+<div class="row"><div class="cell c-name">Trust Nobody — Hippie Sabotage</div><div class="cell c-tag"><span class="pill" style="background:rgba(34,197,94,0.15);color:#22c55e;">Electronic</span></div><div class="cell c-meta">Gatsby</div><div class="cell c-meta">○</div></div>
+<div class="row"><div class="cell c-name">Ice In My Eyes — WELKER</div><div class="cell c-tag"><span class="pill" style="background:rgba(34,197,94,0.15);color:#22c55e;">Electronic</span></div><div class="cell c-meta">Gatsby</div><div class="cell c-meta">○</div></div>
 </div>
 </div>
 </div>
 </div>
 
-<!-- THEME 4: Soft Gradient -->
+<!-- THEME 4: Apple Music -->
 <div class="theme-card">
 <div class="theme-header">
-<div>
-<h2>4. Soft Gradient</h2>
-<span style="color:#666;font-size:13px;">Purple haze, icon sidebar, smooth</span>
-</div>
+<div><h2>4. Apple Music</h2><span style="color:#666;font-size:13px;">Clean tracklist, featured cards, search bar, red accent</span></div>
 <div style="display:flex;align-items:center;gap:12px;">
-<div class="tags"><span class="tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">Dark</span><span class="tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">Gradient</span></div>
+<div class="tags"><span class="tag" style="background:rgba(250,45,72,0.15);color:#fa2d48;">Dark</span><span class="tag" style="background:rgba(250,45,72,0.15);color:#fa2d48;">Apple</span></div>
 <button class="vote-btn" onclick="pick(4,this)">This One</button>
 </div>
 </div>
 <div class="theme-preview t4">
-<div class="sidebar">
-<div class="icon active">🏠</div>
-<div class="icon" style="color:#a78bfa;">🎵</div>
-<div class="icon">📋</div>
-<div class="icon">📖</div>
-<div class="icon">💰</div>
-<div class="icon">📅</div>
-<div class="icon">🎯</div>
+<div class="topbar">
+<div class="logo">♪ Mission Control</div>
+<div class="nav">
+<a class="active">Music</a>
+<a>Notebook</a>
+<a>Book</a>
+<a>Money</a>
+<a>Calendar</a>
 </div>
-<div class="content">
-<h2>Music</h2>
-<div class="sub">Gatsby's playlist • 10 songs queued</div>
-<div class="cards">
-<div class="card"><div class="label">Queue</div><div class="value accent">234</div></div>
-<div class="card"><div class="label">Downloaded</div><div class="value">10</div></div>
-<div class="card"><div class="label">Playlist</div><div class="value" style="font-size:18px;">Gatsby 1</div></div>
+<input class="search" placeholder="Search songs...">
 </div>
-<div class="songlist">
-<div class="song"><div class="art"></div><div class="name">Hung Up (SDP Extended Vocal) — Madonna</div><div class="meta">Dance/Pop</div></div>
-<div class="song"><div class="art" style="background:linear-gradient(135deg,#ec4899,#f59e0b);"></div><div class="name">Substitution — Purple Disco Machine</div><div class="meta">Disco</div></div>
-<div class="song"><div class="art" style="background:linear-gradient(135deg,#10b981,#3b82f6);"></div><div class="name">CTRL + ALT + DEL — Rêve</div><div class="meta">House</div></div>
-<div class="song"><div class="art" style="background:linear-gradient(135deg,#f59e0b,#ef4444);"></div><div class="name">Trust Nobody — Hippie Sabotage</div><div class="meta">Electronic</div></div>
+<div class="main">
+<h2>Gatsby 1</h2>
+<div class="sub">10 songs • Updated today</div>
+<div class="featured">
+<div class="item" style="background:linear-gradient(135deg,#7c3aed,#ec4899);"><div class="overlay"><div class="ftitle">234 in Queue</div><div class="fsub">Spotify + Billboard tracks</div></div></div>
+<div class="item" style="background:linear-gradient(135deg,#ea580c,#f59e0b);"><div class="overlay"><div class="ftitle">Soulseek Pipeline</div><div class="fsub">FLAC → WAV → Rekordbox</div></div></div>
+<div class="item" style="background:linear-gradient(135deg,#0891b2,#6366f1);"><div class="overlay"><div class="ftitle">3 DJs</div><div class="fsub">Gatsby • Tara • Sabrina</div></div></div>
+</div>
+<div class="tracklist">
+<div class="header"><div class="h-num">#</div><div class="h-title">Title</div><div class="h-genre">Genre</div><div class="h-added">Added</div></div>
+<div class="song"><div class="num">1</div><div class="art" style="background:linear-gradient(135deg,#e91e63,#9c27b0);"></div><div class="info"><div class="name">Hung Up (SDP Extended Vocal)</div><div class="artist">Madonna</div></div><div class="genre">Dance/Pop</div><div class="added">Today</div></div>
+<div class="song"><div class="num">2</div><div class="art" style="background:linear-gradient(135deg,#ff9800,#e91e63);"></div><div class="info"><div class="name">Substitution</div><div class="artist">Purple Disco Machine, Kungs</div></div><div class="genre">Disco</div><div class="added">Today</div></div>
+<div class="song"><div class="num">3</div><div class="art" style="background:linear-gradient(135deg,#00bcd4,#3f51b5);"></div><div class="info"><div class="name">CTRL + ALT + DEL</div><div class="artist">Rêve</div></div><div class="genre">House</div><div class="added">Today</div></div>
+<div class="song"><div class="num">4</div><div class="art" style="background:linear-gradient(135deg,#4caf50,#009688);"></div><div class="info"><div class="name">Trust Nobody</div><div class="artist">Hippie Sabotage</div></div><div class="genre">Electronic</div><div class="added">Today</div></div>
+<div class="song"><div class="num">5</div><div class="art" style="background:linear-gradient(135deg,#2196f3,#673ab7);"></div><div class="info"><div class="name">Ice In My Eyes</div><div class="artist">WELKER</div></div><div class="genre">Electronic</div><div class="added">Today</div></div>
 </div>
 </div>
 </div>
 </div>
 
-<!-- THEME 5: Spotify Dark -->
+<!-- THEME 5: Arc Browser -->
 <div class="theme-card">
 <div class="theme-header">
-<div>
-<h2>5. Spotify Dark</h2>
-<span style="color:#666;font-size:13px;">Familiar layout, green accents, album art grid</span>
-</div>
+<div><h2>5. Arc Browser</h2><span style="color:#666;font-size:13px;">Purple haze, space tabs, playful sidebar, gradient pills</span></div>
 <div style="display:flex;align-items:center;gap:12px;">
-<div class="tags"><span class="tag" style="background:rgba(29,185,84,0.15);color:#1db954;">Dark</span><span class="tag" style="background:rgba(29,185,84,0.15);color:#1db954;">Spotify</span></div>
+<div class="tags"><span class="tag" style="background:rgba(232,121,249,0.15);color:#e879f9;">Dark</span><span class="tag" style="background:rgba(232,121,249,0.15);color:#e879f9;">Arc</span></div>
 <button class="vote-btn" onclick="pick(5,this)">This One</button>
 </div>
 </div>
 <div class="theme-preview t5">
 <div class="sidebar">
-<div class="logo">Mission Control</div>
-<div class="nav-item active">🏠 Home</div>
-<div class="nav-item" style="color:#fff;">🎵 Music</div>
-<div class="nav-item">📋 Notebook</div>
+<div class="space-tabs"><div class="space active"></div><div class="space"></div><div class="space"></div></div>
+<div class="pinned">Pinned</div>
+<div class="item active"><span class="dot" style="background:#e879f9;"></span> Music</div>
+<div class="item"><span class="dot" style="background:#22d3ee;"></span> Notebook</div>
+<div class="item"><span class="dot" style="background:#f59e0b;"></span> Book</div>
 <div class="divider"></div>
-<div class="playlist-label">Playlists</div>
-<div class="nav-item">📀 Gatsby 1</div>
-<div class="nav-item">📀 Tara 1</div>
-<div class="nav-item">📀 Sabrina 1</div>
+<div class="pinned">Pages</div>
+<div class="item"><span class="dot" style="background:#555;"></span> Overview</div>
+<div class="item"><span class="dot" style="background:#555;"></span> Money</div>
+<div class="item"><span class="dot" style="background:#555;"></span> Calendar</div>
+<div class="item"><span class="dot" style="background:#555;"></span> Bingo</div>
+<div class="divider"></div>
+<div class="pinned">Playlists</div>
+<div class="item">📀 Gatsby 1</div>
+<div class="item" style="color:#555;">📀 Tara 1</div>
 </div>
-<div class="content">
-<h2>Gatsby 1</h2>
-<div class="sub">10 songs • Adding as: Gatsby</div>
-<div class="songlist">
-<div class="song"><div class="num">1</div><div class="art" style="background:linear-gradient(135deg,#e91e63,#9c27b0);"></div><div class="info"><div class="name">Hung Up (SDP Extended Vocal)</div><div class="artist">Madonna</div></div><div class="meta">Dance/Pop</div></div>
-<div class="song"><div class="num">2</div><div class="art" style="background:linear-gradient(135deg,#ff9800,#e91e63);"></div><div class="info"><div class="name">Substitution</div><div class="artist">Purple Disco Machine, Kungs</div></div><div class="meta">Disco</div></div>
-<div class="song"><div class="num">3</div><div class="art" style="background:linear-gradient(135deg,#00bcd4,#3f51b5);"></div><div class="info"><div class="name">CTRL + ALT + DEL</div><div class="artist">Rêve</div></div><div class="meta">House</div></div>
-<div class="song"><div class="num">4</div><div class="art" style="background:linear-gradient(135deg,#4caf50,#009688);"></div><div class="info"><div class="name">Trust Nobody</div><div class="artist">Hippie Sabotage</div></div><div class="meta">Electronic</div></div>
-<div class="song"><div class="num">5</div><div class="art" style="background:linear-gradient(135deg,#2196f3,#673ab7);"></div><div class="info"><div class="name">Ice In My Eyes</div><div class="artist">WELKER</div></div><div class="meta">Electronic</div></div>
-<div class="song"><div class="num">6</div><div class="art" style="background:linear-gradient(135deg,#ff5722,#ff9800);"></div><div class="info"><div class="name">think you're someone new</div><div class="artist">Ian Asher, Arden Jones</div></div><div class="meta">Indie Pop</div></div>
+<div class="main">
+<div class="url-bar">🔒 missioncontrol.app/music</div>
+<h2>Music</h2>
+<div class="sub">Gatsby's queue • 10 songs added</div>
+<div class="cards">
+<div class="card"><div class="label">Queue</div><div class="value pink">234</div></div>
+<div class="card"><div class="label">Downloaded</div><div class="value cyan">10</div></div>
+<div class="card"><div class="label">Playlist</div><div class="value white" style="font-size:18px;">Gatsby 1</div></div>
+</div>
+<div class="song-section">
+<h3>Gatsby 1 — 10/30 songs</h3>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#e91e63,#9c27b0);"></div><div class="info"><div class="name">Hung Up (SDP Extended Vocal)</div><div class="artist">Madonna</div></div><span class="tag" style="background:rgba(232,121,249,0.12);color:#e879f9;">Dance</span></div>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#ff9800,#e91e63);"></div><div class="info"><div class="name">Substitution</div><div class="artist">Purple Disco Machine, Kungs</div></div><span class="tag" style="background:rgba(34,211,238,0.12);color:#22d3ee;">Disco</span></div>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#00bcd4,#3f51b5);"></div><div class="info"><div class="name">CTRL + ALT + DEL</div><div class="artist">Rêve</div></div><span class="tag" style="background:rgba(245,158,11,0.12);color:#f59e0b;">House</span></div>
+<div class="song"><div class="art" style="background:linear-gradient(135deg,#4caf50,#009688);"></div><div class="info"><div class="name">Trust Nobody</div><div class="artist">Hippie Sabotage</div></div><span class="tag" style="background:rgba(34,197,94,0.12);color:#22c55e;">Electronic</span></div>
 </div>
 </div>
 </div>
@@ -350,22 +418,18 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:#0a0a0a;c
 
 </div>
 
-<div class="picked-banner" id="banner">✅ Nice pick! Tell Alex which number you chose</div>
+<div class="picked-banner" id="banner">✅ Nice pick! Tell Alex the number</div>
 
 <script>
 function pick(n,btn){
-  document.querySelectorAll('.vote-btn').forEach(b=>b.classList.remove('picked'));
+  document.querySelectorAll('.vote-btn').forEach(b=>{b.classList.remove('picked');b.textContent='This One';});
   btn.classList.add('picked');
   btn.textContent='Picked ✓';
   document.getElementById('banner').classList.add('show');
   localStorage.setItem('mc-theme-pick',n);
 }
-// Restore pick
 const saved=localStorage.getItem('mc-theme-pick');
-if(saved){
-  const btns=document.querySelectorAll('.vote-btn');
-  if(btns[saved-1]){btns[saved-1].classList.add('picked');btns[saved-1].textContent='Picked ✓';}
-}
+if(saved){const btns=document.querySelectorAll('.vote-btn');if(btns[saved-1]){btns[saved-1].classList.add('picked');btns[saved-1].textContent='Picked ✓';}}
 </script>
 </body>
 </html>

@@ -506,9 +506,9 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
 <label style="color:var(--text2);font-size:13px;font-weight:600;">Adding as:</label>
 <select id="djProfile" onchange="saveDJProfile();renderDJ()" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text);font-family:inherit;font-size:14px;font-weight:600;min-width:120px;">
-<option value="Gatsby">🎧 Gatsby</option>
-<option value="Tara">💜 Tara</option>
-<option value="Sabrina">🌸 Sabrina</option>
+<option value="Gatsby">Gatsby</option>
+<option value="Tara">Tara</option>
+<option value="Sabrina">Sabrina</option>
 </select>
 <button onclick="addDJProfile()" style="background:none;border:1px dashed var(--border);border-radius:10px;padding:8px 12px;color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;">+ Add Friend</button>
 </div>
@@ -858,7 +858,7 @@ function loadDJProfile(){
   const customs=JSON.parse(localStorage.getItem('mc-dj-profiles')||'[]');
   customs.forEach(name=>{
     if(!Array.from(sel.options).some(o=>o.value===name)){
-      const opt=document.createElement('option');opt.value=name;opt.textContent='🎵 '+name;sel.appendChild(opt);
+      const opt=document.createElement('option');opt.value=name;opt.textContent=name;sel.appendChild(opt);
     }
   });
   sel.value=saved;
@@ -871,7 +871,7 @@ function addDJProfile(){
   const customs=JSON.parse(localStorage.getItem('mc-dj-profiles')||'[]');
   if(!customs.includes(name.trim())){customs.push(name.trim());localStorage.setItem('mc-dj-profiles',JSON.stringify(customs));}
   const sel=document.getElementById('djProfile');
-  const opt=document.createElement('option');opt.value=name.trim();opt.textContent='🎵 '+name.trim();sel.appendChild(opt);
+  const opt=document.createElement('option');opt.value=name.trim();opt.textContent=name.trim();sel.appendChild(opt);
   sel.value=name.trim();saveDJProfile();renderDJ();
 }
 let djShowAll=false;

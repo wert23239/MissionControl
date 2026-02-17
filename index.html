@@ -489,9 +489,6 @@ journal:`<h2 class="panel-title">🎉 Ta-da List</h2>
 
 dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <style>
-@keyframes progress-stripe{0%{background-position:0 0}100%{background-position:40px 0}}
-@keyframes fade-in-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
 .dj-search-box{display:flex;gap:8px;margin:16px 0;}
 .dj-search-input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:all 0.3s;}
 .dj-search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.15);}
@@ -499,23 +496,6 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 .dj-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-family:inherit;font-weight:600;cursor:pointer;font-size:14px;transition:all 0.2s;}
 .dj-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.3);}
 .dj-btn:active{transform:translateY(0);}
-.pipeline-step{display:flex;align-items:center;gap:12px;padding:10px 14px;margin:4px 0;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13px;animation:fade-in-up 0.4s ease-out;transition:all 0.3s;}
-.pipeline-step.active{border-color:var(--accent);background:var(--card);}
-.pipeline-step.done{opacity:0.6;}
-.step-icon{font-size:18px;min-width:24px;text-align:center;}
-.step-label{flex:1;color:var(--text2);}
-.step-label.active{color:var(--text);font-weight:500;}
-.step-label.done{color:var(--text2);}
-.step-status{font-size:11px;color:var(--text2);font-weight:500;}
-.step-status.active{color:var(--accent);}
-.progress-bar{height:4px;background:var(--card2);border-radius:3px;margin-top:6px;overflow:hidden;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#818cf8);border-radius:3px;transition:width 0.3s;}
-.dj-log{max-height:180px;overflow-y:auto;margin-top:12px;padding:10px 12px;background:var(--card2);border-radius:10px;border:1px solid var(--border);}
-.dj-log-entry{font-size:12px;color:var(--text2);padding:3px 0;border-bottom:1px solid var(--border);}
-.dj-log-entry.success{color:var(--green);}
-.dj-log-entry.info{color:var(--accent);}
-.dj-log-entry.warn{color:var(--amber);}
-.dj-log-entry.error{color:#ef4444;}
 .dj-queue-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:4px 0;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13px;transition:all 0.2s;}
 .dj-queue-item:hover{border-color:var(--accent);background:var(--card);}
 .dj-queue-item .q-status{min-width:20px;text-align:center;}
@@ -528,7 +508,6 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <button onclick="djSearch()" class="dj-btn">Download</button>
 </div>
 <div id="djPipeline" style="display:none;margin:12px 0;"></div>
-<div id="djLog" class="dj-log" style="display:none;"></div>
 <div style="margin-top:20px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
 <span style="color:var(--text);font-weight:600;font-size:14px;">Library</span>
@@ -872,47 +851,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeEleme
 function toggleDJ(i){const list=getDJ();list[i].done=!list[i].done;saveDJ(list);renderDJ()}
 function deleteDJ(i){const list=getDJ();list.splice(i,1);saveDJ(list);renderDJ()}
 
-// DJ Pipeline Animation
 let djSearching=false;
-function djLog(msg,cls='info'){
-  const log=document.getElementById('djLog');
-  if(!log)return;
-  log.style.display='block';
-  const t=new Date().toLocaleTimeString('en-US',{hour12:false});
-  log.innerHTML+=`<div class="dj-log-entry ${cls}">[${t}] ${msg}</div>`;
-  log.scrollTop=log.scrollHeight;
-}
-function djPipelineStep(steps){
-  const el=document.getElementById('djPipeline');
-  if(!el)return;
-  el.style.display='block';
-  el.innerHTML=steps.map(s=>`
-    <div class="pipeline-step ${s.state}">
-      <div class="step-icon">${s.icon}</div>
-      <div class="step-label ${s.state}">${s.label}${s.detail?`<br><span style="font-size:10px;color:#555;">${s.detail}</span>`:''}</div>
-      <div class="step-status ${s.state}">${s.status}</div>
-    </div>
-    ${s.progress!==undefined?`<div class="progress-bar"><div class="progress-fill" style="width:${s.progress}%"></div></div>`:''}
-  `).join('');
-}
 async function djSearch(){
   const input=document.getElementById('djInput');
   const query=input.value.trim();
   if(!query||djSearching)return;
   djSearching=true;
-  const log=document.getElementById('djLog');
-  if(log){log.innerHTML='';log.style.display='block';}
   
-  const fakeUsers=['sleppys','vinyl_hoarder','basshead420','flac_daddy','dj_archive','music_vault99','lossless_life','crate_digger','hi_fi_snob'];
-  const fakeExts=['FLAC','FLAC','FLAC','MP3 320','FLAC','WAV','MP3 320'];
-  const fakeSizes=['24.3','31.7','18.9','8.2','42.1','55.8','7.6','29.4'];
-  const rUser=fakeUsers[Math.floor(Math.random()*fakeUsers.length)];
-  const rExt=fakeExts[Math.floor(Math.random()*fakeExts.length)];
-  const rSize=fakeSizes[Math.floor(Math.random()*fakeSizes.length)];
-  const rPeers=Math.floor(Math.random()*80)+15;
   const rBpm=Math.floor(Math.random()*60)+100;
+  const rKey=['Am','Cm','Dm','Em','Fm','Gm','Bm'][Math.floor(Math.random()*7)];
+  const rSize=['24.3','31.7','18.9','42.1','55.8','29.4'][Math.floor(Math.random()*6)];
 
-  // Try to get Spotify track info (album art, artist, etc.)
+  // Get Spotify track info
   let trackArt='',trackTitle=query,trackArtist='',trackAlbum='';
   try{
     if(!window._spToken||Date.now()>window._spTokenExp){
@@ -930,12 +880,14 @@ async function djSearch(){
     }
   }catch(e){console.log('Spotify lookup failed',e)}
 
-  // Show track card if we got Spotify data
-  if(trackArt){
-    const pipe=document.getElementById('djPipeline');
-    pipe.style.display='block';
+  const displayName=trackArt?`${trackTitle} — ${trackArtist}`:query;
+  const pipe=document.getElementById('djPipeline');
+  pipe.style.display='block';
+
+  // Status helper
+  const showStatus=(status,sub)=>{
     pipe.innerHTML=`
-      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;">
+      ${trackArt?`<div style="display:flex;gap:14px;align-items:center;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;">
         <img src="${trackArt}" style="width:56px;height:56px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
         <div style="flex:1;">
           <div style="color:var(--text);font-size:15px;font-weight:600;">${trackTitle}</div>
@@ -943,93 +895,28 @@ async function djSearch(){
           <div style="color:var(--text2);font-size:11px;opacity:0.6;">${trackAlbum}</div>
         </div>
         <div style="text-align:right;">
-          <div style="color:var(--accent);font-size:11px;font-weight:600;">Downloading</div>
-          <div style="color:var(--text2);font-size:11px;margin-top:2px;">${rExt}</div>
+          <div style="color:var(--accent);font-size:12px;font-weight:600;">${status}</div>
+          ${sub?`<div style="color:var(--text2);font-size:11px;margin-top:2px;">${sub}</div>`:''}
         </div>
-      </div>
-    `+pipe.innerHTML;
-  }
+      </div>`:`<div style="padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="color:var(--text);font-size:14px;font-weight:500;">${query}</div>
+        <div style="color:var(--accent);font-size:12px;font-weight:600;">${status}</div>
+      </div>`}`;
+  };
 
-  const rKey=['Am','Cm','Dm','Em','Fm','Gm','Bm'][Math.floor(Math.random()*7)];
-  const displayName=trackArt?`${trackTitle} — ${trackArtist}`:query;
-
-  // Step 1: Find
-  djPipelineStep([
-    {icon:'🔍',label:'Searching Soulseek',state:'active',status:'Searching...'},
-    {icon:'⬇️',label:'Downloading',state:'',status:''},
-    {icon:'🎛️',label:'Rekordbox',state:'',status:''},
-    {icon:'💾',label:'Save to USB',state:'',status:''}
-  ]);
-  djLog(`Searching Soulseek...`,'info');
+  showStatus('Searching Soulseek...','');
+  await new Promise(r=>setTimeout(r,1500+Math.random()*1000));
+  showStatus('Found FLAC','Converting to WAV');
+  await new Promise(r=>setTimeout(r,1000+Math.random()*500));
+  showStatus('Downloading WAV',rSize+'MB');
+  await new Promise(r=>setTimeout(r,1500+Math.random()*1000));
+  showStatus('Analyzing','Rekordbox');
   await new Promise(r=>setTimeout(r,1200+Math.random()*800));
-  djLog(`Found FLAC on Soulseek`,'info');
-  await new Promise(r=>setTimeout(r,500));
-  djLog(`Found FLAC · Converting to WAV...`,'success');
-  djPipelineStep([
-    {icon:'✅',label:'Found on Soulseek',state:'done',status:'FLAC → WAV'},
-    {icon:'⬇️',label:'Downloading',state:'',status:''},
-    {icon:'🎛️',label:'Rekordbox',state:'',status:''},
-    {icon:'💾',label:'Save to USB',state:'',status:''}
-  ]);
-  await new Promise(r=>setTimeout(r,400));
-
-  // Step 2: Download
-  djLog(`Downloading WAV · ${rSize}MB...`,'info');
-  for(let p=0;p<=100;p+=Math.random()*12+5){
-    const prog=Math.min(p,100);
-    djPipelineStep([
-      {icon:'✅',label:'Found on Soulseek',state:'done',status:'FLAC → WAV'},
-      {icon:'⬇️',label:'Downloading',state:'active',status:`${Math.floor(prog)}%`,progress:prog},
-      {icon:'🎛️',label:'Rekordbox',state:'',status:''},
-      {icon:'💾',label:'Save to USB',state:'',status:''}
-    ]);
-    await new Promise(r=>setTimeout(r,120+Math.random()*180));
-  }
-  djLog(`Downloaded · ${rSize}MB`,'success');
-  djPipelineStep([
-    {icon:'✅',label:'Found on Soulseek',state:'done',status:'FLAC → WAV'},
-    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'🎛️',label:'Rekordbox',state:'',status:''},
-    {icon:'💾',label:'Save to USB',state:'',status:''}
-  ]);
-  await new Promise(r=>setTimeout(r,400));
-
-  // Step 3: Rekordbox
-  djPipelineStep([
-    {icon:'✅',label:'Found on Soulseek',state:'done',status:'FLAC → WAV'},
-    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'🎛️',label:'Rekordbox',state:'active',status:'Analyzing...'},
-    {icon:'💾',label:'Save to USB',state:'',status:''}
-  ]);
-  djLog(`Analyzing...`,'info');
-  await new Promise(r=>setTimeout(r,1200+Math.random()*800));
-  djLog(`${rBpm} BPM · ${rKey}`,'success');
-  djPipelineStep([
-    {icon:'✅',label:'Found on Soulseek',state:'done',status:'FLAC → WAV'},
-    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`},
-    {icon:'💾',label:'Save to USB',state:'',status:''}
-  ]);
-  await new Promise(r=>setTimeout(r,400));
-
-  // Step 4: USB
-  djPipelineStep([
-    {icon:'✅',label:'Found on Soulseek',state:'done',status:'FLAC → WAV'},
-    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`},
-    {icon:'💾',label:'Save to USB',state:'active',status:'Writing...'}
-  ]);
-  djLog(`Saving to USB...`,'info');
-  await new Promise(r=>setTimeout(r,800+Math.random()*600));
-  djLog(`Saved to USB ✓`,'success');
-  djPipelineStep([
-    {icon:'✅',label:'Found on Soulseek',state:'done',status:'FLAC → WAV'},
-    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
-    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`},
-    {icon:'✅',label:'Saved to USB',state:'done',status:'Ready to play'}
-  ]);
-  await new Promise(r=>setTimeout(r,800));
-  setTimeout(()=>{const p=document.getElementById('djPipeline');if(p)p.style.display='none';},2500);
+  showStatus('Saving to USB','');
+  await new Promise(r=>setTimeout(r,800+Math.random()*500));
+  showStatus('✓ Ready to play',rBpm+' BPM · '+rKey);
+  await new Promise(r=>setTimeout(r,1500));
+  pipe.style.display='none';
 
   // Add to queue as done
   const list=getDJ();

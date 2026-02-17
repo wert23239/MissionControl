@@ -112,6 +112,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .filter-tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:var(--card2);color:var(--text2);border:none;font-family:inherit}
 .filter-tab.active{background:var(--accent);color:#fff}
 .note-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--card2);border-radius:8px;margin-bottom:6px;font-size:13px}
+.note-collapsed .note-long{display:none}.note-collapsed .note-short{display:block}
+.note-expanded .note-short{display:none}.note-expanded .note-long{display:block}
+.note-short,.note-long{display:none}.note-expanded .note-long,.note-collapsed .note-short{display:block}
 .note-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
 .note-content{flex:1}
 .note-meta{font-size:11px;color:var(--text2);margin-top:4px}
@@ -660,8 +663,9 @@ function renderNotes(){
     const strike=n.done?'text-decoration:line-through;opacity:0.5':'';
     const cb=isBook?`<input type="checkbox" ${checked} onchange="toggleNote(${idx})" style="cursor:pointer;accent-color:var(--accent);min-width:18px;min-height:18px">`:'';
     const long=n.text.length>120;
-    const preview=long?n.text.slice(0,120)+'…':n.text;
-    const body=long?`<span class="note-preview" onclick="this.style.display='none';this.nextElementSibling.style.display='inline'" style="cursor:pointer">${preview} <span style="color:var(--accent);font-size:11px">▶ expand</span></span><span class="note-full" style="display:none">${n.text} <span onclick="this.parentElement.style.display='none';this.parentElement.previousElementSibling.style.display='inline'" style="color:var(--accent);font-size:11px;cursor:pointer">▲ collapse</span></span>`:n.text;
+    const preview=long?n.text.split(/[.|!|?|\n]/)[0]:'';
+    const collapsed=long?'note-collapsed':'';
+    const body=long?`<div class="${collapsed}" style="cursor:pointer" onclick="this.classList.toggle('note-collapsed');this.classList.toggle('note-expanded')"><div class="note-short">${preview} <span style="color:var(--accent);font-size:11px">▶</span></div><div class="note-long">${n.text.replace(/\|/g,' · ')} <span style="color:var(--accent);font-size:11px">▲</span></div></div>`:n.text;
     return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
   }).join('');
 }

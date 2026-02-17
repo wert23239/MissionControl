@@ -487,7 +487,7 @@ journal:`<h2 class="panel-title">🎉 Ta-da List</h2>
 <div class="filter-tabs" id="journalFilterTabs"></div>
 <div id="journalList"></div>`,
 
-dj:`<h2 class="panel-title">🎵 DJ Command Center</h2>
+dj:`<h2 class="panel-title">💿 Spotify to Flash</h2>
 <style>
 @keyframes progress-stripe{0%{background-position:0 0}100%{background-position:40px 0}}
 @keyframes fade-in-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -522,13 +522,7 @@ dj:`<h2 class="panel-title">🎵 DJ Command Center</h2>
 .dj-queue-item .q-song{flex:1;color:var(--text);}
 .dj-queue-item .q-quality{color:var(--text2);font-size:11px;}
 </style>
-<p style="color:var(--text2);margin-bottom:12px;font-size:13px;">Search any song to download via Soulseek → Rekordbox → USB</p>
-<div class="stats-row">
-<div class="stat"><div class="stat-label">Queue</div><div class="stat-value" id="djCount">0</div></div>
-<div class="stat"><div class="stat-label">Downloaded</div><div class="stat-value" id="djDone" style="color:var(--green)">0</div></div>
-<div class="stat"><div class="stat-label">In Rekordbox</div><div class="stat-value" id="djInRekordbox">1271</div></div>
-<div class="stat"><div class="stat-label">Status</div><div class="stat-value" style="font-size:13px;color:var(--green)">● Online</div></div>
-</div>
+<div id="djCount" style="display:none">0</div><div id="djDone" style="display:none">0</div>
 <div class="dj-search-box">
 <input type="text" id="djInput" class="dj-search-input" placeholder="Search a song to download..." autocomplete="off">
 <button onclick="djSearch()" class="dj-btn">Download</button>

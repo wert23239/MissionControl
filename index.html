@@ -564,8 +564,8 @@ async function syncFromSupabase(){
     const [cal,notes,dj,bingo]=await Promise.all([sbGet('calendar'),sbGet('notes'),sbGet('dj'),sbGet('bingo')]);
     if(cal.length)localStorage.setItem('mc-cal',JSON.stringify(cal));
     if(notes.length)localStorage.setItem('mc-notes',JSON.stringify(notes.map(n=>({text:n.text,cat:n.cat,time:n.created_at,id:n.id}))));
-    if(dj.length&&!localStorage.getItem('mc-dj')){
-      localStorage.setItem('mc-dj',JSON.stringify(dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id}))));
+    if(dj.length){
+      localStorage.setItem('mc-dj',JSON.stringify(dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id,bpm:d.bpm||'',quality:d.quality||'',art:d.art||'',size:d.size||''}))));
     }
     if(bingo.length){const state={};bingo.forEach(b=>{if(b.done)state[b.cell_index]=true});localStorage.setItem('mc-bingo',JSON.stringify(state));}
     var active=document.querySelector('.nav-item.active');
@@ -831,7 +831,17 @@ localStorage.setItem('mc-cal',JSON.stringify([
 ]));}
 if(!localStorage.getItem('mc-dj'))localStorage.setItem('mc-dj',JSON.stringify(defaultDJ));
 function getDJ(){return JSON.parse(localStorage.getItem('mc-dj')||'[]')}
-function saveDJ(d){localStorage.setItem('mc-dj',JSON.stringify(d))}
+function saveDJ(d){
+  localStorage.setItem('mc-dj',JSON.stringify(d));
+  // Sync new songs (without id) to Supabase
+  d.filter(item=>!item.id).forEach(item=>{
+    fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},
+      body:JSON.stringify({song:item.song,genre:item.genre||'Other',done:item.done||false,bpm:item.bpm||null,quality:item.quality||null,art:item.art||null,size:item.size||null})
+    }).then(r=>r.json()).then(res=>{
+      if(res&&res[0]&&res[0].id){item.id=res[0].id;localStorage.setItem('mc-dj',JSON.stringify(d));}
+    }).catch(()=>{});
+  });
+}
 function addDJ(){
   const input=document.getElementById('djInput');
   const genre=document.getElementById('djGenre');

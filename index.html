@@ -941,109 +941,60 @@ async function djSearch(){
     `+pipe.innerHTML;
   }
 
-  // Step 1: Search Soulseek
-  djLog(`> soulseek search "${trackArt?trackTitle+' - '+trackArtist:query}"`, 'info');
-  djPipelineStep([
-    {icon:'🔍',label:'Searching Soulseek Network',detail:'Querying distributed peers...',state:'active',status:'SEARCHING',progress:0},
-    {icon:'📦',label:'Select Best Source',state:'',status:'WAITING'},
-    {icon:'⬇️',label:'Download Track',state:'',status:'WAITING'},
-    {icon:'🔄',label:'Import to Rekordbox',state:'',status:'WAITING'},
-    {icon:'💾',label:'Export to USB',state:'',status:'WAITING'}
-  ]);
-  
-  await new Promise(r=>setTimeout(r,800));
-  djLog(`  Connecting to ${rPeers} peers...`, 'info');
-  for(let p=0;p<=60;p+=Math.random()*15+5){
-    djPipelineStep([
-      {icon:'🔍',label:'Searching Soulseek Network',detail:`${Math.floor(p/2)} responses from ${rPeers} peers`,state:'active',status:'SEARCHING',progress:Math.min(p,100)},
-      {icon:'📦',label:'Select Best Source',state:'',status:'WAITING'},
-      {icon:'⬇️',label:'Download Track',state:'',status:'WAITING'},
-      {icon:'🔄',label:'Import to Rekordbox',state:'',status:'WAITING'},
-      {icon:'💾',label:'Export to USB',state:'',status:'WAITING'}
-    ]);
-    await new Promise(r=>setTimeout(r,400));
-  }
-  djLog(`  Found ${rPeers} sources — ${rExt} available`, 'success');
-
-  // Step 2: Select best
-  await new Promise(r=>setTimeout(r,500));
-  djLog(`  Best: ${rUser} → ${rExt} (${rSize}MB) — free slot ✓`, 'success');
-  djPipelineStep([
-    {icon:'✅',label:'Soulseek Search',detail:`${rPeers} sources found`,state:'done',status:'DONE'},
-    {icon:'📦',label:`Selected: ${rUser}`,detail:`${rExt} · ${rSize}MB · Free upload slot`,state:'active',status:'LOCKED'},
-    {icon:'⬇️',label:'Download Track',state:'',status:'WAITING'},
-    {icon:'🔄',label:'Import to Rekordbox',state:'',status:'WAITING'},
-    {icon:'💾',label:'Export to USB',state:'',status:'WAITING'}
-  ]);
-
-  // Step 3: Download
-  await new Promise(r=>setTimeout(r,1000));
-  djLog(`  Downloading from ${rUser}...`, 'info');
-  for(let p=0;p<=100;p+=Math.random()*8+3){
-    const prog=Math.min(p,100);
-    const downloaded=(parseFloat(rSize)*prog/100).toFixed(1);
-    djPipelineStep([
-      {icon:'✅',label:'Soulseek Search',state:'done',status:'DONE'},
-      {icon:'✅',label:`Source: ${rUser}`,state:'done',status:'LOCKED'},
-      {icon:'⬇️',label:`Downloading ${rExt}`,detail:`${downloaded}MB / ${rSize}MB from ${rUser}`,state:'active',status:`${Math.floor(prog)}%`,progress:prog},
-      {icon:'🔄',label:'Import to Rekordbox',state:'',status:'WAITING'},
-      {icon:'💾',label:'Export to USB',state:'',status:'WAITING'}
-    ]);
-    await new Promise(r=>setTimeout(r,200+Math.random()*300));
-  }
-  djLog(`  ✓ Downloaded: ${query}.${rExt.toLowerCase().replace(' ','_')} (${rSize}MB)`, 'success');
-  djLog(`  → Saved to ~/Music/DJ/`, 'success');
-
-  // Step 4: Rekordbox import
-  await new Promise(r=>setTimeout(r,600));
-  djLog(`  Importing to Rekordbox...`, 'info');
-  djPipelineStep([
-    {icon:'✅',label:'Soulseek Search',state:'done',status:'DONE'},
-    {icon:'✅',label:`Source: ${rUser}`,state:'done',status:'LOCKED'},
-    {icon:'✅',label:`Downloaded ${rExt}`,detail:`${rSize}MB`,state:'done',status:'DONE'},
-    {icon:'🔄',label:'Analyzing in Rekordbox',detail:`BPM detection · Key analysis · Waveform generation`,state:'active',status:'ANALYZING',progress:0},
-    {icon:'💾',label:'Export to USB',state:'',status:'WAITING'}
-  ]);
-  for(let p=0;p<=100;p+=Math.random()*20+10){
-    const prog=Math.min(p,100);
-    djPipelineStep([
-      {icon:'✅',label:'Soulseek Search',state:'done',status:'DONE'},
-      {icon:'✅',label:`Source: ${rUser}`,state:'done',status:'LOCKED'},
-      {icon:'✅',label:`Downloaded ${rExt}`,state:'done',status:'DONE'},
-      {icon:'🔄',label:'Analyzing in Rekordbox',detail:`BPM: ${rBpm} · Key: ${['Am','Cm','Dm','Em','Fm','Gm','Bm'][Math.floor(Math.random()*7)]} · Waveform ✓`,state:'active',status:`${Math.floor(prog)}%`,progress:prog},
-      {icon:'💾',label:'Export to USB',state:'',status:'WAITING'}
-    ]);
-    await new Promise(r=>setTimeout(r,300));
-  }
-  djLog(`  ✓ Rekordbox: BPM ${rBpm} detected, waveform generated`, 'success');
-
-  // Step 5: USB export
-  await new Promise(r=>setTimeout(r,400));
-  djLog(`  Exporting to USB (NO NAME)...`, 'info');
-  djPipelineStep([
-    {icon:'✅',label:'Soulseek Search',state:'done',status:'DONE'},
-    {icon:'✅',label:`Source: ${rUser}`,state:'done',status:'LOCKED'},
-    {icon:'✅',label:`Downloaded ${rExt}`,state:'done',status:'DONE'},
-    {icon:'✅',label:`Rekordbox: BPM ${rBpm}`,state:'done',status:'DONE'},
-    {icon:'💾',label:'Exporting to USB',detail:'Writing to /Volumes/NO NAME/Contents/',state:'active',status:'WRITING',progress:50}
-  ]);
-  await new Promise(r=>setTimeout(r,1200));
-  
-  // All done!
-  djPipelineStep([
-    {icon:'✅',label:'Soulseek Search',detail:`${rPeers} sources`,state:'done',status:'DONE'},
-    {icon:'✅',label:`Source: ${rUser}`,detail:`${rExt} · Free slot`,state:'done',status:'DONE'},
-    {icon:'✅',label:`Downloaded`,detail:`${rSize}MB · ~/Music/DJ/`,state:'done',status:'DONE'},
-    {icon:'✅',label:`Rekordbox`,detail:`BPM ${rBpm} · Analyzed`,state:'done',status:'DONE'},
-    {icon:'✅',label:'USB Export',detail:'/Volumes/NO NAME/',state:'done',status:'DONE'}
-  ]);
-  djLog(`  ✓ USB export complete`, 'success');
-  djLog(``, 'info');
+  const rKey=['Am','Cm','Dm','Em','Fm','Gm','Bm'][Math.floor(Math.random()*7)];
   const displayName=trackArt?`${trackTitle} — ${trackArtist}`:query;
-  djLog(`  ══════════════════════════════════════`, 'success');
-  djLog(`  ✅ PIPELINE COMPLETE: ${displayName}`, 'success');
-  djLog(`  📀 ${rExt} · ${rSize}MB · BPM ${rBpm} · Ready to play`, 'success');
-  djLog(`  ══════════════════════════════════════`, 'success');
+
+  // Step 1: Find
+  djPipelineStep([
+    {icon:'🔍',label:'Finding song',state:'active',status:'Searching...'},
+    {icon:'⬇️',label:'Downloading',state:'',status:''},
+    {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+  ]);
+  djLog(`Searching...`,'info');
+  await new Promise(r=>setTimeout(r,1500+Math.random()*1000));
+  djLog(`Found ${rPeers} sources · ${rExt}`,'success');
+  djPipelineStep([
+    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'⬇️',label:'Downloading',state:'',status:''},
+    {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+  ]);
+  await new Promise(r=>setTimeout(r,400));
+
+  // Step 2: Download
+  djLog(`Downloading WAV · ${rSize}MB...`,'info');
+  for(let p=0;p<=100;p+=Math.random()*12+5){
+    const prog=Math.min(p,100);
+    djPipelineStep([
+      {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+      {icon:'⬇️',label:'Downloading',state:'active',status:`${Math.floor(prog)}%`,progress:prog},
+      {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+    ]);
+    await new Promise(r=>setTimeout(r,120+Math.random()*180));
+  }
+  djLog(`Downloaded · ${rSize}MB`,'success');
+  djPipelineStep([
+    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
+    {icon:'🎛️',label:'Rekordbox',state:'',status:''}
+  ]);
+  await new Promise(r=>setTimeout(r,400));
+
+  // Step 3: Rekordbox
+  djPipelineStep([
+    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
+    {icon:'🎛️',label:'Rekordbox',state:'active',status:'Analyzing...'}
+  ]);
+  djLog(`Analyzing...`,'info');
+  await new Promise(r=>setTimeout(r,1200+Math.random()*800));
+  djLog(`${rBpm} BPM · ${rKey} · Ready ✓`,'success');
+  djPipelineStep([
+    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
+    {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`}
+  ]);
+  await new Promise(r=>setTimeout(r,800));
+  setTimeout(()=>{const p=document.getElementById('djPipeline');if(p)p.style.display='none';},2500);
 
   // Add to queue as done
   const list=getDJ();

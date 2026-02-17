@@ -1019,8 +1019,10 @@ function getDJ(){return JSON.parse(localStorage.getItem('mc-dj')||'[]')}
 function saveDJ(d){
   localStorage.setItem('mc-dj',JSON.stringify(d));
   d.filter(item=>!item.id).forEach(item=>{
+    const body={song:item.song,genre:item.genre||'Other',done:item.done||false,bpm:item.bpm||null,quality:item.quality||null,art:item.art||null,size:item.size||null};
+    // Try to include added_by if column exists, gracefully fail if not
     fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},
-      body:JSON.stringify({song:item.song,genre:item.genre||'Other',done:item.done||false,bpm:item.bpm||null,quality:item.quality||null,art:item.art||null,size:item.size||null})
+      body:JSON.stringify(body)
     }).then(r=>r.json()).then(res=>{
       if(res&&res[0]&&res[0].id){item.id=res[0].id;localStorage.setItem('mc-dj',JSON.stringify(d));}
     }).catch(()=>{});
@@ -1037,13 +1039,13 @@ async function syncDJFromSupabase(){
     let added=0;
     remote.forEach(r=>{
       if(!localIds.has(r.id)&&!localSongs.has(r.song?.toLowerCase())){
-        local.push({id:r.id,song:r.song,genre:r.genre||'Other',done:r.done||false,bpm:r.bpm,quality:r.quality,art:r.art,size:r.size});
+        local.push({id:r.id,song:r.song,genre:r.genre||'Other',done:r.done||false,bpm:r.bpm,quality:r.quality,art:r.art,size:r.size,added_by:r.added_by||'Gatsby'});
         added++;
       }
     });
     if(added>0){localStorage.setItem('mc-dj',JSON.stringify(local));}
     const idMap=Object.fromEntries(remote.map(r=>[r.id,r]));
-    local.forEach(l=>{if(l.id&&idMap[l.id]){const r=idMap[l.id];if(r.art&&!l.art)l.art=r.art;if(r.bpm&&!l.bpm)l.bpm=r.bpm;if(r.done&&!l.done)l.done=r.done;}});
+    local.forEach(l=>{if(l.id&&idMap[l.id]){const r=idMap[l.id];if(r.art&&!l.art)l.art=r.art;if(r.bpm&&!l.bpm)l.bpm=r.bpm;if(r.done&&!l.done)l.done=r.done;if(r.added_by&&!l.added_by)l.added_by=r.added_by;}});
     localStorage.setItem('mc-dj',JSON.stringify(local));
   }catch(e){console.log('DJ sync error',e);}
 }
@@ -1074,14 +1076,15 @@ async function djSearch(){
       const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials&client_id=f265d9bb8bea479081633c5c94efc50f&client_secret=201d3532910149f7960b2fd11f46377a'});
       const d=await r.json();window._spToken=d.access_token;window._spTokenExp=Date.now()+(d.expires_in-60)*1000;
     }
-    const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,{headers:{'Authorization':'Bearer '+window._spToken}});
+    const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`,{headers:{'Authorization':'Bearer '+window._spToken}});
     const sd=await sr.json();
     if(sd.tracks&&sd.tracks.items.length){
-      const t=sd.tracks.items[0];
-      trackTitle=t.name;
-      trackArtist=t.artists.map(a=>a.name).join(', ');
-      trackAlbum=t.album.name;
-      trackArt=t.album.images[0]?.url||'';
+      // Prefer the non-remix/non-edit version as the "original"
+      const orig=sd.tracks.items.find(t=>{const n=t.name.toLowerCase();return !n.includes('remix')&&!n.includes('edit')&&!n.includes(' mix');})||sd.tracks.items[0];
+      trackTitle=orig.name;
+      trackArtist=orig.artists.map(a=>a.name).join(', ');
+      trackAlbum=orig.album.name;
+      trackArt=orig.album.images[0]?.url||'';
     }
   }catch(e){console.log('Spotify lookup failed',e)}
 

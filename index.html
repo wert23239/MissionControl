@@ -923,8 +923,46 @@ async function djSearch(){
   const rPeers=Math.floor(Math.random()*80)+15;
   const rBpm=Math.floor(Math.random()*60)+100;
 
+  // Try to get Spotify track info (album art, artist, etc.)
+  let trackArt='',trackTitle=query,trackArtist='',trackAlbum='';
+  try{
+    if(!window._spToken||Date.now()>window._spTokenExp){
+      const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials&client_id=f265d9bb8bea479081633c5c94efc50f&client_secret=201d3532910149f7960b2fd11f46377a'});
+      const d=await r.json();window._spToken=d.access_token;window._spTokenExp=Date.now()+(d.expires_in-60)*1000;
+    }
+    const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,{headers:{'Authorization':'Bearer '+window._spToken}});
+    const sd=await sr.json();
+    if(sd.tracks&&sd.tracks.items.length){
+      const t=sd.tracks.items[0];
+      trackTitle=t.name;
+      trackArtist=t.artists.map(a=>a.name).join(', ');
+      trackAlbum=t.album.name;
+      trackArt=t.album.images[0]?.url||'';
+    }
+  }catch(e){console.log('Spotify lookup failed',e)}
+
+  // Show track card if we got Spotify data
+  if(trackArt){
+    const pipe=document.getElementById('djPipeline');
+    pipe.style.display='block';
+    pipe.innerHTML=`
+      <div style="display:flex;gap:14px;align-items:center;padding:12px;background:#0d0d0d;border:1px solid #22c55e30;border-radius:10px;margin-bottom:12px;">
+        <img src="${trackArt}" style="width:64px;height:64px;border-radius:6px;box-shadow:0 0 15px rgba(34,197,94,0.2);">
+        <div>
+          <div style="color:#22c55e;font-family:'Courier New',monospace;font-size:14px;font-weight:700;">${trackTitle}</div>
+          <div style="color:#888;font-family:'Courier New',monospace;font-size:12px;">${trackArtist}</div>
+          <div style="color:#555;font-family:'Courier New',monospace;font-size:10px;">${trackAlbum}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="color:#22c55e;font-size:10px;font-family:'Courier New',monospace;letter-spacing:1px;">ACQUIRING</div>
+          <div style="color:#555;font-size:10px;font-family:'Courier New',monospace;margin-top:2px;">Target: ${rExt}</div>
+        </div>
+      </div>
+    `+pipe.innerHTML;
+  }
+
   // Step 1: Search Soulseek
-  djLog(`> soulseek search "${query}"`, 'info');
+  djLog(`> soulseek search "${trackArt?trackTitle+' - '+trackArtist:query}"`, 'info');
   djPipelineStep([
     {icon:'🔍',label:'Searching Soulseek Network',detail:'Querying distributed peers...',state:'active',status:'SEARCHING',progress:0},
     {icon:'📦',label:'Select Best Source',state:'',status:'WAITING'},
@@ -1021,15 +1059,16 @@ async function djSearch(){
   ]);
   djLog(`  ✓ USB export complete`, 'success');
   djLog(``, 'info');
+  const displayName=trackArt?`${trackTitle} — ${trackArtist}`:query;
   djLog(`  ══════════════════════════════════════`, 'success');
-  djLog(`  ✅ PIPELINE COMPLETE: ${query}`, 'success');
+  djLog(`  ✅ PIPELINE COMPLETE: ${displayName}`, 'success');
   djLog(`  📀 ${rExt} · ${rSize}MB · BPM ${rBpm} · Ready to play`, 'success');
   djLog(`  ══════════════════════════════════════`, 'success');
 
   // Add to queue as done
   const list=getDJ();
   const genre=document.getElementById('djGenre').value;
-  list.unshift({song:query,genre:genre,bpm:String(rBpm),done:true,time:new Date().toISOString(),quality:rExt,size:rSize+'MB'});
+  list.unshift({song:displayName,genre:genre,bpm:String(rBpm),done:true,time:new Date().toISOString(),quality:rExt,size:rSize+'MB',art:trackArt});
   saveDJ(list);renderDJ();
   input.value='';
   djSearching=false;
@@ -1047,6 +1086,7 @@ function renderDJ(){
   el.innerHTML=list.map((d,i)=>`
     <div class="dj-queue-item" style="${d.done?'border-color:#22c55e20;':''}">
       <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${i})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>
+      ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:4px;">`:``}
       <div class="q-song" style="${d.done?'color:#22c55e80;':'color:#aaa;'}">${d.song}</div>
       <div class="q-quality">${d.quality||d.genre}${d.bpm?' · '+d.bpm+'bpm':''}</div>
       <button onclick="deleteDJ(${i})" style="background:none;border:none;color:#333;cursor:pointer;font-size:12px;font-family:Courier New,monospace;">×</button>

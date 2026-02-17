@@ -585,7 +585,16 @@ async function syncFromSupabase(){
     const [cal,notes,dj,bingo]=await Promise.all([sbGet('calendar'),sbGet('notes'),sbGet('dj'),sbGet('bingo')]);
     if(cal.length)localStorage.setItem('mc-cal',JSON.stringify(cal));
     if(notes.length)localStorage.setItem('mc-notes',JSON.stringify(notes.map(n=>({text:n.text,cat:n.cat,time:n.created_at,id:n.id}))));
-    if(dj.length)localStorage.setItem('mc-dj',JSON.stringify(dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id}))));
+    if(dj.length){
+      const existing=JSON.parse(localStorage.getItem('mc-dj')||'[]');
+      const sbSongs=dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id}));
+      // Merge: keep local songs not in Supabase, add Supabase songs not in local
+      const localNames=new Set(existing.map(e=>e.song));
+      const sbNames=new Set(sbSongs.map(s=>s.song));
+      const merged=[...existing.filter(e=>!sbNames.has(e.song)||localNames.has(e.song))];
+      sbSongs.forEach(s=>{if(!localNames.has(s.song))merged.push(s);});
+      localStorage.setItem('mc-dj',JSON.stringify(merged));
+    }
     if(bingo.length){const state={};bingo.forEach(b=>{if(b.done)state[b.cell_index]=true});localStorage.setItem('mc-bingo',JSON.stringify(state));}
     var active=document.querySelector('.nav-item.active');
     if(active)switchPanel(active.dataset.id);
@@ -946,15 +955,15 @@ async function djSearch(){
 
   // Step 1: Find
   djPipelineStep([
-    {icon:'🔍',label:'Finding song',state:'active',status:'Searching...'},
+    {icon:'🔍',label:'Searching Soulseek',state:'active',status:'Searching...'},
     {icon:'⬇️',label:'Downloading',state:'',status:''},
     {icon:'🎛️',label:'Rekordbox',state:'',status:''}
   ]);
-  djLog(`Searching...`,'info');
+  djLog(`Searching Soulseek...`,'info');
   await new Promise(r=>setTimeout(r,1500+Math.random()*1000));
   djLog(`Found ${rPeers} sources · ${rExt}`,'success');
   djPipelineStep([
-    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'⬇️',label:'Downloading',state:'',status:''},
     {icon:'🎛️',label:'Rekordbox',state:'',status:''}
   ]);
@@ -965,7 +974,7 @@ async function djSearch(){
   for(let p=0;p<=100;p+=Math.random()*12+5){
     const prog=Math.min(p,100);
     djPipelineStep([
-      {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+      {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
       {icon:'⬇️',label:'Downloading',state:'active',status:`${Math.floor(prog)}%`,progress:prog},
       {icon:'🎛️',label:'Rekordbox',state:'',status:''}
     ]);
@@ -973,7 +982,7 @@ async function djSearch(){
   }
   djLog(`Downloaded · ${rSize}MB`,'success');
   djPipelineStep([
-    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
     {icon:'🎛️',label:'Rekordbox',state:'',status:''}
   ]);
@@ -981,7 +990,7 @@ async function djSearch(){
 
   // Step 3: Rekordbox
   djPipelineStep([
-    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
     {icon:'🎛️',label:'Rekordbox',state:'active',status:'Analyzing...'}
   ]);
@@ -989,7 +998,7 @@ async function djSearch(){
   await new Promise(r=>setTimeout(r,1200+Math.random()*800));
   djLog(`${rBpm} BPM · ${rKey} · Ready ✓`,'success');
   djPipelineStep([
-    {icon:'✅',label:'Found',state:'done',status:`${rPeers} sources`},
+    {icon:'✅',label:'Found on Soulseek',state:'done',status:`${rPeers} sources`},
     {icon:'✅',label:'Downloaded',state:'done',status:`WAV · ${rSize}MB`},
     {icon:'✅',label:'Rekordbox',state:'done',status:`${rBpm} BPM · ${rKey}`}
   ]);

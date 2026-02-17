@@ -659,7 +659,10 @@ function renderNotes(){
     const checked=n.done?'checked':'';
     const strike=n.done?'text-decoration:line-through;opacity:0.5':'';
     const cb=isBook?`<input type="checkbox" ${checked} onchange="toggleNote(${idx})" style="cursor:pointer;accent-color:var(--accent);min-width:18px;min-height:18px">`:'';
-    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content" style="${strike}">${n.text}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
+    const long=n.text.length>120;
+    const preview=long?n.text.slice(0,120)+'…':n.text;
+    const body=long?`<span class="note-preview" onclick="this.style.display='none';this.nextElementSibling.style.display='inline'" style="cursor:pointer">${preview} <span style="color:var(--accent);font-size:11px">▶ expand</span></span><span class="note-full" style="display:none">${n.text} <span onclick="this.parentElement.style.display='none';this.parentElement.previousElementSibling.style.display='inline'" style="color:var(--accent);font-size:11px;cursor:pointer">▲ collapse</span></span>`:n.text;
+    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'var(--accent)'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
   }).join('');
 }
 

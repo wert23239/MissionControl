@@ -1132,23 +1132,28 @@ function renderDJ(){
 
 // Crons
 function renderCrons(){
-  // Static render since we can't call the API from browser
   const jobs=[
     {name:'heartbeat',schedule:'Every ~30 min',status:'Active',desc:'Periodic check-in — proactive tasks, background work',type:'system'},
-    {name:'daily-tip',schedule:'Every day at 11:00 PM ET',status:'Active',desc:'Search the web for one useful tip and send it to Bilbo on Discord',type:'isolated agentTurn'}
+    {name:'daily-tip',schedule:'Every day 11:00 PM ET',status:'Active',desc:'Search the web for a useful tip and send to Discord',type:'isolated'},
+    {name:'spotify-batch',schedule:'Random 2-6hr intervals',status:'Queued',desc:'Download 5-8 songs from 234-track Spotify queue via Soulseek',type:'isolated'},
+    {name:'read-substack',schedule:'Feb 17 @ 2:00 PM ET',status:'Active',desc:'Reminder to read Oak Barrel Alchemist Substack',type:'one-shot'},
   ];
+  // Merge with any saved from localStorage (Alex updates these via chat)
+  const extra=JSON.parse(localStorage.getItem('mc-crons')||'[]');
+  const allJobs=[...jobs,...extra];
   const list=document.getElementById('cronList');
   if(!list)return;
-  document.getElementById('cronCount').textContent=jobs.length;
+  const active=allJobs.filter(j=>j.status==='Active').length;
+  document.getElementById('cronCount').textContent=active+'/'+allJobs.length;
   document.getElementById('cronNext').textContent='11:00 PM';
-  list.innerHTML=jobs.map(j=>`
+  list.innerHTML=allJobs.map(j=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);">
       <div>
         <div style="font-weight:600;font-size:13px;color:var(--text)">${j.name}</div>
         <div style="font-size:11px;color:var(--text2);margin-top:2px">${j.desc}</div>
         <div style="font-size:10px;color:var(--text2);margin-top:2px">📅 ${j.schedule} · 🔧 ${j.type}</div>
       </div>
-      <span style="font-size:10px;padding:3px 8px;border-radius:9999px;font-weight:600;${j.status==='Active'?'background:rgba(34,197,94,0.15);color:var(--green)':'background:rgba(250,204,21,0.15);color:#facc15'}">${j.status}</span>
+      <span style="font-size:10px;padding:3px 8px;border-radius:9999px;font-weight:600;${j.status==='Active'?'background:rgba(34,197,94,0.15);color:var(--green)':j.status==='Queued'?'background:rgba(250,204,21,0.15);color:#facc15':'background:rgba(99,102,241,0.15);color:var(--accent)'}">${j.status}</span>
     </div>
   `).join('');
 }

@@ -489,78 +489,62 @@ journal:`<h2 class="panel-title">🎉 Ta-da List</h2>
 
 dj:`<h2 class="panel-title">🎵 DJ Command Center</h2>
 <style>
-@keyframes scanline{0%{top:-100%}100%{top:100%}}
-@keyframes pulse-glow{0%,100%{box-shadow:0 0 5px rgba(34,197,94,0.3)}50%{box-shadow:0 0 20px rgba(34,197,94,0.6)}}
-@keyframes typing{from{width:0}to{width:100%}}
-@keyframes blink-caret{from,to{border-color:transparent}50%{border-color:#22c55e}}
 @keyframes progress-stripe{0%{background-position:0 0}100%{background-position:40px 0}}
 @keyframes fade-in-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.dj-terminal{background:#0a0a0a;border:1px solid #1a3a1a;border-radius:12px;padding:16px;font-family:'Courier New',monospace;position:relative;overflow:hidden;}
-.dj-terminal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#22c55e,transparent);animation:scanline 3s linear infinite;pointer-events:none;opacity:0.3;}
-.dj-search-box{display:flex;gap:8px;margin:12px 0;}
-.dj-search-input{flex:1;background:#111;border:1px solid #22c55e40;border-radius:8px;padding:12px 16px;color:#22c55e;font-family:'Courier New',monospace;font-size:14px;outline:none;transition:all 0.3s;}
-.dj-search-input:focus{border-color:#22c55e;box-shadow:0 0 15px rgba(34,197,94,0.2);}
-.dj-search-input::placeholder{color:#22c55e40;}
-.dj-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#000;border:none;border-radius:8px;padding:12px 24px;font-family:'Courier New',monospace;font-weight:700;cursor:pointer;font-size:13px;text-transform:uppercase;letter-spacing:1px;transition:all 0.3s;}
-.dj-btn:hover{transform:scale(1.05);box-shadow:0 0 20px rgba(34,197,94,0.4);}
-.dj-btn:active{transform:scale(0.98);}
-.pipeline-step{display:flex;align-items:center;gap:12px;padding:10px 12px;margin:4px 0;border-radius:8px;background:#0d0d0d;border:1px solid #1a1a1a;font-size:12px;animation:fade-in-up 0.4s ease-out;transition:all 0.3s;}
-.pipeline-step.active{border-color:#22c55e40;background:#0a150a;}
-.pipeline-step.done{border-color:#22c55e30;opacity:0.7;}
-.pipeline-step.error{border-color:#ef444440;background:#150a0a;}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+.dj-search-box{display:flex;gap:8px;margin:16px 0;}
+.dj-search-input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:all 0.3s;}
+.dj-search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.15);}
+.dj-search-input::placeholder{color:var(--text2);}
+.dj-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-family:inherit;font-weight:600;cursor:pointer;font-size:14px;transition:all 0.2s;}
+.dj-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.3);}
+.dj-btn:active{transform:translateY(0);}
+.pipeline-step{display:flex;align-items:center;gap:12px;padding:10px 14px;margin:4px 0;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13px;animation:fade-in-up 0.4s ease-out;transition:all 0.3s;}
+.pipeline-step.active{border-color:var(--accent);background:var(--card);}
+.pipeline-step.done{opacity:0.6;}
 .step-icon{font-size:18px;min-width:24px;text-align:center;}
-.step-label{flex:1;color:#888;font-family:'Courier New',monospace;}
-.step-label.active{color:#22c55e;}
-.step-label.done{color:#22c55e80;}
-.step-status{font-size:11px;color:#555;font-family:'Courier New',monospace;}
-.step-status.active{color:#22c55e;animation:pulse-glow 2s infinite;}
-.progress-bar{height:3px;background:#1a1a1a;border-radius:2px;margin-top:6px;overflow:hidden;}
-.progress-fill{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:2px;transition:width 0.3s;background-size:40px 40px;animation:progress-stripe 0.5s linear infinite;background-image:linear-gradient(45deg,rgba(0,0,0,0.1) 25%,transparent 25%,transparent 50%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.1) 75%,transparent 75%);}
-.dj-log{max-height:200px;overflow-y:auto;margin-top:12px;padding:8px;background:#050505;border-radius:8px;border:1px solid #111;}
-.dj-log-entry{font-family:'Courier New',monospace;font-size:11px;color:#555;padding:2px 0;border-bottom:1px solid #0a0a0a;}
-.dj-log-entry.success{color:#22c55e;}
-.dj-log-entry.info{color:#3b82f6;}
-.dj-log-entry.warn{color:#f59e0b;}
+.step-label{flex:1;color:var(--text2);}
+.step-label.active{color:var(--text);font-weight:500;}
+.step-label.done{color:var(--text2);}
+.step-status{font-size:11px;color:var(--text2);font-weight:500;}
+.step-status.active{color:var(--accent);}
+.progress-bar{height:4px;background:var(--card2);border-radius:3px;margin-top:6px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#818cf8);border-radius:3px;transition:width 0.3s;}
+.dj-log{max-height:180px;overflow-y:auto;margin-top:12px;padding:10px 12px;background:var(--card2);border-radius:10px;border:1px solid var(--border);}
+.dj-log-entry{font-size:12px;color:var(--text2);padding:3px 0;border-bottom:1px solid var(--border);}
+.dj-log-entry.success{color:var(--green);}
+.dj-log-entry.info{color:var(--accent);}
+.dj-log-entry.warn{color:var(--amber);}
 .dj-log-entry.error{color:#ef4444;}
-.dj-queue-item{display:flex;align-items:center;gap:10px;padding:8px 10px;margin:3px 0;border-radius:6px;background:#0d0d0d;border:1px solid #1a1a1a;font-size:12px;}
+.dj-queue-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:4px 0;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13px;transition:all 0.2s;}
+.dj-queue-item:hover{border-color:var(--accent);background:var(--card);}
 .dj-queue-item .q-status{min-width:20px;text-align:center;}
-.dj-queue-item .q-song{flex:1;color:#ccc;font-family:'Courier New',monospace;}
-.dj-queue-item .q-quality{color:#22c55e80;font-size:10px;font-family:'Courier New',monospace;}
-.dj-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
-.dj-stat{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:10px;text-align:center;}
-.dj-stat-val{font-size:20px;font-weight:700;color:#22c55e;font-family:'Courier New',monospace;}
-.dj-stat-lbl{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+.dj-queue-item .q-song{flex:1;color:var(--text);}
+.dj-queue-item .q-quality{color:var(--text2);font-size:11px;}
 </style>
-<div class="dj-terminal">
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-<div style="display:flex;gap:4px;"><div style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></div><div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></div><div style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></div></div>
-<span style="color:#555;font-size:11px;font-family:'Courier New',monospace;">alex@dj-pipeline ~ $</span>
-<div style="flex:1;"></div>
-<span id="djOnlineStatus" style="font-size:10px;color:#22c55e;font-family:'Courier New',monospace;">● SOULSEEK CONNECTED</span>
-</div>
-<div class="dj-stats-grid">
-<div class="dj-stat"><div class="dj-stat-val" id="djCount">0</div><div class="dj-stat-lbl">Queue</div></div>
-<div class="dj-stat"><div class="dj-stat-val" id="djDone" style="color:#22c55e">0</div><div class="dj-stat-lbl">Downloaded</div></div>
-<div class="dj-stat"><div class="dj-stat-val" id="djInRekordbox">1271</div><div class="dj-stat-lbl">In Rekordbox</div></div>
-<div class="dj-stat"><div class="dj-stat-val" id="djNextCron">—</div><div class="dj-stat-lbl">Next Batch</div></div>
+<p style="color:var(--text2);margin-bottom:12px;font-size:13px;">Search any song to download via Soulseek → Rekordbox → USB</p>
+<div class="stats-row">
+<div class="stat"><div class="stat-label">Queue</div><div class="stat-value" id="djCount">0</div></div>
+<div class="stat"><div class="stat-label">Downloaded</div><div class="stat-value" id="djDone" style="color:var(--green)">0</div></div>
+<div class="stat"><div class="stat-label">In Rekordbox</div><div class="stat-value" id="djInRekordbox">1271</div></div>
+<div class="stat"><div class="stat-label">Status</div><div class="stat-value" style="font-size:13px;color:var(--green)">● Online</div></div>
 </div>
 <div class="dj-search-box">
-<input type="text" id="djInput" class="dj-search-input" placeholder="⟩ search track to download..." autocomplete="off">
-<button onclick="djSearch()" class="dj-btn">⚡ ACQUIRE</button>
+<input type="text" id="djInput" class="dj-search-input" placeholder="Search a song to download..." autocomplete="off">
+<button onclick="djSearch()" class="dj-btn">Download</button>
 </div>
 <div id="djPipeline" style="display:none;margin:12px 0;"></div>
 <div id="djLog" class="dj-log" style="display:none;"></div>
-<div style="margin-top:16px;">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-<span style="color:#555;font-size:11px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;">Download Queue</span>
-<select id="djGenre" style="background:#111;border:1px solid #1a1a1a;border-radius:6px;padding:4px 8px;color:#555;font-family:'Courier New',monospace;font-size:10px;">
+<div style="margin-top:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<span style="color:var(--text);font-weight:600;font-size:14px;">Library</span>
+<select id="djGenre" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text2);font-family:inherit;font-size:12px;">
 <option value="Electronic">Electronic</option><option value="House">House</option><option value="Disco">Disco</option><option value="Techno">Techno</option>
 <option value="Indie Pop">Indie Pop</option><option value="Pop">Pop</option><option value="Hip-Hop">Hip-Hop</option><option value="Chill">Chill</option>
 <option value="DnB">DnB</option><option value="Rock">Rock</option><option value="Other">Other</option>
 </select>
 </div>
 <div id="djList"></div>
-</div>
 </div>`,
 
 crons:`<h2 class="panel-title">⏰ Cron Jobs</h2>
@@ -946,16 +930,16 @@ async function djSearch(){
     const pipe=document.getElementById('djPipeline');
     pipe.style.display='block';
     pipe.innerHTML=`
-      <div style="display:flex;gap:14px;align-items:center;padding:12px;background:#0d0d0d;border:1px solid #22c55e30;border-radius:10px;margin-bottom:12px;">
-        <img src="${trackArt}" style="width:64px;height:64px;border-radius:6px;box-shadow:0 0 15px rgba(34,197,94,0.2);">
-        <div>
-          <div style="color:#22c55e;font-family:'Courier New',monospace;font-size:14px;font-weight:700;">${trackTitle}</div>
-          <div style="color:#888;font-family:'Courier New',monospace;font-size:12px;">${trackArtist}</div>
-          <div style="color:#555;font-family:'Courier New',monospace;font-size:10px;">${trackAlbum}</div>
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;">
+        <img src="${trackArt}" style="width:56px;height:56px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+        <div style="flex:1;">
+          <div style="color:var(--text);font-size:15px;font-weight:600;">${trackTitle}</div>
+          <div style="color:var(--text2);font-size:13px;">${trackArtist}</div>
+          <div style="color:var(--text2);font-size:11px;opacity:0.6;">${trackAlbum}</div>
         </div>
-        <div style="margin-left:auto;text-align:right;">
-          <div style="color:#22c55e;font-size:10px;font-family:'Courier New',monospace;letter-spacing:1px;">ACQUIRING</div>
-          <div style="color:#555;font-size:10px;font-family:'Courier New',monospace;margin-top:2px;">Target: ${rExt}</div>
+        <div style="text-align:right;">
+          <div style="color:var(--accent);font-size:11px;font-weight:600;">Downloading</div>
+          <div style="color:var(--text2);font-size:11px;margin-top:2px;">${rExt}</div>
         </div>
       </div>
     `+pipe.innerHTML;
@@ -1082,7 +1066,7 @@ function renderDJ(){
   const done=list.filter(d=>d.done).length;
   const dc=document.getElementById('djCount');if(dc)dc.textContent=todo;
   const dd=document.getElementById('djDone');if(dd)dd.textContent=done;
-  if(!list.length){el.innerHTML='<div style="text-align:center;color:#333;padding:20px;font-family:Courier New,monospace;font-size:12px;">⟩ no tracks in queue — search above to acquire</div>';return}
+  if(!list.length){el.innerHTML='<div class="empty-state">🎵 No songs yet — search above to start downloading</div>';return}
   el.innerHTML=list.map((d,i)=>`
     <div class="dj-queue-item" style="${d.done?'border-color:#22c55e20;':''}">
       <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${i})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>

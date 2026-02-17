@@ -683,7 +683,7 @@ async function syncFromSupabase(){
     if(cal.length)localStorage.setItem('mc-cal',JSON.stringify(cal));
     if(notes.length)localStorage.setItem('mc-notes',JSON.stringify(notes.map(n=>({text:n.text,cat:n.cat,time:n.created_at,id:n.id}))));
     if(dj.length){
-      localStorage.setItem('mc-dj',JSON.stringify(dj.map(d=>({song:d.song,genre:d.genre,done:d.done,time:d.created_at||new Date().toISOString(),id:d.id,bpm:d.bpm||'',quality:d.quality||'',art:d.art||'',size:d.size||''}))));
+      djCache=dj.map(d=>({id:d.id,song:d.song,genre:d.genre||'Other',done:d.done||false,bpm:d.bpm||'',quality:d.quality||'',art:d.art||'',size:d.size||'',added_by:d.added_by||'Gatsby',time:d.created_at||''}));
     }
     if(bingo.length){const state={};bingo.forEach(b=>{if(b.done)state[b.cell_index]=true});localStorage.setItem('mc-bingo',JSON.stringify(state));}
     var active=document.querySelector('.nav-item.active');
@@ -947,16 +947,8 @@ function renderBook(){
 }
 
 // DJ
-const defaultDJ=[
-  {song:"Ice In My Eyes — WELKER",genre:"Electronic",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
-  {song:"think you're someone new — Ian Asher, Arden Jones",genre:"Indie Pop",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
-  {song:"We R Who We R — New Beat Order, Seeko, Amero, KROMA",genre:"Electronic",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
-  {song:"BLOCKED — G Luné",genre:"Pop",bpm:"",done:false,time:"2026-02-14T21:04:00Z"},
-  {song:"CTRL + ALT + DEL — Rêve",genre:"House",bpm:"120",done:false,time:"2026-02-14T21:04:00Z"},
-  {song:"Trust Nobody — Hippie Sabotage",genre:"Electronic",bpm:"128",done:false,time:"2026-02-14T21:04:00Z"},
-  {song:"Substitution (ft. Julian Perretta) — Purple Disco Machine, Kungs",genre:"Disco",bpm:"124",done:false,time:"2026-02-14T21:04:00Z"},
-  {song:"drifting (remix)",genre:"Other",bpm:"",done:false,time:"2026-02-14T21:04:00Z"}
-];
+// DJ cache — Supabase is the single source of truth
+let djCache=[];
 // Default calendar events
 if(!localStorage.getItem('mc-cal')){
 localStorage.setItem('mc-cal',JSON.stringify([
@@ -972,7 +964,7 @@ localStorage.setItem('mc-cal',JSON.stringify([
 {date:"2026-07-17",event:"Tomorrowland + extra time (Jul 17-26ish)"},
 {date:"2026-09-19",event:"Car Davis wedding"}
 ]));}
-if(!localStorage.getItem('mc-dj'))localStorage.setItem('mc-dj',JSON.stringify(defaultDJ));
+// DJ data loaded from Supabase on tab switch
 
 // DJ Profile management
 function getDJProfile(){return localStorage.getItem('mc-dj-profile')||'Gatsby'}
@@ -1019,52 +1011,39 @@ function toggleDJShowAll(){
   if(label)label.textContent=djShowAll?'Everyone\'s Songs':getDJProfile()+"'s Songs";
   renderDJ();
 }
-function getDJ(){return JSON.parse(localStorage.getItem('mc-dj')||'[]')}
-function saveDJ(d){
-  localStorage.setItem('mc-dj',JSON.stringify(d));
-  d.filter(item=>!item.id).forEach(item=>{
-    const body={song:item.song,genre:item.genre||'Other',done:item.done||false,bpm:item.bpm||null,quality:item.quality||null,art:item.art||null,size:item.size||null};
-    // Try to include added_by if column exists, gracefully fail if not
-    fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},
-      body:JSON.stringify(body)
-    }).then(r=>r.json()).then(res=>{
-      if(res&&res[0]&&res[0].id){item.id=res[0].id;localStorage.setItem('mc-dj',JSON.stringify(d));}
-    }).catch(()=>{});
-  });
-}
+function getDJ(){return djCache}
 async function syncDJFromSupabase(){
   try{
-    const res=await fetch(SB_URL+'/rest/v1/dj?select=*&order=id.desc',{headers:sbHeaders});
+    const res=await fetch(SB_URL+'/rest/v1/dj?select=*&order=created_at.desc',{headers:sbHeaders});
     const remote=await res.json();
-    if(!Array.isArray(remote))return;
-    const local=getDJ();
-    const localIds=new Set(local.filter(x=>x.id).map(x=>x.id));
-    const localSongs=new Set(local.map(x=>x.song?.toLowerCase()));
-    let added=0;
-    remote.forEach(r=>{
-      if(!localIds.has(r.id)&&!localSongs.has(r.song?.toLowerCase())){
-        local.push({id:r.id,song:r.song,genre:r.genre||'Other',done:r.done||false,bpm:r.bpm,quality:r.quality,art:r.art,size:r.size,added_by:r.added_by||'Gatsby'});
-        added++;
-      }
-    });
-    if(added>0){localStorage.setItem('mc-dj',JSON.stringify(local));}
-    const idMap=Object.fromEntries(remote.map(r=>[r.id,r]));
-    local.forEach(l=>{if(l.id&&idMap[l.id]){const r=idMap[l.id];if(r.art&&!l.art)l.art=r.art;if(r.bpm&&!l.bpm)l.bpm=r.bpm;if(r.done&&!l.done)l.done=r.done;if(r.added_by&&!l.added_by)l.added_by=r.added_by;}});
-    localStorage.setItem('mc-dj',JSON.stringify(local));
+    if(Array.isArray(remote))djCache=remote.map(r=>({id:r.id,song:r.song,genre:r.genre||'Other',done:r.done||false,bpm:r.bpm||'',quality:r.quality||'',art:r.art||'',size:r.size||'',added_by:r.added_by||'Gatsby',time:r.created_at||''}));
   }catch(e){console.log('DJ sync error',e);}
 }
-function addDJ(){
+async function addDJ(){
   const input=document.getElementById('djInput');
   const genre=document.getElementById('djGenre');
   if(!input.value.trim())return;
-  const list=getDJ();
   const profile=getDJProfile();
-  list.unshift({song:input.value.trim(),genre:genre.value,done:false,added_by:profile,time:new Date().toISOString()});
-  saveDJ(list);input.value='';renderDJ();
+  const body={song:input.value.trim(),genre:genre.value,done:false,added_by:profile};
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(body)});
+    const rows=await res.json();
+    if(rows&&rows[0]){const r=rows[0];djCache.unshift({id:r.id,song:r.song,genre:r.genre,done:r.done,bpm:r.bpm||'',quality:r.quality||'',art:r.art||'',size:r.size||'',added_by:r.added_by||profile,time:r.created_at||''});}
+  }catch(e){console.log('addDJ error',e)}
+  input.value='';renderDJ();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='djInput')djSearch()});
-function toggleDJ(i){const list=getDJ();list[i].done=!list[i].done;saveDJ(list);renderDJ()}
-function deleteDJ(i){const list=getDJ();list.splice(i,1);saveDJ(list);renderDJ()}
+async function toggleDJ(id){
+  const item=djCache.find(d=>d.id===id);if(!item)return;
+  item.done=!item.done;
+  renderDJ();
+  try{await fetch(SB_URL+'/rest/v1/dj?id=eq.'+id,{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=minimal'},body:JSON.stringify({done:item.done})});}catch(e){console.log('toggleDJ error',e)}
+}
+async function deleteDJ(id){
+  djCache=djCache.filter(d=>d.id!==id);
+  renderDJ();
+  try{await fetch(SB_URL+'/rest/v1/dj?id=eq.'+id,{method:'DELETE',headers:sbHeaders});}catch(e){console.log('deleteDJ error',e)}
+}
 
 let djSearching=false;
 async function djSearch(){
@@ -1167,8 +1146,8 @@ async function djSearch(){
       </div>`;
   };
 
-  const list=getDJ();
   const genre=document.getElementById('djGenre').value;
+  const profile=getDJProfile();
 
   for(const picked of picks){
     const thisSize=['24.3','31.7','18.9','42.1','55.8','29.4'][Math.floor(Math.random()*6)];
@@ -1189,10 +1168,15 @@ async function djSearch(){
     showStatus(picked,'✓ Ready',thisBpm+' BPM · '+thisKey);
     await new Promise(r=>setTimeout(r,1000));
 
-    list.unshift({song:displayName,genre:genre,bpm:String(thisBpm),done:true,added_by:getDJProfile(),time:new Date().toISOString(),quality:'WAV',size:thisSize+'MB',art:picked.art});
+    const body={song:displayName,genre:genre,bpm:String(thisBpm),done:true,added_by:profile,quality:'WAV',size:thisSize+'MB',art:picked.art};
+    try{
+      const res=await fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(body)});
+      const rows=await res.json();
+      if(rows&&rows[0]){const r=rows[0];djCache.unshift({id:r.id,song:r.song,genre:r.genre,done:r.done,bpm:r.bpm||'',quality:r.quality||'',art:r.art||'',size:r.size||'',added_by:r.added_by||profile,time:r.created_at||''});}
+    }catch(e){console.log('DJ insert error',e)}
   }
 
-  saveDJ(list);renderDJ();
+  renderDJ();
   pipe.style.display='none';
   input.value='';
   }catch(e){console.log('DJ search error',e);document.getElementById('djPipeline').style.display='none';}
@@ -1205,7 +1189,6 @@ function renderDJ(){
   if(!el)return;
   const profile=getDJProfile();
   const list=djShowAll?[...allList]:allList.filter(d=>(d.added_by||'Gatsby')===profile);
-  list.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
   const todo=list.filter(d=>!d.done).length;
   const done=list.filter(d=>d.done).length;
   const dc=document.getElementById('djCount');if(dc)dc.textContent=todo;
@@ -1222,16 +1205,14 @@ function renderDJ(){
       <span style="color:#665c78;font-size:11px;">${chunk.length}/30 songs</span>
       <div style="flex:1;height:2px;background:#2a2535;border-radius:1px;"><div style="height:2px;background:linear-gradient(90deg,#e879f9,#7c3aed);border-radius:1px;width:${Math.round(chunk.length/30*100)}%;"></div></div>
     </div>`;
-    html+=chunk.map((d,ci)=>{
-      const i=p*playlistSize+ci;
-      const realIdx=allList.indexOf(d);
+    html+=chunk.map(d=>{
       const byTag=djShowAll&&d.added_by?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(232,121,249,0.12);color:#e879f9;margin-left:4px;">${d.added_by}</span>`:'';
       return `<div class="dj-queue-item" style="${d.done?'border-color:rgba(34,197,94,0.15);':''}">
-        <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${realIdx})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>
+        <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${d.id})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>
         ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:6px;">`:``}
         <div class="q-song" style="${d.done?'color:rgba(34,197,94,0.5);':'color:#d4c4f0;'}">${d.song}${byTag}</div>
         <div class="q-quality">${d.quality||d.genre||''}${d.bpm?' · '+d.bpm+'bpm':''}</div>
-        <button onclick="deleteDJ(${realIdx})" style="background:none;border:none;color:#333;cursor:pointer;font-size:12px;font-family:Courier New,monospace;">×</button>
+        <button onclick="deleteDJ(${d.id})" style="background:none;border:none;color:#333;cursor:pointer;font-size:12px;font-family:Courier New,monospace;">×</button>
       </div>`;
     }).join('');
   }

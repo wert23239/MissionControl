@@ -636,7 +636,7 @@ function switchPanel(id){
   if(id==='journal')renderJournal();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
-  if(id==='dj')renderDJ();
+  if(id==='dj'){syncDJFromSupabase().then(()=>renderDJ());}
 }
 
 // Clock
@@ -841,6 +841,28 @@ function saveDJ(d){
       if(res&&res[0]&&res[0].id){item.id=res[0].id;localStorage.setItem('mc-dj',JSON.stringify(d));}
     }).catch(()=>{});
   });
+}
+async function syncDJFromSupabase(){
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/dj?select=*&order=id.desc',{headers:sbHeaders});
+    const remote=await res.json();
+    if(!Array.isArray(remote))return;
+    const local=getDJ();
+    const localIds=new Set(local.filter(x=>x.id).map(x=>x.id));
+    const localSongs=new Set(local.map(x=>x.song?.toLowerCase()));
+    let added=0;
+    remote.forEach(r=>{
+      if(!localIds.has(r.id)&&!localSongs.has(r.song?.toLowerCase())){
+        local.push({id:r.id,song:r.song,genre:r.genre||'Other',done:r.done||false,bpm:r.bpm,quality:r.quality,art:r.art,size:r.size});
+        added++;
+      }
+    });
+    if(added>0){localStorage.setItem('mc-dj',JSON.stringify(local));}
+    // Also update local items with Supabase data (art, bpm etc)
+    const idMap=Object.fromEntries(remote.map(r=>[r.id,r]));
+    local.forEach(l=>{if(l.id&&idMap[l.id]){const r=idMap[l.id];if(r.art&&!l.art)l.art=r.art;if(r.bpm&&!l.bpm)l.bpm=r.bpm;if(r.done&&!l.done)l.done=r.done;}});
+    localStorage.setItem('mc-dj',JSON.stringify(local));
+  }catch(e){console.log('DJ sync error',e);}
 }
 function addDJ(){
   const input=document.getElementById('djInput');
@@ -1136,7 +1158,7 @@ switchPanel=function(id){
   if(id==='journal')renderJournal();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
-  if(id==='dj')renderDJ();
+  if(id==='dj'){syncDJFromSupabase().then(()=>renderDJ());}
   if(id==='spending'){}
   if(id==='calendar')renderCal();
 }

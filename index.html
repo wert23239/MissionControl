@@ -507,38 +507,67 @@ ${progress('Break-Even Progress',0,'#22c55e')}
 <div class="stat" style="text-align:center;margin-top:16px"><div class="stat-label">Lifetime Revenue</div><div class="stat-value">$0</div></div>`,
 
 spending:`<h2 class="panel-title">🏦 Spending</h2>
-<div class="panel-sub">Monthly spending breakdown • powered by Supabase</div>
+<div class="panel-sub">Monthly spending breakdown • 1,184 transactions analyzed • powered by Supabase</div>
 <div id="spending-stats" class="stats">
 ${stat('Loading...','—','')}
 </div>
 
 <div class="card" style="margin-bottom:20px">
-<h3 style="margin-bottom:16px">📊 Monthly Spending</h3>
+<h3 style="margin-bottom:16px">📈 Spending Over Time (Card + Rent)</h3>
+<canvas id="spendTrend" height="220"></canvas>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+<h3 style="margin-bottom:16px">📊 Category Breakdown</h3>
 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
 <select id="spendMonth" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 14px;color:#e8e0f0;font-family:inherit;font-size:13px"></select>
 </div>
-<canvas id="spendChart" height="260"></canvas>
+<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+<div style="flex:1;min-width:280px"><canvas id="spendChart" height="280"></canvas></div>
+<div id="spend-cats" style="flex:1;min-width:280px;font-size:13px;color:#d4c4f0">Loading...</div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+<h3 style="margin-bottom:16px">🍔 Food & Drink Deep Dive ($1,700/mo avg)</h3>
+<div id="spend-food" style="font-size:13px;color:#d4c4f0">Loading...</div>
 </div>
 
 <div class="grid2">
 <div class="card" style="min-height:200px">
-<h3 style="margin-bottom:12px">🔄 Monthly Subscriptions</h3>
+<h3 style="margin-bottom:12px">🚗 Transport Breakdown</h3>
+<div id="spend-transport" style="font-size:13px;line-height:1.8;color:#d4c4f0">Loading...</div>
+</div>
+<div class="card" style="min-height:200px">
+<h3 style="margin-bottom:12px">🛍️ Shopping Habits</h3>
+<div id="spend-shopping" style="font-size:13px;line-height:1.8;color:#d4c4f0">Loading...</div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+<h3 style="margin-bottom:12px">🏆 Top 20 Merchants</h3>
+<div id="spend-merchants" style="font-size:13px;color:#d4c4f0">Loading...</div>
+</div>
+
+<div class="grid2">
+<div class="card" style="min-height:200px">
+<h3 style="margin-bottom:12px">🔄 Recurring Subscriptions</h3>
 <div id="spend-subs" style="font-size:13px;line-height:2;color:#d4c4f0">Loading...</div>
 </div>
 <div class="card" style="min-height:200px">
-<h3 style="margin-bottom:12px">💡 Savings Tips</h3>
+<h3 style="margin-bottom:12px">💡 Savings Plan</h3>
 <div id="spend-tips" style="font-size:13px;line-height:1.8;color:#d4c4f0">Loading...</div>
 </div>
 </div>
 
 <div class="card" style="margin-bottom:20px">
-<h3 style="margin-bottom:16px">📈 Spending Over Time</h3>
-<canvas id="spendTrend" height="220"></canvas>
+<h3 style="margin-bottom:12px">🎯 Current vs Target Budget</h3>
+<div id="spend-budget" style="font-size:13px;color:#d4c4f0">Loading...</div>
 </div>
 
 <div class="card">
-<h3 style="margin-bottom:12px">🏷️ Category Breakdown (Selected Month)</h3>
-<div id="spend-cats" style="font-size:13px;color:#d4c4f0">Loading...</div>
+<h3 style="margin-bottom:12px">📅 Weekend vs Weekday</h3>
+<div id="spend-daytype" style="font-size:13px;color:#d4c4f0">Loading...</div>
 </div>`,
 
 calendar:`<h2 class="panel-title">📅 Calendar</h2>
@@ -1393,17 +1422,17 @@ switchPanel=function(id){
 let spendChartInstance=null, spendTrendInstance=null;
 const RENT=3000;
 const SUBS_MAP={
-  'BARRYS WILLIAMSBURG':{name:'Barry\'s Bootcamp',avg:260,essential:false,tip:'$260/mo for a gym — consider cheaper alternatives ($30-50/mo) or ClassPass'},
-  'RO HEALTH':{name:'Ro Health',avg:94,essential:true,tip:'Health — keep if needed'},
-  'MEALPAL':{name:'MealPal',avg:53,essential:false,tip:'$53/mo meal plan — cooking saves more'},
+  'BARRYS WILLIAMSBURG':{name:'Barry\'s Bootcamp',avg:260,essential:false,tip:'$260/mo — consider cheaper gyms ($30-50) or ClassPass'},
+  'RO HEALTH':{name:'Ro Health',avg:94,essential:true,tip:'Health/prescriptions — keep'},
+  'MEALPAL':{name:'MealPal',avg:53,essential:false,tip:'$53/mo — cooking saves more'},
   'CLAUDE.AI SUBSCRIPTION':{name:'Claude AI',avg:32,essential:true,tip:'Your AI backbone — essential'},
-  'ORENDA PSYCHIATRY':{name:'Orenda Psychiatry',avg:30,essential:true,tip:'Health — keep'},
-  'TIKTOK SHOP':{name:'TikTok Shop',avg:28,essential:false,tip:'Impulse buys adding up — $28/mo avg'},
-  'ADOBE  *800-833-6687':{name:'Adobe Creative Cloud',avg:28,essential:false,tip:'$28/mo — do you use it? Free alternatives: Figma, Photopea, DaVinci Resolve'},
-  'GOOGLE *YouTubePremium':{name:'YouTube Premium',avg:23,essential:false,tip:'$23/mo — consider if ad-free is worth it, or use uBlock Origin'},
-  'OPENAI *CHATGPT SUBSCR':{name:'ChatGPT Plus',avg:22,essential:false,tip:'You already have Claude — do you need both? Save $22/mo'},
+  'ORENDA PSYCHIATRY':{name:'Orenda Psychiatry',avg:30,essential:true,tip:'Mental health — keep'},
+  'TIKTOK SHOP':{name:'TikTok Shop',avg:28,essential:false,tip:'11 impulse buys in 6mo — $28/mo avg'},
+  'ADOBE  *800-833-6687':{name:'Adobe CC (3 subs!)',avg:82,essential:false,tip:'3 Adobe charges/mo totaling ~$82. Do you use all of them? Figma/Photopea/DaVinci are free'},
+  'GOOGLE *YouTubePremium':{name:'YouTube Premium',avg:23,essential:false,tip:'$23/mo — uBlock Origin is free'},
+  'OPENAI *CHATGPT SUBSCR':{name:'ChatGPT Plus',avg:22,essential:false,tip:'You already have Claude — save $22/mo'},
   'Spotify USA':{name:'Spotify',avg:12,essential:true,tip:'Essential for a DJ 🎧'},
-  'APPLE.COM/BILL':{name:'Apple (iCloud/Services)',avg:8,essential:true,tip:'Likely iCloud storage — reasonable'},
+  'APPLE.COM/BILL':{name:'Apple Services',avg:23,essential:true,tip:'iCloud + other Apple subs'},
 };
 const CAT_COLORS={'Food & Drink':'#ef4444','Shopping':'#f59e0b','Travel':'#3b82f6','Groceries':'#22c55e','Health & Wellness':'#e879f9','Bills & Utilities':'#998eb5','Entertainment':'#22d3ee','Personal':'#fb923c','Education':'#a78bfa','Gas':'#64748b','Professional Services':'#14b8a6','Gifts & Donations':'#f472b6','Home':'#84cc16'};
 
@@ -1422,61 +1451,40 @@ async function loadSpending(){
   const byMonth={};
   all.forEach(t=>{
     const m=t.transaction_date.slice(0,7);
-    if(!byMonth[m])byMonth[m]={total:0,cats:{}};
+    if(!byMonth[m])byMonth[m]={total:0,cats:{},txns:[]};
     const amt=Math.abs(t.amount);
     byMonth[m].total+=amt;
     const c=t.category||'Other';
     byMonth[m].cats[c]=(byMonth[m].cats[c]||0)+amt;
+    byMonth[m].txns.push(t);
   });
 
   const months=Object.keys(byMonth).sort().reverse();
-  const fullMonths=months.filter(m=>m>='2025-07'&&m<months[0]); // exclude partial current & first
+  const fullMonths=months.filter(m=>m>='2025-07'&&m<months[0]);
 
   // Stats
   const avgSpend=fullMonths.length?fullMonths.reduce((s,m)=>s+byMonth[m].total,0)/fullMonths.length:0;
   const subsTotal=Object.values(SUBS_MAP).reduce((s,v)=>s+v.avg,0);
   const cuttable=Object.values(SUBS_MAP).filter(v=>!v.essential).reduce((s,v)=>s+v.avg,0);
   const topCat=fullMonths.length?Object.entries(fullMonths.reduce((acc,m)=>{Object.entries(byMonth[m].cats).forEach(([c,v])=>{acc[c]=(acc[c]||0)+v});return acc},{})).sort((a,b)=>b[1]-a[1])[0][0]:'—';
+  const totalAll=all.reduce((s,t)=>s+Math.abs(t.amount),0);
 
   document.getElementById('spending-stats').innerHTML=`
-    ${stat('Monthly Avg (card)','$'+Math.round(avgSpend).toLocaleString(),fullMonths.length+' full months')}
+    ${stat('Monthly Avg (card)','$'+Math.round(avgSpend).toLocaleString(),fullMonths.length+' full months (Jul–Jan)')}
     ${stat('+ Rent','$'+RENT.toLocaleString(),'not on card')}
-    ${stat('Total Monthly','$'+Math.round(avgSpend+RENT).toLocaleString(),'card + rent')}
-    ${stat('Subscriptions','$'+Math.round(subsTotal)+'/mo',Object.keys(SUBS_MAP).length+' detected')}
-    ${stat('Top Category',topCat,'by total spend')}
-    ${stat('Potential Savings','$'+Math.round(cuttable)+'/mo','cuttable subscriptions')}
+    ${stat('Total Monthly Burn','$'+Math.round(avgSpend+RENT).toLocaleString(),'~$'+Math.round((avgSpend+RENT)*12/1000)+'K/yr')}
+    ${stat('Subscriptions','$'+Math.round(subsTotal)+'/mo',Object.keys(SUBS_MAP).length+' recurring')}
+    ${stat('Potential Savings','$'+Math.round(cuttable)+'/mo','$'+Math.round(cuttable*12).toLocaleString()+'/yr cuttable')}
+    ${stat('Transactions',all.length.toLocaleString(),'analyzed')}
   `;
 
   // Month selector
   const sel=document.getElementById('spendMonth');
   sel.innerHTML=months.map(m=>`<option value="${m}">${m}</option>`).join('');
   sel.onchange=()=>renderMonth(byMonth[sel.value],sel.value);
-
-  // Render current month
   renderMonth(byMonth[months[0]],months[0]);
 
-  // Subscriptions
-  document.getElementById('spend-subs').innerHTML=Object.values(SUBS_MAP)
-    .sort((a,b)=>b.avg-a.avg)
-    .map(s=>`<div class="expense-row"><span>${s.essential?'✅':'⚠️'} ${s.name}</span><strong${s.essential?'':' style="color:#f59e0b"'}>$${s.avg}/mo</strong></div>`)
-    .join('');
-
-  // Tips
-  const tips=Object.values(SUBS_MAP).filter(s=>!s.essential).sort((a,b)=>b.avg-a.avg);
-  const foodAvg=fullMonths.length?fullMonths.reduce((s,m)=>s+(byMonth[m].cats['Food & Drink']||0),0)/fullMonths.length:0;
-  const uberTotal=all.filter(t=>t.description&&t.description.includes('UBER')).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const uberMonthly=fullMonths.length?uberTotal/fullMonths.length:0;
-  document.getElementById('spend-tips').innerHTML=`
-    <div style="margin-bottom:12px"><strong style="color:#22c55e">💰 You could save ~$${Math.round(cuttable)}/mo by cutting:</strong></div>
-    ${tips.map(s=>`<div style="margin-bottom:6px">• <strong>${s.name}</strong> ($${s.avg}/mo) — ${s.tip}</div>`).join('')}
-    <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-    <strong style="color:#ef4444">🍔 Food & Drink:</strong> $${Math.round(foodAvg)}/mo avg — biggest category. Cooking more = biggest savings lever.<br>
-    <strong style="color:#3b82f6">🚗 Uber/Lyft:</strong> $${Math.round(uberMonthly)}/mo avg — subway is $2.90/ride (you already use MTA a lot, nice).<br>
-    <strong style="color:#f59e0b">🛍️ TikTok Shop:</strong> 11 purchases in 6 months — impulse buy trap.
-    </div>
-  `;
-
-  // Trend chart
+  // ── Trend chart ──
   const trendMonths=months.slice().reverse().filter(m=>m>='2025-07');
   const ctx2=document.getElementById('spendTrend').getContext('2d');
   if(spendTrendInstance)spendTrendInstance.destroy();
@@ -1484,8 +1492,176 @@ async function loadSpending(){
     labels:trendMonths,
     datasets:[
       {label:'Card Spending',data:trendMonths.map(m=>Math.round(byMonth[m].total)),backgroundColor:'rgba(232,128,240,0.6)',borderRadius:6},
-      {label:'+ Rent ($3K)',data:trendMonths.map(()=>RENT),backgroundColor:'rgba(153,142,181,0.4)',borderRadius:6}
-    ]},options:{responsive:true,plugins:{legend:{labels:{color:'#d4c4f0'}},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString()}}},scales:{x:{stacked:true,ticks:{color:'#665c78'},grid:{display:false}},y:{stacked:true,ticks:{color:'#665c78',callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+      {label:'Rent ($3K)',data:trendMonths.map(()=>RENT),backgroundColor:'rgba(153,142,181,0.4)',borderRadius:6}
+    ]},options:{responsive:true,plugins:{legend:{labels:{color:'#d4c4f0'}},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString()}},annotation:{}},scales:{x:{stacked:true,ticks:{color:'#665c78'},grid:{display:false}},y:{stacked:true,ticks:{color:'#665c78',callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  // ── Food deep dive ──
+  const foodTxns=all.filter(t=>(t.category==='Food & Drink'));
+  const deliveryKw=['DOORDASH','UBER EATS','GRUBHUB','SEAMLESS','CAVIAR'];
+  const coffeeKw=['COFFEE','BLUE BOTTLE','DEVOCION','GRANIERO','STARBUCKS','JOE'];
+  const barKw=['BAR','COCKTAIL','BREWERY','BLINKY','ELSEWHERE','BOTTLE SHOPPE','RADEGAST'];
+  let delivery=0,coffee=0,bars=0,restaurants=0;
+  const foodPlaces={};
+  foodTxns.forEach(t=>{
+    const d=t.description.toUpperCase(), amt=Math.abs(t.amount);
+    if(deliveryKw.some(k=>d.includes(k))) delivery+=amt;
+    else if(coffeeKw.some(k=>d.includes(k))) coffee+=amt;
+    else if(barKw.some(k=>d.includes(k))) bars+=amt;
+    else restaurants+=amt;
+    const name=t.description.replace(/\s*(TST\*|SQ \*|DD \*)/,'').trim();
+    foodPlaces[name]=(foodPlaces[name]||{total:0,count:0});
+    foodPlaces[name].total+=amt; foodPlaces[name].count++;
+  });
+  const foodTotal=foodTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const foodMonthly=fullMonths.length?foodTotal/fullMonths.length:0;
+  const topFood=Object.entries(foodPlaces).sort((a,b)=>b[1].total-a[1].total).slice(0,10);
+  const bigNights=foodTxns.filter(t=>Math.abs(t.amount)>=200).sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount)).slice(0,8);
+
+  document.getElementById('spend-food').innerHTML=`
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px">
+      <div style="flex:1;min-width:200px">
+        <div style="margin-bottom:8px;color:#998eb5">Breakdown ($${Math.round(foodTotal).toLocaleString()} total, $${Math.round(foodMonthly).toLocaleString()}/mo avg)</div>
+        <div class="expense-row"><span>🍽️ Restaurants</span><strong>$${Math.round(restaurants).toLocaleString()}</strong></div>
+        <div class="expense-row"><span>🍺 Bars & Nightlife</span><strong>$${Math.round(bars).toLocaleString()}</strong></div>
+        <div class="expense-row"><span>🛵 Delivery (DoorDash etc)</span><strong>$${Math.round(delivery).toLocaleString()}</strong></div>
+        <div class="expense-row"><span>☕ Coffee</span><strong>$${Math.round(coffee).toLocaleString()}</strong></div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="margin-bottom:8px;color:#998eb5">Top Spots</div>
+        ${topFood.map(([n,v])=>`<div class="expense-row"><span>${n} <span style="color:#665c78">(${v.count}x)</span></span><strong>$${Math.round(v.total).toLocaleString()}</strong></div>`).join('')}
+      </div>
+    </div>
+    ${bigNights.length?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
+      <div style="color:#ef4444;font-weight:600;margin-bottom:8px">🚨 $200+ Nights Out (${bigNights.length} total = ~$${Math.round(bigNights.reduce((s,t)=>s+Math.abs(t.amount),0)).toLocaleString()})</div>
+      ${bigNights.map(t=>`<div class="expense-row"><span>${t.description} <span style="color:#665c78">${t.transaction_date}</span></span><strong style="color:#ef4444">$${Math.abs(t.amount).toFixed(0)}</strong></div>`).join('')}
+    </div>`:''}
+  `;
+
+  // ── Transport ──
+  const uberTxns=all.filter(t=>t.description&&t.description.toUpperCase().includes('UBER'));
+  const lyftTxns=all.filter(t=>t.description&&t.description.toUpperCase().includes('LYFT'));
+  const mtaTxns=all.filter(t=>t.description&&t.description.toUpperCase().includes('MTA'));
+  const uberTotal=uberTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const lyftTotal=lyftTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const mtaTotal=mtaTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const rideByMonth={};
+  [...uberTxns,...lyftTxns].forEach(t=>{const m=t.transaction_date.slice(0,7);rideByMonth[m]=(rideByMonth[m]||0)+Math.abs(t.amount)});
+  const rideTrend=Object.entries(rideByMonth).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  document.getElementById('spend-transport').innerHTML=`
+    <div class="expense-row"><span>🚗 Uber</span><strong>$${Math.round(uberTotal).toLocaleString()} <span style="color:#665c78">(${uberTxns.length} trips)</span></strong></div>
+    <div class="expense-row"><span>🚗 Lyft</span><strong>$${Math.round(lyftTotal).toLocaleString()} <span style="color:#665c78">(${lyftTxns.length} trips)</span></strong></div>
+    <div class="expense-row"><span>🚇 MTA Subway</span><strong>$${Math.round(mtaTotal).toLocaleString()} <span style="color:#665c78">(${mtaTxns.length} swipes)</span></strong></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);color:#998eb5;font-size:12px">
+      <strong>Rideshare trend:</strong><br>
+      ${rideTrend.map(([m,v])=>`${m}: $${Math.round(v)}`).join(' → ')}
+      ${rideTrend.length>=2&&rideTrend[rideTrend.length-1][1]<rideTrend[rideTrend.length-2][1]?'<br><span style="color:#22c55e">📉 Trending down — nice work switching to subway!</span>':''}
+    </div>
+  `;
+
+  // ── Shopping ──
+  const shopTxns=all.filter(t=>t.category==='Shopping');
+  const shopMerchants={};
+  shopTxns.forEach(t=>{const n=t.description.replace(/\*\S+/,'').trim();shopMerchants[n]=(shopMerchants[n]||{total:0,count:0});shopMerchants[n].total+=Math.abs(t.amount);shopMerchants[n].count++});
+  const topShop=Object.entries(shopMerchants).sort((a,b)=>b[1].total-a[1].total).slice(0,8);
+  const amazonTxns=shopTxns.filter(t=>t.description.toUpperCase().includes('AMAZON'));
+  const tiktokTxns=shopTxns.filter(t=>t.description.toUpperCase().includes('TIKTOK'));
+
+  document.getElementById('spend-shopping').innerHTML=`
+    <div style="margin-bottom:8px;color:#998eb5">$${Math.round(shopTxns.reduce((s,t)=>s+Math.abs(t.amount),0)).toLocaleString()} total shopping</div>
+    ${topShop.map(([n,v])=>`<div class="expense-row"><span>${n} <span style="color:#665c78">(${v.count}x)</span></span><strong>$${Math.round(v.total).toLocaleString()}</strong></div>`).join('')}
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:#998eb5">
+      🚨 Amazon: ${amazonTxns.length} orders ($${Math.round(amazonTxns.reduce((s,t)=>s+Math.abs(t.amount),0)).toLocaleString()}) — ~${(amazonTxns.length/fullMonths.length).toFixed(0)}/mo<br>
+      🚨 TikTok Shop: ${tiktokTxns.length} impulse buys ($${Math.round(tiktokTxns.reduce((s,t)=>s+Math.abs(t.amount),0)).toLocaleString()})
+    </div>
+  `;
+
+  // ── Top 20 Merchants ──
+  const allMerchants={};
+  all.forEach(t=>{const n=t.description;allMerchants[n]=(allMerchants[n]||{total:0,count:0,cat:t.category});allMerchants[n].total+=Math.abs(t.amount);allMerchants[n].count++});
+  const top20=Object.entries(allMerchants).sort((a,b)=>b[1].total-a[1].total).slice(0,20);
+  document.getElementById('spend-merchants').innerHTML=`
+    <div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 16px;align-items:center">
+      <div style="color:#665c78;font-weight:600">#</div><div style="color:#665c78;font-weight:600">Merchant</div><div style="color:#665c78;font-weight:600">Visits</div><div style="color:#665c78;font-weight:600;text-align:right">Total</div>
+      ${top20.map(([n,v],i)=>`<div style="color:#665c78">${i+1}</div><div>${n}</div><div style="text-align:center">${v.count}</div><div style="text-align:right;font-weight:600">$${Math.round(v.total).toLocaleString()}</div>`).join('')}
+    </div>
+  `;
+
+  // ── Subscriptions ──
+  document.getElementById('spend-subs').innerHTML=Object.values(SUBS_MAP)
+    .sort((a,b)=>b.avg-a.avg)
+    .map(s=>`<div class="expense-row"><span>${s.essential?'✅':'⚠️'} ${s.name}</span><strong${s.essential?'':' style="color:#f59e0b"'}>$${s.avg}/mo</strong></div>`)
+    .join('')+`<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-weight:600;color:#e8e0f0">Total: $${subsTotal}/mo ($${Math.round(subsTotal*12).toLocaleString()}/yr)</div>`;
+
+  // ── Savings Plan ──
+  const savings=[
+    {action:'Drop ChatGPT (have Claude)',save:22,period:'mo',annual:264},
+    {action:'Audit Adobe (3→1 sub)',save:55,period:'mo',annual:660},
+    {action:'Keep rideshare low (subway)',save:400,period:'mo',annual:4800},
+    {action:'Cap dining at $1K/mo',save:700,period:'mo',annual:8400},
+    {action:'Limit $200+ nights to 1/mo',save:400,period:'mo',annual:4800},
+    {action:'Stop TikTok Shop',save:50,period:'mo',annual:600},
+    {action:'Amazon 48hr rule (cut 30%)',save:150,period:'mo',annual:1800},
+    {action:'Cancel MealPal',save:53,period:'mo',annual:636},
+  ];
+  const totalSave=savings.reduce((s,v)=>s+v.save,0);
+  document.getElementById('spend-tips').innerHTML=`
+    <div style="margin-bottom:12px"><strong style="color:#22c55e">💰 Potential savings: ~$${totalSave.toLocaleString()}/mo ($${Math.round(totalSave*12).toLocaleString()}/yr)</strong></div>
+    ${savings.map(s=>`<div style="margin-bottom:6px">• <strong>${s.action}</strong> → <span style="color:#22c55e">-$${s.save}/${s.period}</span> <span style="color:#665c78">($${s.annual.toLocaleString()}/yr)</span></div>`).join('')}
+  `;
+
+  // ── Budget comparison ──
+  const budgetRows=[
+    {cat:'Rent',current:3000,target:3000},
+    {cat:'Food & Drink',current:1700,target:1000},
+    {cat:'Groceries',current:379,target:400},
+    {cat:'Shopping',current:1370,target:600},
+    {cat:'Travel',current:1276,target:500},
+    {cat:'Rideshare',current:420,target:100},
+    {cat:'Health & Wellness',current:447,target:350},
+    {cat:'Entertainment',current:266,target:200},
+    {cat:'Subscriptions',current:Math.round(subsTotal),target:200},
+    {cat:'Other',current:615,target:400},
+  ];
+  const currentTotal=budgetRows.reduce((s,r)=>s+r.current,0);
+  const targetTotal=budgetRows.reduce((s,r)=>s+r.target,0);
+  document.getElementById('spend-budget').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:6px 20px;align-items:center">
+      <div style="color:#665c78;font-weight:600">Category</div><div style="color:#665c78;font-weight:600;text-align:right">Current</div><div style="color:#665c78;font-weight:600;text-align:right">Target</div><div style="color:#665c78;font-weight:600;text-align:right">Saved</div>
+      ${budgetRows.map(r=>{const diff=r.current-r.target;return `<div>${r.cat}</div><div style="text-align:right">$${r.current.toLocaleString()}</div><div style="text-align:right;color:#22c55e">$${r.target.toLocaleString()}</div><div style="text-align:right;color:${diff>0?'#22c55e':'#665c78'}">${diff>0?'-$'+diff.toLocaleString():'—'}</div>`}).join('')}
+      <div style="font-weight:700;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)">TOTAL</div>
+      <div style="font-weight:700;text-align:right;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)">$${currentTotal.toLocaleString()}</div>
+      <div style="font-weight:700;text-align:right;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);color:#22c55e">$${targetTotal.toLocaleString()}</div>
+      <div style="font-weight:700;text-align:right;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);color:#22c55e">-$${(currentTotal-targetTotal).toLocaleString()}/mo</div>
+    </div>
+  `;
+
+  // ── Weekend vs Weekday ──
+  let wkday={total:0,count:0},wkend={total:0,count:0};
+  all.forEach(t=>{
+    const d=new Date(t.transaction_date+'T12:00:00').getDay();
+    const amt=Math.abs(t.amount);
+    if(d===0||d===6){wkend.total+=amt;wkend.count++}else{wkday.total+=amt;wkday.count++}
+  });
+  const numDays=Math.ceil((new Date(all[0].transaction_date)-new Date(all[all.length-1].transaction_date))/(86400000));
+  const wkdayDays=Math.round(numDays*5/7), wkendDays=numDays-wkdayDays;
+  document.getElementById('spend-daytype').innerHTML=`
+    <div style="display:flex;gap:40px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:24px;font-weight:700;color:#e8e0f0">$${Math.round(wkday.total/wkdayDays)}/day</div>
+        <div style="color:#665c78">Weekdays (${wkday.count} txns)</div>
+      </div>
+      <div>
+        <div style="font-size:24px;font-weight:700;color:#f59e0b">$${Math.round(wkend.total/wkendDays)}/day</div>
+        <div style="color:#665c78">Weekends (${wkend.count} txns)</div>
+      </div>
+      <div>
+        <div style="font-size:24px;font-weight:700;color:#ef4444">+${Math.round((wkend.total/wkendDays)/(wkday.total/wkdayDays)*100-100)}%</div>
+        <div style="color:#665c78">Weekend premium</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;color:#998eb5;font-size:12px">Weekends cost more per day — restaurants, bars, and rideshares spike Fri–Sun</div>
+  `;
 }
 
 function renderMonth(data,label){
@@ -1496,11 +1672,11 @@ function renderMonth(data,label){
   spendChartInstance=new Chart(ctx,{type:'doughnut',data:{
     labels:cats.map(c=>c[0]),
     datasets:[{data:cats.map(c=>Math.round(c[1])),backgroundColor:cats.map(c=>CAT_COLORS[c[0]]||'#665c78'),borderWidth:0}]
-  },options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#d4c4f0',padding:12,font:{size:12}}},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString()+' ('+Math.round(c.raw/data.total*100)+'%)'}}}}});
+  },options:{responsive:true,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString()+' ('+Math.round(c.raw/data.total*100)+'%)'}}}}});
 
   document.getElementById('spend-cats').innerHTML=`
-    <div style="margin-bottom:8px;color:#998eb5">Total: <strong style="color:#e8e0f0">$${Math.round(data.total).toLocaleString()}</strong> (card only, excludes $3K rent)</div>
-    ${cats.map(([c,v])=>`<div class="expense-row"><span style="color:${CAT_COLORS[c]||'#665c78'}">● ${c}</span><strong>$${Math.round(v).toLocaleString()} <span style="color:#665c78;font-weight:400">(${Math.round(v/data.total*100)}%)</span></strong></div>`).join('')}
+    <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:#e8e0f0">$${Math.round(data.total).toLocaleString()} <span style="font-size:12px;color:#665c78;font-weight:400">(card only, +$3K rent)</span></div>
+    ${cats.map(([c,v])=>`<div class="expense-row"><span><span style="color:${CAT_COLORS[c]||'#665c78'}">●</span> ${c}</span><strong>$${Math.round(v).toLocaleString()} <span style="color:#665c78;font-weight:400">${Math.round(v/data.total*100)}%</span></strong></div>`).join('')}
   `;
 }
 </script>

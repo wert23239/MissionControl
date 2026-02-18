@@ -213,6 +213,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
   <div id="main"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 const sections=[
   {id:'overview',icon:'🏠',label:'Overview',dot:'#e879f9'},
@@ -506,38 +507,38 @@ ${progress('Break-Even Progress',0,'#22c55e')}
 <div class="stat" style="text-align:center;margin-top:16px"><div class="stat-label">Lifetime Revenue</div><div class="stat-value">$0</div></div>`,
 
 spending:`<h2 class="panel-title">🏦 Spending</h2>
-<div class="panel-sub">Transaction analysis and budgeting</div>
-<div class="stats">
-${stat('Monthly Avg','—','upload Chase CSV to populate')}
-${stat('Top Category','—','waiting for data')}
-${stat('Subscriptions','—','auto-detected')}
-${stat('Savings Found','—','potential cuts')}
+<div class="panel-sub">Monthly spending breakdown • powered by Supabase</div>
+<div id="spending-stats" class="stats">
+${stat('Loading...','—','')}
 </div>
-<div class="card" style="margin-bottom:20px;text-align:center;padding:40px">
-<div style="font-size:48px;margin-bottom:12px">🏦</div>
-<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:#e8e0f0">Upload Chase Transactions</div>
-<div style="font-size:13px;color:#665c78;line-height:1.6;max-width:400px;margin:0 auto">
-Download your last 3 months from chase.com → Activity → Download (CSV).<br>
-Send the file to Alex on Discord and he'll analyze everything.
+
+<div class="card" style="margin-bottom:20px">
+<h3 style="margin-bottom:16px">📊 Monthly Spending</h3>
+<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+<select id="spendMonth" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 14px;color:#e8e0f0;font-family:inherit;font-size:13px"></select>
 </div>
+<canvas id="spendChart" height="260"></canvas>
 </div>
+
 <div class="grid2">
-<div class="card"><h3>What Alex Will Track</h3>
-<div style="font-size:13px;line-height:1.8;color:#665c78">
-📊 Spending by category (food, transport, subscriptions, etc.)<br>
-🔄 Recurring charges & forgotten subscriptions<br>
-📈 Month-over-month trends<br>
-💡 Savings recommendations<br>
-🎯 Budget targets
-</div></div>
-<div class="card"><h3>Future: Live Tracking</h3>
-<div style="font-size:13px;line-height:1.8;color:#665c78">
-🔌 Plaid API — connects directly to Chase<br>
-📱 Auto-sync transactions daily<br>
-⚠️ Alerts for unusual spending<br>
-💰 Real-time budget tracking<br>
-<span style="color:#f59e0b">Requires setup + possible cost — TBD</span>
-</div></div>
+<div class="card" style="min-height:200px">
+<h3 style="margin-bottom:12px">🔄 Monthly Subscriptions</h3>
+<div id="spend-subs" style="font-size:13px;line-height:2;color:#d4c4f0">Loading...</div>
+</div>
+<div class="card" style="min-height:200px">
+<h3 style="margin-bottom:12px">💡 Savings Tips</h3>
+<div id="spend-tips" style="font-size:13px;line-height:1.8;color:#d4c4f0">Loading...</div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+<h3 style="margin-bottom:16px">📈 Spending Over Time</h3>
+<canvas id="spendTrend" height="220"></canvas>
+</div>
+
+<div class="card">
+<h3 style="margin-bottom:12px">🏷️ Category Breakdown (Selected Month)</h3>
+<div id="spend-cats" style="font-size:13px;color:#d4c4f0">Loading...</div>
 </div>`,
 
 calendar:`<h2 class="panel-title">📅 Calendar</h2>
@@ -1384,8 +1385,123 @@ switchPanel=function(id){
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj'){loadDJProfile();syncDJFromSupabase().then(()=>renderDJ());}
-  if(id==='spending'){}
+  if(id==='spending'){loadSpending()}
   if(id==='calendar')renderCal();
+}
+
+/* ── Spending Tab ── */
+let spendChartInstance=null, spendTrendInstance=null;
+const RENT=3000;
+const SUBS_MAP={
+  'BARRYS WILLIAMSBURG':{name:'Barry\'s Bootcamp',avg:260,essential:false,tip:'$260/mo for a gym — consider cheaper alternatives ($30-50/mo) or ClassPass'},
+  'RO HEALTH':{name:'Ro Health',avg:94,essential:true,tip:'Health — keep if needed'},
+  'MEALPAL':{name:'MealPal',avg:53,essential:false,tip:'$53/mo meal plan — cooking saves more'},
+  'CLAUDE.AI SUBSCRIPTION':{name:'Claude AI',avg:32,essential:true,tip:'Your AI backbone — essential'},
+  'ORENDA PSYCHIATRY':{name:'Orenda Psychiatry',avg:30,essential:true,tip:'Health — keep'},
+  'TIKTOK SHOP':{name:'TikTok Shop',avg:28,essential:false,tip:'Impulse buys adding up — $28/mo avg'},
+  'ADOBE  *800-833-6687':{name:'Adobe Creative Cloud',avg:28,essential:false,tip:'$28/mo — do you use it? Free alternatives: Figma, Photopea, DaVinci Resolve'},
+  'GOOGLE *YouTubePremium':{name:'YouTube Premium',avg:23,essential:false,tip:'$23/mo — consider if ad-free is worth it, or use uBlock Origin'},
+  'OPENAI *CHATGPT SUBSCR':{name:'ChatGPT Plus',avg:22,essential:false,tip:'You already have Claude — do you need both? Save $22/mo'},
+  'Spotify USA':{name:'Spotify',avg:12,essential:true,tip:'Essential for a DJ 🎧'},
+  'APPLE.COM/BILL':{name:'Apple (iCloud/Services)',avg:8,essential:true,tip:'Likely iCloud storage — reasonable'},
+};
+const CAT_COLORS={'Food & Drink':'#ef4444','Shopping':'#f59e0b','Travel':'#3b82f6','Groceries':'#22c55e','Health & Wellness':'#e879f9','Bills & Utilities':'#998eb5','Entertainment':'#22d3ee','Personal':'#fb923c','Education':'#a78bfa','Gas':'#64748b','Professional Services':'#14b8a6','Gifts & Donations':'#f472b6','Home':'#84cc16'};
+
+async function loadSpending(){
+  const SB='https://aihworyfcgstwbpzkzoy.supabase.co/rest/v1';
+  const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE';
+  const hdr={apikey:KEY,Authorization:'Bearer '+KEY};
+  let all=[], offset=0, batch=1000;
+  while(true){
+    const r=await fetch(`${SB}/spending?select=*&type=eq.Sale&order=transaction_date.desc&offset=${offset}&limit=${batch}`,{headers:{...hdr,'Range-Unit':'items','Range':`${offset}-${offset+batch-1}`,'Prefer':'count=exact'}});
+    const d=await r.json(); all=all.concat(d);
+    if(d.length<batch) break; offset+=batch;
+  }
+
+  // Group by month
+  const byMonth={};
+  all.forEach(t=>{
+    const m=t.transaction_date.slice(0,7);
+    if(!byMonth[m])byMonth[m]={total:0,cats:{}};
+    const amt=Math.abs(t.amount);
+    byMonth[m].total+=amt;
+    const c=t.category||'Other';
+    byMonth[m].cats[c]=(byMonth[m].cats[c]||0)+amt;
+  });
+
+  const months=Object.keys(byMonth).sort().reverse();
+  const fullMonths=months.filter(m=>m>='2025-07'&&m<months[0]); // exclude partial current & first
+
+  // Stats
+  const avgSpend=fullMonths.length?fullMonths.reduce((s,m)=>s+byMonth[m].total,0)/fullMonths.length:0;
+  const subsTotal=Object.values(SUBS_MAP).reduce((s,v)=>s+v.avg,0);
+  const cuttable=Object.values(SUBS_MAP).filter(v=>!v.essential).reduce((s,v)=>s+v.avg,0);
+  const topCat=fullMonths.length?Object.entries(fullMonths.reduce((acc,m)=>{Object.entries(byMonth[m].cats).forEach(([c,v])=>{acc[c]=(acc[c]||0)+v});return acc},{})).sort((a,b)=>b[1]-a[1])[0][0]:'—';
+
+  document.getElementById('spending-stats').innerHTML=`
+    ${stat('Monthly Avg (card)','$'+Math.round(avgSpend).toLocaleString(),fullMonths.length+' full months')}
+    ${stat('+ Rent','$'+RENT.toLocaleString(),'not on card')}
+    ${stat('Total Monthly','$'+Math.round(avgSpend+RENT).toLocaleString(),'card + rent')}
+    ${stat('Subscriptions','$'+Math.round(subsTotal)+'/mo',Object.keys(SUBS_MAP).length+' detected')}
+    ${stat('Top Category',topCat,'by total spend')}
+    ${stat('Potential Savings','$'+Math.round(cuttable)+'/mo','cuttable subscriptions')}
+  `;
+
+  // Month selector
+  const sel=document.getElementById('spendMonth');
+  sel.innerHTML=months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  sel.onchange=()=>renderMonth(byMonth[sel.value],sel.value);
+
+  // Render current month
+  renderMonth(byMonth[months[0]],months[0]);
+
+  // Subscriptions
+  document.getElementById('spend-subs').innerHTML=Object.values(SUBS_MAP)
+    .sort((a,b)=>b.avg-a.avg)
+    .map(s=>`<div class="expense-row"><span>${s.essential?'✅':'⚠️'} ${s.name}</span><strong${s.essential?'':' style="color:#f59e0b"'}>$${s.avg}/mo</strong></div>`)
+    .join('');
+
+  // Tips
+  const tips=Object.values(SUBS_MAP).filter(s=>!s.essential).sort((a,b)=>b.avg-a.avg);
+  const foodAvg=fullMonths.length?fullMonths.reduce((s,m)=>s+(byMonth[m].cats['Food & Drink']||0),0)/fullMonths.length:0;
+  const uberTotal=all.filter(t=>t.description&&t.description.includes('UBER')).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const uberMonthly=fullMonths.length?uberTotal/fullMonths.length:0;
+  document.getElementById('spend-tips').innerHTML=`
+    <div style="margin-bottom:12px"><strong style="color:#22c55e">💰 You could save ~$${Math.round(cuttable)}/mo by cutting:</strong></div>
+    ${tips.map(s=>`<div style="margin-bottom:6px">• <strong>${s.name}</strong> ($${s.avg}/mo) — ${s.tip}</div>`).join('')}
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
+    <strong style="color:#ef4444">🍔 Food & Drink:</strong> $${Math.round(foodAvg)}/mo avg — biggest category. Cooking more = biggest savings lever.<br>
+    <strong style="color:#3b82f6">🚗 Uber/Lyft:</strong> $${Math.round(uberMonthly)}/mo avg — subway is $2.90/ride (you already use MTA a lot, nice).<br>
+    <strong style="color:#f59e0b">🛍️ TikTok Shop:</strong> 11 purchases in 6 months — impulse buy trap.
+    </div>
+  `;
+
+  // Trend chart
+  const trendMonths=months.slice().reverse().filter(m=>m>='2025-07');
+  const ctx2=document.getElementById('spendTrend').getContext('2d');
+  if(spendTrendInstance)spendTrendInstance.destroy();
+  spendTrendInstance=new Chart(ctx2,{type:'bar',data:{
+    labels:trendMonths,
+    datasets:[
+      {label:'Card Spending',data:trendMonths.map(m=>Math.round(byMonth[m].total)),backgroundColor:'rgba(232,128,240,0.6)',borderRadius:6},
+      {label:'+ Rent ($3K)',data:trendMonths.map(()=>RENT),backgroundColor:'rgba(153,142,181,0.4)',borderRadius:6}
+    ]},options:{responsive:true,plugins:{legend:{labels:{color:'#d4c4f0'}},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString()}}},scales:{x:{stacked:true,ticks:{color:'#665c78'},grid:{display:false}},y:{stacked:true,ticks:{color:'#665c78',callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+}
+
+function renderMonth(data,label){
+  if(!data)return;
+  const cats=Object.entries(data.cats).sort((a,b)=>b[1]-a[1]);
+  const ctx=document.getElementById('spendChart').getContext('2d');
+  if(spendChartInstance)spendChartInstance.destroy();
+  spendChartInstance=new Chart(ctx,{type:'doughnut',data:{
+    labels:cats.map(c=>c[0]),
+    datasets:[{data:cats.map(c=>Math.round(c[1])),backgroundColor:cats.map(c=>CAT_COLORS[c[0]]||'#665c78'),borderWidth:0}]
+  },options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#d4c4f0',padding:12,font:{size:12}}},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString()+' ('+Math.round(c.raw/data.total*100)+'%)'}}}}});
+
+  document.getElementById('spend-cats').innerHTML=`
+    <div style="margin-bottom:8px;color:#998eb5">Total: <strong style="color:#e8e0f0">$${Math.round(data.total).toLocaleString()}</strong> (card only, excludes $3K rent)</div>
+    ${cats.map(([c,v])=>`<div class="expense-row"><span style="color:${CAT_COLORS[c]||'#665c78'}">● ${c}</span><strong>$${Math.round(v).toLocaleString()} <span style="color:#665c78;font-weight:400">(${Math.round(v/data.total*100)}%)</span></strong></div>`).join('')}
+  `;
 }
 </script>
 </body>

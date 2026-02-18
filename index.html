@@ -1229,41 +1229,21 @@ function renderDJ(){
     </div>`;
   }
 
-  // Wishlist section
-  if(wishlist.length){
-    html+=`<div style="margin:12px 0 6px;display:flex;align-items:center;gap:8px;">
-      <span style="color:#f59e0b;font-weight:700;font-size:13px;">🎯 Wishlist</span>
-      <span style="color:#665c78;font-size:11px;">${wishlist.length} tracks</span>
-    </div>`;
-    html+=wishlist.map(renderRow).join('');
-  }
-
-  // Collection section
-  if(collection.length){
+  // Next Set — all songs in one list, sorted by BPM
+  const allSongs=[...wishlist,...collection];
+  if(allSongs.length){
     const sortBtn=(label,key)=>`<button onclick="djSetCollectionSort('${key}')" style="background:${djCollectionSort===key?'rgba(124,58,237,0.25)':'none'};border:1px solid ${djCollectionSort===key?'#7c3aed':'rgba(255,255,255,0.08)'};border-radius:6px;padding:2px 8px;color:${djCollectionSort===key?'#a78bfa':'#665c78'};font-family:inherit;font-size:10px;cursor:pointer;">${label}</button>`;
-    html+=`<div style="margin:16px 0 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <span style="color:#22c55e;font-weight:700;font-size:13px;">📀 Collection</span>
-      <span style="color:#665c78;font-size:11px;">${collection.length} tracks</span>
+    html+=`<div style="margin:12px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="color:#e879f9;font-weight:700;font-size:14px;">🎧 Next Set</span>
+      <span style="color:#665c78;font-size:11px;">${allSongs.length} tracks · ${collection.length} ready · ${wishlist.length} to download</span>
       <div style="margin-left:auto;display:flex;gap:4px;">${sortBtn('BPM','bpm')}${sortBtn('Key','key')}${sortBtn('Recent','recent')}</div>
     </div>`;
-
-    const visible=collection.slice(0,djCollectionVisible);
-    const playlistSize=30;
-    const playlistNum=Math.ceil(visible.length/playlistSize);
-    for(let p=0;p<playlistNum;p++){
-      const chunk=visible.slice(p*playlistSize,(p+1)*playlistSize);
-      const plName=djShowAll?`Playlist ${p+1}`:`${chunk[0]?.added_by||profile} ${p+1}`;
-      html+=`<div style="margin:10px 0 4px;display:flex;align-items:center;gap:8px;">
-        <span style="color:#665c78;font-size:11px;font-weight:600;">📀 ${plName}</span>
-        <span style="color:#555;font-size:10px;">${chunk.length}/30</span>
-        <div style="flex:1;height:2px;background:#2a2535;border-radius:1px;"><div style="height:2px;background:linear-gradient(90deg,#e879f9,#7c3aed);border-radius:1px;width:${Math.round(chunk.length/30*100)}%;"></div></div>
-      </div>`;
-      html+=chunk.map(renderRow).join('');
-    }
-
-    if(djCollectionVisible<collection.length){
-      html+=`<div style="text-align:center;margin:16px 0;"><button onclick="djShowMore()" style="background:rgba(124,58,237,0.15);border:1px solid #7c3aed;border-radius:8px;padding:8px 24px;color:#a78bfa;font-family:inherit;font-size:12px;cursor:pointer;font-weight:600;">Show more (${Math.min(50,collection.length-djCollectionVisible)} of ${collection.length-djCollectionVisible} remaining)</button></div>`;
-    }
+    // Re-sort all together
+    let sorted=[...allSongs];
+    if(djCollectionSort==='bpm') sorted.sort((a,b)=>(parseFloat(a.bpm)||999)-(parseFloat(b.bpm)||999));
+    else if(djCollectionSort==='key') sorted.sort((a,b)=>(a.key||'zzz').localeCompare(b.key||'zzz'));
+    else sorted.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+    html+=sorted.map(renderRow).join('');
   }
 
   el.innerHTML=html;

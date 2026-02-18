@@ -422,19 +422,22 @@ const active=[
 ['🌤','Weather','Forecasts & alerts'],
 ['🐦','X/Twitter','Social monitoring'],['🔄','Automation Workflows','Auto-build workflows'],
 ['🎭','Playwright Scraper','Anti-bot web scraping'],['📐','Linear','Project management'],
-['🔍','Reflect & Learn','Self-improvement from corrections'],['🤖','Proactive Agent','Anticipate needs']
+['🔍','Reflect & Learn','Self-improvement from corrections'],['🤖','Proactive Agent','Anticipate needs'],
+['📊','Google Workspace','Docs, Sheets, Calendar'],['🎙','ElevenLabs TTS','Voice synthesis']
 ];
 const wish=[
-['📊','Google Workspace','Docs, Sheets, Calendar'],['🎙','ElevenLabs TTS','Voice synthesis ($5-22/mo)']
+['🎵','Spotify Player','Control playback & queue'],['📅','Apple Calendar CLI','Read/write calendar events'],
+['💸','CFO','Finance tracking & budgets'],['🖥','Computer Use','Full desktop automation'],
+['🔊','Sonos CLI','Control speakers/rooms'],['📱','Shortcuts','iOS/macOS Shortcuts integration']
 ];
 return `<h2 class="panel-title">⚡ Skills</h2>
 <div class="panel-sub">Installed capabilities and wishlist</div>
 <div class="stats">
-${stat('Ready','23','installed & working')}
-${stat('Wishlist','2','want to add')}
+${stat('Ready','25','installed & working')}
+${stat('Wishlist','6','want to add')}
 ${stat('ClawHub','700+','community skills')}
 </div>
-<h3 style="font-size:12px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Active Skills (23)</h3>
+<h3 style="font-size:12px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Active Skills (25)</h3>
 <div class="grid2" style="margin-bottom:28px">
 ${active.map(([i,n,d])=>`<div class="skill-card"><span class="skill-icon">${i}</span><div class="skill-info"><div class="name">${n}</div><div class="desc">${d}</div></div><span class="badge badge-green">Ready</span></div>`).join('')}
 </div>

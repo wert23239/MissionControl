@@ -286,40 +286,17 @@ notebook:`<h2 class="panel-title">📋 Notebook</h2>
 <button class="nb-tab" onclick="switchNB('tada')">Ta-da</button>
 </div>
 <div id="nb-tasks" class="nb-section active">
-<div class="stats">
-${stat('Todo','10','queued')}
-${stat('In Progress','2','active')}
-${stat('Done','9','completed ✅')}
+<div class="notes-input" style="margin-bottom:12px">
+<input type="text" id="taskInput" placeholder="New task title...">
+<input type="date" id="taskDue" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;max-width:160px">
+<select id="taskTag" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;min-width:100px">
+<option value="human">human</option><option value="infra">infra</option><option value="design">design</option><option value="book">book</option>
+</select>
+<button onclick="addTask()">Add</button>
 </div>
-<div class="grid3">
-<div class="kanban-col card"><h4>📋 Todo (10)</h4>
-${kanbanItem('Create Kalshi account + KYC','human')}
-${kanbanItem('Set up Polymarket wallet (USDC)','human')}
-${kanbanItem('Review site v3 design','human')}
-${kanbanItem('Finalize 8 survey questions','human')}
-${kanbanItem('Fiverr dice logo (~$15-80)','human')}
-${kanbanItem('Set up Vercel account + domain','human')}
-${kanbanItem('Set up Venmo payment flow','human')}
-${kanbanItem('Connect CodeRabbit to repos','human')}
-${kanbanItem('Download 3mo Chase CSV','human')}
-${kanbanItem('Move scoring server-side','infra')}
-</div>
-<div class="kanban-col card"><h4>🔄 In Progress (2)</h4>
-${kanbanItem('Homepage UX PR (#1)','design')}
-${kanbanItem('About/FAQ page','design')}
-</div>
-<div class="kanban-col card"><h4>✅ Done (9)</h4>
-${kanbanItem('Discord bot online','infra')}
-${kanbanItem('GitHub repos (2)','infra')}
-${kanbanItem('Site v3 built (Next.js)','design')}
-${kanbanItem('Brave Search API','infra')}
-${kanbanItem('Mac app + Canvas','infra')}
-${kanbanItem('17 skills installed','infra')}
-${kanbanItem('Dashboard built','infra')}
-${kanbanItem('Daily tip cron (11 PM)','infra')}
-${kanbanItem('CodeRabbit connected','infra')}
-</div>
-</div>
+<div id="taskDailyTodo"></div>
+<div id="taskStats" class="stats"></div>
+<div id="taskKanban" class="grid3"></div>
 </div>
 <div id="nb-notes" class="nb-section">
 <div class="notes-input">
@@ -798,7 +775,7 @@ function switchPanel(id){
   // Update URL bar
   const urlBar=document.querySelector('.url-bar');
   if(urlBar)urlBar.innerHTML='🔒 missioncontrol.app/'+id;
-  if(id==='notebook'){renderNotes();renderJournal();}
+  if(id==='notebook'){loadTasks();renderNotes();renderJournal();}
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
@@ -810,6 +787,7 @@ function switchNB(tab){
   document.querySelectorAll('.nb-section').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById('nb-'+tab);
   if(el)el.classList.add('active');
+  if(tab==='tasks')loadTasks();
   if(tab==='notes')renderNotes();
   if(tab==='tada')renderJournal();
   localStorage.setItem('mc-nb-tab',tab);
@@ -909,6 +887,83 @@ async function deleteJournal(id){
   renderJournal();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='journalInput')addJournalEntry()});
+
+// Tasks (Supabase)
+let tasksCache=[];
+async function loadTasks(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/tasks?order=created_at.desc',{headers:sbHeaders});
+    tasksCache=r.ok?await r.json():[];
+  }catch(e){tasksCache=[];}
+  renderTasks();
+}
+async function addTask(){
+  const input=document.getElementById('taskInput');
+  const title=input.value.trim();if(!title)return;
+  const due=document.getElementById('taskDue').value||null;
+  const tag=document.getElementById('taskTag').value;
+  await sbInsert('tasks',{title,status:'todo',tag,due_date:due});
+  input.value='';document.getElementById('taskDue').value='';
+  loadTasks();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='taskInput')addTask()});
+async function advanceTask(id){
+  const t=tasksCache.find(x=>x.id===id);if(!t)return;
+  const next=t.status==='todo'?'in_progress':t.status==='in_progress'?'done':null;
+  if(!next)return;
+  const patch={status:next};
+  if(next==='done')patch.completed_at=new Date().toISOString();
+  await sbUpdate('tasks',id,patch);
+  loadTasks();
+}
+async function revertTask(id){
+  const t=tasksCache.find(x=>x.id===id);if(!t)return;
+  const prev=t.status==='done'?'in_progress':t.status==='in_progress'?'todo':null;
+  if(!prev)return;
+  const patch={status:prev};
+  if(prev!=='done')patch.completed_at=null;
+  await sbUpdate('tasks',id,patch);
+  loadTasks();
+}
+async function deleteTask(id){
+  if(!confirm('Delete this task?'))return;
+  await sbDelete('tasks',id);
+  loadTasks();
+}
+function renderTasks(){
+  const todo=tasksCache.filter(t=>t.status==='todo');
+  const prog=tasksCache.filter(t=>t.status==='in_progress');
+  const done=tasksCache.filter(t=>t.status==='done');
+  // Stats
+  const statsEl=document.getElementById('taskStats');
+  if(statsEl)statsEl.innerHTML=stat('Todo',todo.length,'queued')+stat('In Progress',prog.length,'active')+stat('Done',done.length,'completed ✅');
+  // Daily Todo
+  const today=new Date().toISOString().slice(0,10);
+  const daily=tasksCache.filter(t=>t.due_date===today&&t.status!=='done');
+  const dailyEl=document.getElementById('taskDailyTodo');
+  if(dailyEl){
+    if(daily.length){
+      dailyEl.innerHTML='<div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b;padding:14px 18px"><div style="font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:8px">📌 TODAY\'S TASKS</div>'+
+        daily.map(t=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:#d4c4f0"><span style="cursor:pointer" onclick="advanceTask('+t.id+')">○</span> '+t.title+' <span class="tag tag-'+(t.tag||'human')+'">'+(t.tag||'')+'</span></div>').join('')+'</div>';
+    } else dailyEl.innerHTML='';
+  }
+  // Kanban
+  const kanban=document.getElementById('taskKanban');
+  if(!kanban)return;
+  function renderCol(icon,label,items,allowAdvance,allowRevert){
+    let html='<div class="kanban-col card"><h4>'+icon+' '+label+' ('+items.length+')</h4>';
+    items.forEach(t=>{
+      const dueStr=t.due_date?'<div style="font-size:10px;color:#665c78;margin-top:4px">📅 '+t.due_date+'</div>':'';
+      const advBtn=allowAdvance?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="advanceTask('+t.id+')" title="Advance">→</span>':'';
+      const revBtn=allowRevert?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="revertTask('+t.id+')" title="Move back">←</span>':'';
+      const delBtn='<span style="cursor:pointer;font-size:14px;color:#ef4444;opacity:0.5" onclick="deleteTask('+t.id+')" title="Delete">×</span>';
+      html+='<div class="kanban-item"><div style="display:flex;justify-content:space-between;align-items:start"><span>'+t.title+'</span><span style="display:flex;gap:2px">'+revBtn+advBtn+delBtn+'</span></div>'+
+        (t.tag?'<br><span class="tag tag-'+(t.tag||'human')+'">'+t.tag+'</span>':'')+dueStr+'</div>';
+    });
+    html+='</div>';return html;
+  }
+  kanban.innerHTML=renderCol('📋','Todo',todo,true,false)+renderCol('🔄','In Progress',prog,true,true)+renderCol('✅','Done',done,false,true);
+}
 
 // Book Progress Tracker
 const bookData={"1A": {"name": "F.r.a.m.e.w.o.r.k.s.", "titles": ["Intro", "Abusable", "Erase", "Opps", "Side Quests", "Book 1", "Potential Energy", "Hyper-Morality", "Trough of Doubt", "Motivation Sync"]}, "1B": {"name": "Tutorial", "titles": ["Intro", "(page 2)", "(page 3)", "(page 4)", "(page 5)", "(page 6)", "(page 7)", "(page 8)", "(page 9)", "(page 10)"]}, "1C": {"name": "Box Theory", "titles": ["Intro", "Mis-attribution", "Cursed Person", "Role Misalign", "The Meal Box", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2A": {"name": "Taxes", "titles": ["Intro", "Party Tax", "Type 2 Fun", "Single Tax", "Ode to Taxes", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2B": {"name": "Pyramid Theory", "titles": ["Intro", "Envy", "Promo Rejection 2", "Beyond Pyramid 2", "Analysis Paralysis", "Know your Role", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2C": {"name": "Box Theory P.2", "titles": ["Intro", "After a split...", "After a split...", "Alone Box", "Meal Box", "Coffee Shops", "Friendships", "Meals(Luxury)", "NY Dates", "(blank)"]}, "3A": {"name": "Categories", "titles": ["Intro", "(page 2)", "(page 3)", "(page 4)", "(page 5)", "(page 6)", "(page 7)", "(page 8)", "(page 9)", "(page 10)"]}, "3B": {"name": "Death Theory", "titles": ["Intro", "Love", "Can is White", "Damage Rolls 2", "Extroversion", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "3C": {"name": "Therapy", "titles": ["Intro", "Escape", "Pick up pieces", "Work Values", "Saying No", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "4": {"name": "Hard Mode", "titles": ["Intro", "Capitalism 2", "Happiness", "Other Side", "1-on-1 Dates", "Close Minded", "Palestine", "Abortion Free", "Unfair Life", "Men/Women", "Internal Worry", "Work Rewards", "Consistency"]}, "5": {"name": "Uniqueness", "titles": ["Intro", "(blank)", "One Pager", "Abandoned 1", "Abandoned 2", "Half Page", "Half Page 2", "One Paragraph", "One Para Mind", "One Sentence", "One Sentence 2"]}, "6A": {"name": "Void Theory", "titles": ["Intro", "Leaving Void", "Void Reduction", "Void Life", "Void Expansion", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "6B": {"name": "Game Theory", "titles": ["Intro", "Pre-Destined", "Aussies", "Victim Card", "Roster Meta", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "6C": {"name": "Plan(e) Theory", "titles": ["Intro", "Love NY", "Tech A", "Pleaser P.2", "Hostel", "No bad seat", "(blank)", "(blank)", "(blank)", "(blank)"]}, "7A": {"name": "A Retrospective", "titles": ["Intro", "Tax Evasion", "Out of Cards", "Insecurity", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "7B": {"name": "The Simp", "titles": ["Intro", "Other Side", "Goal of sex", "Premature Victory", "Weird rich guy", "(blank)", "SUPER Straight", "Pick someone", "(blank)", "(blank)"]}, "7C": {"name": "A Spectrum", "titles": ["Intro", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8A": {"name": "Mindset", "titles": ["Secretary Problem", "Drinking ticket", "Fairness", "13th Reason", "(blank)", "Majority wrong", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8B": {"name": "Social Death Penalty", "titles": ["Intro", "Future cancel", "Nuclear bomb", "Complaints", "Louie CK", "Population", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8C": {"name": "Salt & Pepper", "titles": ["Intro", "Loading Music", "Raw", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9A": {"name": "The Draft", "titles": ["Intro", "Martyr", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9B": {"name": "SDP P.2", "titles": ["Intro", "Ukraine", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9C": {"name": "Substance Abuse", "titles": ["Intro", "Friends", "NY weekends", "Lost in doing", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10A": {"name": "Type 2 Fun", "titles": ["Intro", "Main page", "Instant gratify", "Exotic fun", "Hard ≠ fun", "Have you heard", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10B": {"name": "Endless Pattern", "titles": ["Intro", "Unconsensual", "Experimentation", "Closed minded", "(untitled)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10C": {"name": "Default Mode", "titles": ["Intro", "Time machine", "Abusive Rel", "Age is number", "Block builder", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "11": {"name": "Hyper Reality", "titles": ["Intro", "Ring of Doubt", "Waiting", "Asexual", "Challenge/Chore", "Gratitude", "Hey man", "Friendships", "Hard Mode", "Healthy", "Roster hits", "Crash"]}};
@@ -1409,7 +1464,7 @@ switchPanel=function(id){
   localStorage.setItem('mc-active-tab',id);
   const urlBar=document.querySelector('.url-bar');
   if(urlBar)urlBar.innerHTML='🔒 missioncontrol.app/'+id;
-  if(id==='notebook'){renderNotes();renderJournal();}
+  if(id==='notebook'){loadTasks();renderNotes();renderJournal();}
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();

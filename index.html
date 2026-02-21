@@ -249,7 +249,7 @@ overview:`<h2 class="panel-title">🏠 Overview</h2>
 ${stat('Day','1','Feb 14, 2026 — born today!')}
 ${stat('Tasks Done','8 / 18','44% complete')}
 ${stat('Book Progress','63%','130 / 207 pages')}
-${stat('Skills Ready','17','installed & working')}
+${stat('Test Coverage','<span id="covPct">—</span>','<span id="covSub">loading...</span>')}
 </div>
 <div id="dailyTipCard" class="card" style="margin-bottom:20px;padding:16px 20px;border-left:3px solid #f59e0b">
 <div style="font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:6px">🧙 DAILY TIP</div>
@@ -734,6 +734,23 @@ async function loadTodayTomorrow(){
   }catch(e){console.log('Calendar load failed',e)}
 }
 loadTodayTomorrow();
+
+// Coverage badge
+(async()=>{
+  try{
+    const r=await fetch('coverage-badge.json');
+    if(r.ok){
+      const d=await r.json();
+      const el=document.getElementById('covPct');
+      const sub=document.getElementById('covSub');
+      if(el)el.textContent=d.statements+'%';
+      if(sub)sub.textContent='Stmts '+d.statements+'% · Fn '+d.functions+'%';
+    }
+  }catch(e){
+    const el=document.getElementById('covPct');if(el)el.textContent='—';
+    const sub=document.getElementById('covSub');if(sub)sub.textContent='unavailable';
+  }
+})();
 
 // Build nav
 const savedTab=localStorage.getItem('mc-active-tab')||'overview';

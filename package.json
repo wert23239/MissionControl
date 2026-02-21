@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage && node scripts/update-coverage-badge.js",
     "test:watch": "jest --watch"
   },
   "repository": {

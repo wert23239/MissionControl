@@ -1173,60 +1173,49 @@ async function djSearch(){
   djSearching=true;
   try{
 
-  let trackArt='',trackTitle=query,trackArtist='',trackAlbum='';
+  // Spotify: get 6 results sorted by popularity
+  const allOptions=[];
   try{
     if(!window._spToken||Date.now()>window._spTokenExp){
       const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials&client_id=f265d9bb8bea479081633c5c94efc50f&client_secret=201d3532910149f7960b2fd11f46377a'});
       const d=await r.json();window._spToken=d.access_token;window._spTokenExp=Date.now()+(d.expires_in-60)*1000;
     }
-    const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`,{headers:{'Authorization':'Bearer '+window._spToken}});
+    const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=6`,{headers:{'Authorization':'Bearer '+window._spToken}});
     const sd=await sr.json();
     if(sd.tracks&&sd.tracks.items.length){
-      // Prefer the non-remix/non-edit version as the "original"
-      const orig=sd.tracks.items.find(t=>{const n=t.name.toLowerCase();return !n.includes('remix')&&!n.includes('edit')&&!n.includes(' mix');})||sd.tracks.items[0];
-      trackTitle=orig.name;
-      trackArtist=orig.artists.map(a=>a.name).join(', ');
-      trackAlbum=orig.album.name;
-      trackArt=orig.album.images[0]?.url||'';
+      sd.tracks.items.sort((a,b)=>b.popularity-a.popularity);
+      sd.tracks.items.forEach(t=>{
+        const n=t.name.toLowerCase();
+        const tag=n.includes('extended')?'Extended':n.includes('edit')?'Edit':(n.includes('remix')||n.includes(' mix'))?'Remix':'Original';
+        allOptions.push({
+          title:t.name,
+          artist:t.artists.map(a=>a.name).join(', '),
+          art:t.album.images[0]?.url||'',
+          album:t.album.name,
+          tag,
+          popularity:t.popularity
+        });
+      });
     }
   }catch(e){console.log('Spotify lookup failed',e)}
+
+  if(!allOptions.length) allOptions.push({title:query,artist:'',art:'',album:'',tag:'Manual',popularity:0});
 
   const pipe=document.getElementById('djPipeline');
   pipe.style.display='block';
 
-  let remixes=[];
-  try{
-    const sr2=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(trackTitle+' '+trackArtist+' remix')}&type=track&limit=6`,{headers:{'Authorization':'Bearer '+window._spToken}});
-    const sd2=await sr2.json();
-    if(sd2.tracks&&sd2.tracks.items.length){
-      remixes=sd2.tracks.items.filter(t=>{
-        const name=t.name.toLowerCase();
-        return name.includes('remix') || name.includes('edit') || name.includes('mix');
-      }).slice(0,4).map(t=>({
-        name:t.name,
-        artist:t.artists.map(a=>a.name).join(', '),
-        art:t.album.images[0]?.url||'',
-        album:t.album.name
-      }));
-    }
-  }catch(e){}
-
-  remixes.sort((a,b)=>{
-    const aExt=a.name.toLowerCase().includes('extended')?0:1;
-    const bExt=b.name.toLowerCase().includes('extended')?0:1;
-    return aExt-bExt;
-  });
-
-  const allOptions=[{title:trackTitle,artist:trackArtist,art:trackArt,album:trackAlbum,tag:'Original'}];
-  remixes.forEach(r=>allOptions.push({title:r.name,artist:r.artist,art:r.art,album:r.album,
-    tag:r.name.toLowerCase().includes('extended')?'Extended':r.name.toLowerCase().includes('edit')?'Edit':'Remix'}));
-
   const pickTracks=()=>new Promise(resolve=>{
     const selected=new Set([0]);
     const render=()=>{
-      let html=`<div style="margin-bottom:6px;color:#665c78;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Tap to select versions</div>`;
+      let html=`<div style="margin-bottom:6px;color:#665c78;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Tap to select · sorted by popularity</div>`;
       allOptions.forEach((opt,i)=>{
         const sel=selected.has(i);
+        const pop=opt.popularity;
+        const popColor=pop>=70?'#22c55e':pop>=40?'#f59e0b':'#665c78';
+        const popBar=`<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:60px;">
+          <div style="width:30px;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;"><div style="width:${pop}%;height:100%;background:${popColor};border-radius:3px;"></div></div>
+          <span style="font-size:10px;font-weight:700;color:${popColor};">${pop}</span>
+        </div>`;
         html+=`<div onclick="window._djToggle(${i})" style="display:flex;gap:8px;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.04);border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:4px;cursor:pointer;transition:all 0.2s;">
           <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;${sel?'background:#e879f9;color:#fff;':''}">${sel?'✓':''}</div>
           ${opt.art?`<img src="${opt.art}" style="width:36px;height:36px;border-radius:6px;">`:''}
@@ -1234,6 +1223,7 @@ async function djSearch(){
             <div style="color:#d4c4f0;font-size:12px;font-weight:${i===0?'600':'500'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.title}</div>
             <div style="color:#665c78;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.artist}</div>
           </div>
+          ${popBar}
           <div style="color:${sel?'#e879f9':'#665c78'};font-size:10px;font-weight:500;flex-shrink:0;">${opt.tag}</div>
         </div>`;
       });

@@ -1186,38 +1186,112 @@ async function djSearch(){
     <style>@keyframes djPulse{0%{width:10%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:10%;margin-left:90%}}</style>
   </div>`;
 
-  // Multi-source search: Spotify (direct) + SoundCloud/YouTube (via proxy)
+  // === SMART MULTI-SOURCE SEARCH ===
+  // Phase 1: Find the exact song on Spotify (get canonical title + artist)
+  // Phase 2: Search for remixes/extended across ALL sources using canonical info
+  // Phase 3: Organize: Original → Extended → Remixes (2 from each source)
+
   let allOptions=[];
   let sources={spotify:0,soundcloud:0,youtube:0};
+  const proxyUrl=localStorage.getItem('dj-proxy-url')||'https://dj-proxy-w7ff.onrender.com';
 
-  // Spotify search (direct — has CORS)
-  try{
+  // Helper: ensure Spotify token
+  async function ensureSpToken(){
     if(!window._spToken||Date.now()>window._spTokenExp){
-      const r2=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials&client_id=f265d9bb8bea479081633c5c94efc50f&client_secret=201d3532910149f7960b2fd11f46377a'});
-      const d2=await r2.json();window._spToken=d2.access_token;window._spTokenExp=Date.now()+(d2.expires_in-60)*1000;
+      const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials&client_id=f265d9bb8bea479081633c5c94efc50f&client_secret=201d3532910149f7960b2fd11f46377a'});
+      const d=await r.json();window._spToken=d.access_token;window._spTokenExp=Date.now()+(d.expires_in-60)*1000;
     }
-    const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=6`,{headers:{'Authorization':'Bearer '+window._spToken}});
+  }
+
+  // Helper: classify track
+  function classifyTag(name){
+    const n=(name||'').toLowerCase();
+    if(n.includes('extended'))return 'Extended';
+    if(n.includes('edit')&&!n.includes('editor'))return 'Edit';
+    if(n.includes('remix')||n.includes('bootleg'))return 'Remix';
+    if(n.includes('vip'))return 'VIP';
+    if(n.includes('instrumental'))return 'Instrumental';
+    return 'Original';
+  }
+
+  // Phase 1: Find exact song on Spotify
+  let canonTitle=query, canonArtist='', canonArt='';
+  try{
+    await ensureSpToken();
+    const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,{headers:{'Authorization':'Bearer '+window._spToken}});
     const sd=await sr.json();
     if(sd.tracks?.items?.length){
-      for(const t of sd.tracks.items){
-        const name=t.name.toLowerCase();
-        allOptions.push({title:t.name,artist:t.artists.map(a=>a.name).join(', '),art:t.album.images[0]?.url||'',
-          source:'spotify',sourceIcon:'🟢',duration:Math.round(t.duration_ms/1000),
-          tag:name.includes('extended')?'Extended':name.includes('edit')?'Edit':(name.includes('remix')||name.includes(' mix'))?'Remix':'Original'});
-        sources.spotify++;
-      }
+      const t=sd.tracks.items[0];
+      canonTitle=t.name; canonArtist=t.artists.map(a=>a.name).join(', '); canonArt=t.album.images[0]?.url||'';
+      // Add original
+      allOptions.push({title:t.name,artist:canonArtist,art:canonArt,
+        source:'spotify',sourceIcon:'🟢',duration:Math.round(t.duration_ms/1000),tag:'Original'});
+      sources.spotify++;
     }
-  }catch(e){console.log('Spotify search error',e)}
+  }catch(e){console.log('Spotify phase 1 error',e)}
 
-  // SoundCloud + YouTube search (via proxy on Mac mini)
-  try{
-    const proxyUrl=localStorage.getItem('dj-proxy-url')||'https://dj-proxy-w7ff.onrender.com';
-    const r=await fetch(`${proxyUrl}/search?q=${encodeURIComponent(query)}`);
-    const data=await r.json();
-    if(data.results){allOptions.push(...data.results);sources.soundcloud=data.sources?.soundcloud||0;sources.youtube=data.sources?.youtube||0;}
-  }catch(e){console.log('DJ proxy unavailable (SoundCloud/YouTube skipped)',e)}
+  const searchBase=canonArtist?`${canonTitle} ${canonArtist}`:`${canonTitle}`;
 
-  if(!allOptions.length) allOptions.push({title:query,artist:'',art:'',source:'manual',sourceIcon:'✏️',tag:'Manual',popularity:0});
+  // Phase 2: Search for remixes/extended across all sources IN PARALLEL
+  const remixQueries=[`${searchBase} remix`,`${searchBase} extended`];
+
+  const [spRemixes,proxyRemix,proxyExtended]=await Promise.allSettled([
+    // Spotify remixes (search both remix + extended in one broader query)
+    (async()=>{
+      const results=[];
+      await ensureSpToken();
+      for(const rq of remixQueries){
+        try{
+          const sr=await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(rq)}&type=track&limit=5`,{headers:{'Authorization':'Bearer '+window._spToken}});
+          const sd=await sr.json();
+          for(const t of (sd.tracks?.items||[])){
+            const tag=classifyTag(t.name);
+            if(tag==='Original') continue; // skip dupes of original
+            results.push({title:t.name,artist:t.artists.map(a=>a.name).join(', '),art:t.album.images[0]?.url||'',
+              source:'spotify',sourceIcon:'🟢',duration:Math.round(t.duration_ms/1000),tag});
+          }
+        }catch(e){}
+      }
+      return results;
+    })(),
+    // Proxy: SoundCloud + YouTube for "remix"
+    fetch(`${proxyUrl}/search?q=${encodeURIComponent(searchBase+' remix')}`).then(r=>r.json()).catch(()=>({results:[]})),
+    // Proxy: SoundCloud + YouTube for "extended"
+    fetch(`${proxyUrl}/search?q=${encodeURIComponent(searchBase+' extended')}`).then(r=>r.json()).catch(()=>({results:[]})),
+  ]);
+
+  // Collect Spotify remixes (max 3)
+  if(spRemixes.status==='fulfilled'){
+    const seen=new Set(allOptions.map(o=>o.title.toLowerCase()));
+    for(const r of spRemixes.value){
+      if(seen.has(r.title.toLowerCase())) continue;
+      seen.add(r.title.toLowerCase());
+      allOptions.push(r); sources.spotify++;
+      if(sources.spotify>=4) break;
+    }
+  }
+
+  // Collect proxy results (SoundCloud + YouTube), max 2 each source
+  const scMax=2, ytMax=2;
+  let scCount=0, ytCount=0;
+  const seen=new Set(allOptions.map(o=>(o.title||'').toLowerCase().replace(/[^a-z0-9]/g,'')));
+  for(const settled of [proxyRemix,proxyExtended]){
+    if(settled.status!=='fulfilled') continue;
+    for(const r of (settled.value.results||[])){
+      const key=(r.title||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      if(seen.has(key)) continue;
+      seen.add(key);
+      r.tag=classifyTag(r.title);
+      if(r.source==='soundcloud'&&scCount<scMax){allOptions.push(r);scCount++;sources.soundcloud++;}
+      else if(r.source==='youtube'&&ytCount<ytMax){allOptions.push(r);ytCount++;sources.youtube++;}
+    }
+  }
+
+  // Sort: Original → Extended → Edit → VIP → Remix → Instrumental
+  const tagOrder={Original:0,Extended:1,Edit:2,VIP:3,Remix:4,Instrumental:5};
+  allOptions.sort((a,b)=>(tagOrder[a.tag]??9)-(tagOrder[b.tag]??9));
+
+  if(!allOptions.length) allOptions.push({title:query,artist:'',art:'',source:'manual',sourceIcon:'✏️',tag:'Manual'});
 
   // Source colors
   const srcColors={spotify:'#1DB954',youtube:'#FF0000',soundcloud:'#FF5500',soulseek:'#7c3aed',manual:'#665c78'};

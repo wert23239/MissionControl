@@ -8,8 +8,9 @@ module.exports = defineConfig({
     headless: true,
   },
   webServer: {
-    command: 'npx http-server . -p 8080 -s',
+    command: 'npx http-server . -p 8080 -s -c-1',
     port: 8080,
     reuseExistingServer: true,
+    timeout: 15000,
   },
 });

@@ -571,8 +571,13 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 .dj-queue-item .q-status{min-width:20px;text-align:center;}
 .dj-queue-item .q-song{flex:1;color:#d4c4f0;}
 .dj-queue-item .q-quality{color:#665c78;font-size:11px;}
+.dj-section-header{display:flex;align-items:center;gap:8px;margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.dj-section-header h3{font-size:14px;font-weight:700;color:#e8e0f0;margin:0;}
+.dj-section-header .count{font-size:12px;color:#665c78;font-weight:400;}
+.dj-disk-search{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;color:#e8e0f0;font-family:inherit;font-size:12px;outline:none;width:200px;}
 </style>
 <div id="djCount" style="display:none">0</div><div id="djDone" style="display:none">0</div>
+<div id="djStats" class="stats" style="margin-bottom:16px;"></div>
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
 <label style="color:#665c78;font-size:13px;font-weight:600;">Adding as:</label>
 <select id="djProfile" onchange="saveDJProfile();renderDJ()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 14px;color:#e8e0f0;font-family:inherit;font-size:14px;font-weight:600;min-width:120px;">
@@ -580,26 +585,20 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <option value="Sabrina">Sabrina</option>
 </select>
 <button onclick="addDJProfile()" style="background:none;border:1px dashed rgba(255,255,255,0.1);border-radius:10px;padding:8px 12px;color:#665c78;font-family:inherit;font-size:12px;cursor:pointer;">+ Add Friend</button>
+<select id="djGenre" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;color:#998eb5;font-family:inherit;font-size:12px;margin-left:auto;">
+<option value="Electronic">Electronic</option><option value="House">House</option><option value="Disco">Disco</option><option value="Techno">Techno</option>
+<option value="Indie Pop">Indie Pop</option><option value="Pop">Pop</option><option value="Hip-Hop">Hip-Hop</option><option value="Chill">Chill</option>
+<option value="DnB">DnB</option><option value="Rock">Rock</option><option value="Other">Other</option>
+</select>
 </div>
 <div class="dj-search-box">
 <input type="text" id="djInput" class="dj-search-input" placeholder="Search a song to download..." autocomplete="off">
 <button onclick="djSearch()" class="dj-btn">Add Song</button>
 </div>
 <div id="djPipeline" style="display:none;margin:12px 0;"></div>
-<div style="margin-top:20px;">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-<span id="djLibLabel" style="color:#e8e0f0;font-weight:600;font-size:14px;">Gatsby's Songs</span>
-<div style="display:flex;gap:8px;align-items:center;">
-<button id="djShowAll" onclick="toggleDJShowAll()" style="background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 10px;color:#665c78;font-family:inherit;font-size:11px;cursor:pointer;">Show All</button>
-<select id="djGenre" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;color:#998eb5;font-family:inherit;font-size:12px;">
-<option value="Electronic">Electronic</option><option value="House">House</option><option value="Disco">Disco</option><option value="Techno">Techno</option>
-<option value="Indie Pop">Indie Pop</option><option value="Pop">Pop</option><option value="Hip-Hop">Hip-Hop</option><option value="Chill">Chill</option>
-<option value="DnB">DnB</option><option value="Rock">Rock</option><option value="Other">Other</option>
-</select>
-</div>
-</div>
-<div id="djList"></div>
-</div>`,
+<div id="djQueue"></div>
+<div id="djFailures"></div>
+<div id="djOnDisk"></div>`,
 
 crons:`<h2 class="panel-title">⏰ Cron Jobs</h2>
 <div class="panel-sub">Scheduled tasks and automated jobs</div>
@@ -796,7 +795,7 @@ function switchPanel(id){
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
-  if(id==='dj'){loadDJProfile();syncDJFromSupabase().then(()=>renderDJ());}
+  if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
 }
 
 function switchNB(tab){
@@ -1153,8 +1152,18 @@ async function deleteDJ(id){
   try{await fetch(SB_URL+'/rest/v1/dj?id=eq.'+id,{method:'DELETE',headers:sbHeaders});}catch(e){console.log('deleteDJ error',e)}
 }
 
-let djCollectionSort='bpm';
+let djCollectionSort='recent';
 let djCollectionVisible=50;
+let djDiskManifest=[];
+let djDiskFilter='';
+
+// Load on-disk manifest
+async function loadDJManifest(){
+  try{
+    const r=await fetch('dj-manifest.json?t='+Date.now());
+    if(r.ok) djDiskManifest=await r.json();
+  }catch(e){console.log('Manifest load failed',e)}
+}
 
 let djSearching=false;
 async function djSearch(){
@@ -1287,64 +1296,101 @@ async function djSearch(){
 
 function djSetCollectionSort(s){djCollectionSort=s;renderDJ();}
 function djShowMore(){djCollectionVisible+=50;renderDJ();}
+function djFilterDisk(v){djDiskFilter=v;renderDJ();}
 
 function renderDJ(){
   const allList=getDJ();
-  const el=document.getElementById('djList');
-  if(!el)return;
   const profile=getDJProfile();
   const list=djShowAll?[...allList]:allList.filter(d=>(d.added_by||'Gatsby')===profile);
 
-  // Split into wishlist and collection
-  const wishlist=list.filter(d=>!d.done).sort((a,b)=>(b.time||'').localeCompare(a.time||''));
-  const collection=list.filter(d=>d.done);
+  // Split into queue, failures, and done
+  const queue=list.filter(d=>!d.done&&d.source!=='failed').sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+  const failures=list.filter(d=>!d.done&&d.source==='failed');
+  const done=list.filter(d=>d.done);
 
-  // Sort collection
-  if(djCollectionSort==='bpm') collection.sort((a,b)=>(parseFloat(a.bpm)||0)-(parseFloat(b.bpm)||0));
-  else if(djCollectionSort==='key') collection.sort((a,b)=>(a.key||'').localeCompare(b.key||''));
-  else collection.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
-
-  const dc=document.getElementById('djCount');if(dc)dc.textContent=wishlist.length;
-  const dd=document.getElementById('djDone');if(dd)dd.textContent=collection.length;
-  if(!list.length){el.innerHTML=`<div class="empty-state">🎵 No songs yet for ${djShowAll?'anyone':profile} — search above to add</div>`;return}
-
-  let html='';
+  // Stats
+  const statsEl=document.getElementById('djStats');
+  if(statsEl) statsEl.innerHTML=
+    stat('On Disk',djDiskManifest.length,'~/Music/DJ/')+
+    stat('Queue',queue.length,'waiting to download')+
+    stat('Downloaded',done.length,'via Supabase')+
+    stat('Failed',failures.length,failures.length?'needs attention':'all good ✅');
 
   // Helper to render a song row
-  function renderRow(d){
+  function renderRow(d,showStatus){
     const byTag=djShowAll&&d.added_by?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(232,121,249,0.12);color:#e879f9;margin-left:4px;">${d.added_by}</span>`:'';
-    const playBtn=`<button onclick="window.open('https://www.youtube.com/results?search_query='+encodeURIComponent('${d.song.replace(/'/g,"\\'")}'))" style="background:none;border:none;color:#7c3aed;cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;" title="Search YouTube">▶</button>`;
+    const songEsc=d.song.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const playBtn=`<button onclick="window.open('https://www.youtube.com/results?search_query='+encodeURIComponent('${songEsc}'))" style="background:none;border:none;color:#7c3aed;cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;" title="Search YouTube">▶</button>`;
     const bpmKey=d.done&&(d.bpm||d.key)?`<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(124,58,237,0.15);color:#a78bfa;font-weight:600;white-space:nowrap;">${d.bpm?parseFloat(d.bpm).toFixed(1)+' BPM':''}${d.bpm&&d.key?' · ':''}${d.key||''}</span>`:'';
-    return `<div class="dj-queue-item" style="${d.done?'border-color:rgba(34,197,94,0.15);':''}">
-      <div class="q-status" style="cursor:pointer;" onclick="toggleDJ(${d.id})">${d.done?'<span style="color:#22c55e;">✓</span>':'<span style="color:#555;">○</span>'}</div>
+    const statusBadge=showStatus==='queued'?'<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;">queued</span>':
+      showStatus==='failed'?'<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;">failed</span>':'';
+    return `<div class="dj-queue-item" style="${d.done?'border-color:rgba(34,197,94,0.15);':d.source==='failed'?'border-color:rgba(239,68,68,0.15);':''}">
       ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:6px;">`:``}
       ${playBtn}
-      <div class="q-song" style="${d.done?'color:rgba(34,197,94,0.5);':'color:#d4c4f0;'}">${d.song}${byTag}</div>
+      <div class="q-song">${d.song}${byTag}</div>
       ${bpmKey}
       <div class="q-quality">${d.quality||d.genre||''}</div>
-      ${!d.done?`<span style="color:#665c78;font-size:10px;">queued</span>`:''}
+      ${statusBadge}
+      ${d.source&&d.done?`<span style="font-size:10px;color:#665c78;">${d.source}</span>`:''}
       <button onclick="deleteDJ(${d.id})" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;font-family:Courier New,monospace;padding:0 4px;transition:color .15s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='#555'">×</button>
     </div>`;
   }
 
-  // Next Set — all songs in one list, sorted by BPM
-  const allSongs=[...wishlist,...collection];
-  if(allSongs.length){
-    const sortBtn=(label,key)=>`<button onclick="djSetCollectionSort('${key}')" style="background:${djCollectionSort===key?'rgba(124,58,237,0.25)':'none'};border:1px solid ${djCollectionSort===key?'#7c3aed':'rgba(255,255,255,0.08)'};border-radius:6px;padding:2px 8px;color:${djCollectionSort===key?'#a78bfa':'#665c78'};font-family:inherit;font-size:10px;cursor:pointer;">${label}</button>`;
-    html+=`<div style="margin:12px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <span style="color:#e879f9;font-weight:700;font-size:14px;">🎧 Next Set</span>
-      <span style="color:#665c78;font-size:11px;">${allSongs.length} tracks · ${collection.length} ready · ${wishlist.length} queued</span>
-      <div style="margin-left:auto;display:flex;gap:4px;">${sortBtn('BPM','bpm')}${sortBtn('Key','key')}${sortBtn('Recent','recent')}</div>
-    </div>`;
-    // Re-sort all together
-    let sorted=[...allSongs];
-    if(djCollectionSort==='bpm') sorted.sort((a,b)=>(parseFloat(a.bpm)||999)-(parseFloat(b.bpm)||999));
-    else if(djCollectionSort==='key') sorted.sort((a,b)=>(a.key||'zzz').localeCompare(b.key||'zzz'));
-    else sorted.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
-    html+=sorted.map(renderRow).join('');
+  // ── Queue Section ──
+  const queueEl=document.getElementById('djQueue');
+  if(queueEl){
+    if(queue.length){
+      queueEl.innerHTML=`<div class="dj-section-header"><h3>⏳ Queue</h3><span class="count">${queue.length} songs waiting</span></div>`+queue.map(d=>renderRow(d,'queued')).join('');
+    } else {
+      queueEl.innerHTML='';
+    }
   }
 
-  el.innerHTML=html;
+  // ── Failures Section ──
+  const failEl=document.getElementById('djFailures');
+  if(failEl){
+    if(failures.length){
+      failEl.innerHTML=`<div class="dj-section-header"><h3 style="color:#ef4444;">❌ Failed</h3><span class="count">${failures.length} songs couldn't be found</span></div>`+failures.map(d=>renderRow(d,'failed')).join('');
+    } else {
+      failEl.innerHTML='';
+    }
+  }
+
+  // ── On Disk Section ──
+  const diskEl=document.getElementById('djOnDisk');
+  if(diskEl){
+    const filtered=djDiskFilter?djDiskManifest.filter(f=>f.name.toLowerCase().includes(djDiskFilter.toLowerCase())):djDiskManifest;
+    const visible=filtered.slice(0,djCollectionVisible);
+    const sortBtn=(label,key)=>`<button onclick="djSetCollectionSort('${key}')" style="background:${djCollectionSort===key?'rgba(124,58,237,0.25)':'none'};border:1px solid ${djCollectionSort===key?'#7c3aed':'rgba(255,255,255,0.08)'};border-radius:6px;padding:2px 8px;color:${djCollectionSort===key?'#a78bfa':'#665c78'};font-family:inherit;font-size:10px;cursor:pointer;">${label}</button>`;
+
+    // Sort manifest
+    if(djCollectionSort==='recent') filtered.sort((a,b)=>b.mtime-a.mtime);
+    else if(djCollectionSort==='name') filtered.sort((a,b)=>a.name.localeCompare(b.name));
+    else if(djCollectionSort==='size') filtered.sort((a,b)=>b.size_mb-a.size_mb);
+
+    let html=`<div class="dj-section-header">
+      <h3>💿 On Disk</h3><span class="count">${djDiskManifest.length} files in ~/Music/DJ/</span>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <input type="text" class="dj-disk-search" placeholder="Filter..." value="${djDiskFilter}" oninput="djFilterDisk(this.value)">
+        ${sortBtn('Recent','recent')}${sortBtn('Name','name')}${sortBtn('Size','size')}
+      </div>
+    </div>`;
+    html+=`<div style="max-height:400px;overflow-y:auto;">`;
+    visible.forEach(f=>{
+      const date=new Date(f.mtime*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      html+=`<div class="dj-queue-item">
+        <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${f.ext==='WAV'?'rgba(34,197,94,0.15)':'rgba(168,85,247,0.15)'};color:${f.ext==='WAV'?'#22c55e':'#a855f7'};font-weight:600;">${f.ext}</span>
+        <div class="q-song" style="font-size:12px;">${f.name}</div>
+        <span style="font-size:10px;color:#665c78;">${f.size_mb}MB</span>
+        <span style="font-size:10px;color:#665c78;">${date}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+    if(filtered.length>djCollectionVisible){
+      html+=`<div style="text-align:center;padding:10px;"><button onclick="djShowMore()" style="background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 16px;color:#665c78;font-family:inherit;font-size:12px;cursor:pointer;">Show more (${filtered.length-djCollectionVisible} remaining)</button></div>`;
+    }
+    diskEl.innerHTML=html;
+  }
 }
 
 // Crons
@@ -1477,7 +1523,7 @@ switchPanel=function(id){
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
-  if(id==='dj'){loadDJProfile();syncDJFromSupabase().then(()=>renderDJ());}
+  if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
   if(id==='spending'){loadSpending()}
   if(id==='calendar')renderCal();
 }

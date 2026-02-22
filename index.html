@@ -1228,7 +1228,7 @@ async function djSearch(){
           <div style="color:${sel?'#e879f9':'#665c78'};font-size:10px;font-weight:500;flex-shrink:0;">${opt.tag}</div>
         </div>`;
       });
-      html+=`<button onclick="window._djConfirm()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;">Download ${selected.size} song${selected.size!==1?'s':''}</button>`;
+      html+=`<button onclick="window._djConfirm()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;">Add ${selected.size} song${selected.size!==1?'s':''}</button>`;
       pipe.innerHTML=html;
     };
     window._djToggle=(i)=>{
@@ -1260,125 +1260,22 @@ async function djSearch(){
   const genre=document.getElementById('djGenre').value;
   const profile=getDJProfile();
 
-  // Get slskd auth token
-  async function getSlskdToken(){
-    if(window._slskdToken&&Date.now()<window._slskdTokenExp) return window._slskdToken;
-    const r=await fetch('http://localhost:5893/api/v0/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'gatsby',password:'djG4tsby!2026'})});
-    const d=await r.json();
-    window._slskdToken=d.token;
-    window._slskdTokenExp=Date.now()+3500*1000;
-    return d.token;
-  }
-
   for(const picked of picks){
     const displayName=`${picked.title} — ${picked.artist}`;
-    const searchQuery=`${picked.artist} ${picked.title}`.replace(/\s+/g,' ').trim();
+    showStatus(picked,'Adding to queue...','');
 
-    // Step 1: Search on Soulseek
-    showStatus(picked,'Searching Soulseek...','');
-    let token,searchId,bestFile=null,bestUser=null;
-    try{
-      token=await getSlskdToken();
-      searchId=crypto.randomUUID();
-      await fetch('http://localhost:5893/api/v0/searches',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({id:searchId,searchText:searchQuery})});
-
-      // Poll for results (up to 20s)
-      let attempts=0;
-      while(attempts<20){
-        await new Promise(r=>setTimeout(r,1500));
-        attempts++;
-        const sr=await fetch('http://localhost:5893/api/v0/searches/'+searchId,{headers:{'Authorization':'Bearer '+token}});
-        const sd=await sr.json();
-        const responses=sd.responses||[];
-        // Find best FLAC or MP3 file
-        for(const resp of responses){
-          if(!resp.files||!resp.files.length) continue;
-          for(const f of resp.files){
-            const fn=(f.filename||'').toLowerCase();
-            const isAudio=fn.endsWith('.flac')||fn.endsWith('.mp3')||fn.endsWith('.wav');
-            if(!isAudio) continue;
-            const isFlac=fn.endsWith('.flac');
-            const isWav=fn.endsWith('.wav');
-            // Prefer FLAC > WAV > MP3, and larger bitrate
-            if(!bestFile||(isFlac&&!bestFile.filename.toLowerCase().endsWith('.flac'))||(isWav&&bestFile.filename.toLowerCase().endsWith('.mp3'))||(f.size>bestFile.size&&fn.endsWith(bestFile.filename.toLowerCase().split('.').pop()))){
-              bestFile=f;bestUser=resp.username;
-            }
-          }
-        }
-        const state=sd.state||'';
-        if(state==='Completed'||state.includes('Completed')||state.includes('complete')) break;
-        if(bestFile&&attempts>=4) break; // Got a good result, don't wait forever
-        showStatus(picked,'Searching Soulseek...','Found '+responses.length+' users...');
-      }
-    }catch(e){
-      console.log('slskd search error',e);
-      showStatus(picked,'❌ Search failed',e.message||'');
-      await new Promise(r=>setTimeout(r,2000));
-      continue;
-    }
-
-    if(!bestFile||!bestUser){
-      showStatus(picked,'❌ No results','Try a different search');
-      await new Promise(r=>setTimeout(r,2000));
-      // Still add to Supabase as wishlist (not done)
-      const body={song:displayName,genre:genre,done:false,added_by:profile,art:picked.art};
-      try{
-        const res=await fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(body)});
-        const rows=await res.json();
-        if(rows&&rows[0]){const r=rows[0];djCache.unshift({id:r.id,song:r.song,genre:r.genre,done:r.done,bpm:r.bpm||'',quality:r.quality||'',art:r.art||'',size:r.size||'',added_by:r.added_by||profile,time:r.created_at||''});}
-      }catch(e2){console.log('DJ insert error',e2)}
-      continue;
-    }
-
-    // Step 2: Download via slskd
-    const ext=bestFile.filename.split('.').pop().toUpperCase();
-    const sizeMB=(bestFile.size/(1024*1024)).toFixed(1);
-    showStatus(picked,'Downloading '+ext,sizeMB+'MB from '+bestUser);
-    try{
-      await fetch('http://localhost:5893/api/v0/transfers/downloads/'+encodeURIComponent(bestUser),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify([{filename:bestFile.filename,size:bestFile.size}])});
-
-      // Poll download progress (up to 60s)
-      let dlDone=false,dlAttempts=0;
-      while(dlAttempts<30&&!dlDone){
-        await new Promise(r=>setTimeout(r,2000));
-        dlAttempts++;
-        try{
-          const dr=await fetch('http://localhost:5893/api/v0/transfers/downloads/'+encodeURIComponent(bestUser),{headers:{'Authorization':'Bearer '+token}});
-          const dd=await dr.json();
-          // Check if our file is completed
-          for(const dir of (dd.directories||dd||[])){
-            const files=dir.files||[];
-            for(const f of files){
-              if(f.filename===bestFile.filename){
-                const st=(f.state||'').toLowerCase();
-                const pct=f.percentComplete||f.bytesTransferred&&bestFile.size?(f.bytesTransferred/bestFile.size*100).toFixed(0):0;
-                showStatus(picked,'Downloading '+ext,pct+'% · '+sizeMB+'MB');
-                if(st.includes('completed')||st.includes('succeed')||st==='completed, succeeded'){dlDone=true;}
-              }
-            }
-          }
-        }catch(e){console.log('dl poll error',e)}
-      }
-
-      if(dlDone){
-        showStatus(picked,'✓ Saved to DJ Folder',ext+' · '+sizeMB+'MB');
-      }else{
-        showStatus(picked,'⏳ Downloading...',ext+' · queued');
-      }
-      await new Promise(r=>setTimeout(r,1000));
-    }catch(e){
-      console.log('slskd download error',e);
-      showStatus(picked,'⚠ Download queued','May complete in background');
-      await new Promise(r=>setTimeout(r,1500));
-    }
-
-    // Step 3: Save to Supabase
-    const body={song:displayName,genre:genre,done:true,added_by:profile,quality:ext,size:sizeMB+'MB',art:picked.art,source:'soulseek'};
+    // Save to Supabase (done=false, Gatsby will download via cron)
+    const body={song:displayName,genre:genre,done:false,added_by:profile,art:picked.art};
     try{
       const res=await fetch(SB_URL+'/rest/v1/dj',{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(body)});
       const rows=await res.json();
       if(rows&&rows[0]){const r=rows[0];djCache.unshift({id:r.id,song:r.song,genre:r.genre,done:r.done,bpm:r.bpm||'',quality:r.quality||'',art:r.art||'',size:r.size||'',added_by:r.added_by||profile,time:r.created_at||''});}
-    }catch(e){console.log('DJ insert error',e)}
+      showStatus(picked,'✓ Added to queue','Gatsby will download soon');
+    }catch(e){
+      console.log('DJ insert error',e);
+      showStatus(picked,'❌ Failed to add',e.message||'');
+    }
+    await new Promise(r=>setTimeout(r,800));
   }
 
   renderDJ();
@@ -1388,60 +1285,6 @@ async function djSearch(){
   djSearching=false;
 }
 
-async function djDownloadSingle(id){
-  const item=djCache.find(d=>d.id===id);
-  if(!item||item.done)return;
-  const pipe=document.getElementById('djPipeline');
-  pipe.style.display='block';
-  const showSt=(status,sub)=>{
-    pipe.innerHTML=`<div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;">
-      ${item.art?`<img src="${item.art}" style="width:40px;height:40px;border-radius:8px;">`:''}
-      <div style="flex:1;min-width:0;"><div style="color:#d4c4f0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.song}</div></div>
-      <div style="text-align:right;flex-shrink:0;"><div style="color:#e879f9;font-size:11px;font-weight:600;">${status}</div>${sub?`<div style="color:#665c78;font-size:10px;">${sub}</div>`:''}</div></div>`;
-  };
-  try{
-    // Auth
-    if(!window._slskdToken||Date.now()>=window._slskdTokenExp){
-      const r=await fetch('http://localhost:5893/api/v0/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'gatsby',password:'djG4tsby!2026'})});
-      const d=await r.json();window._slskdToken=d.token;window._slskdTokenExp=Date.now()+3500*1000;
-    }
-    const token=window._slskdToken;
-    // Search
-    showSt('Searching Soulseek...','');
-    const searchId=crypto.randomUUID();
-    await fetch('http://localhost:5893/api/v0/searches',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({id:searchId,searchText:item.song.replace(/\s*—\s*/,' ')})});
-    let bestFile=null,bestUser=null,attempts=0;
-    while(attempts<15){
-      await new Promise(r=>setTimeout(r,1500));attempts++;
-      const sr=await fetch('http://localhost:5893/api/v0/searches/'+searchId,{headers:{'Authorization':'Bearer '+token}});
-      const sd=await sr.json();
-      for(const resp of (sd.responses||[])){
-        for(const f of (resp.files||[])){
-          const fn=(f.filename||'').toLowerCase();
-          if(fn.endsWith('.flac')||fn.endsWith('.mp3')||fn.endsWith('.wav')){
-            if(!bestFile||fn.endsWith('.flac')&&!bestFile.filename.toLowerCase().endsWith('.flac')||f.size>bestFile.size){bestFile=f;bestUser=resp.username;}
-          }
-        }
-      }
-      if((sd.state||'').toLowerCase().includes('complet')) break;
-      if(bestFile&&attempts>=4) break;
-      showSt('Searching...', (sd.responses||[]).length+' users');
-    }
-    if(!bestFile){showSt('❌ No results','');await new Promise(r=>setTimeout(r,2000));pipe.style.display='none';return;}
-    // Download
-    const ext=bestFile.filename.split('.').pop().toUpperCase();
-    const sizeMB=(bestFile.size/(1024*1024)).toFixed(1);
-    showSt('Downloading '+ext,sizeMB+'MB');
-    await fetch('http://localhost:5893/api/v0/transfers/downloads/'+encodeURIComponent(bestUser),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify([{filename:bestFile.filename,size:bestFile.size}])});
-    showSt('✓ Saved to DJ Folder',ext+' · '+sizeMB+'MB');
-    // Update Supabase
-    item.done=true;item.quality=ext;item.size=sizeMB+'MB';
-    await fetch(SB_URL+'/rest/v1/dj?id=eq.'+id,{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=minimal'},body:JSON.stringify({done:true,quality:ext,size:sizeMB+'MB',source:'soulseek'})});
-    renderDJ();
-    await new Promise(r=>setTimeout(r,1500));
-  }catch(e){console.log('djDownloadSingle error',e);showSt('❌ Error',e.message||'');}
-  pipe.style.display='none';
-}
 function djSetCollectionSort(s){djCollectionSort=s;renderDJ();}
 function djShowMore(){djCollectionVisible+=50;renderDJ();}
 
@@ -1479,7 +1322,7 @@ function renderDJ(){
       <div class="q-song" style="${d.done?'color:rgba(34,197,94,0.5);':'color:#d4c4f0;'}">${d.song}${byTag}</div>
       ${bpmKey}
       <div class="q-quality">${d.quality||d.genre||''}</div>
-      ${!d.done?`<button onclick="djDownloadSingle(${d.id})" style="background:none;border:1px solid rgba(232,121,249,0.3);border-radius:6px;padding:2px 8px;color:#e879f9;cursor:pointer;font-size:10px;font-family:inherit;font-weight:600;transition:all .15s;" onmouseenter="this.style.background='rgba(232,121,249,0.15)'" onmouseleave="this.style.background='none'">⬇ DL</button>`:''}
+      ${!d.done?`<span style="color:#665c78;font-size:10px;">queued</span>`:''}
       <button onclick="deleteDJ(${d.id})" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;font-family:Courier New,monospace;padding:0 4px;transition:color .15s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='#555'">×</button>
     </div>`;
   }
@@ -1490,7 +1333,7 @@ function renderDJ(){
     const sortBtn=(label,key)=>`<button onclick="djSetCollectionSort('${key}')" style="background:${djCollectionSort===key?'rgba(124,58,237,0.25)':'none'};border:1px solid ${djCollectionSort===key?'#7c3aed':'rgba(255,255,255,0.08)'};border-radius:6px;padding:2px 8px;color:${djCollectionSort===key?'#a78bfa':'#665c78'};font-family:inherit;font-size:10px;cursor:pointer;">${label}</button>`;
     html+=`<div style="margin:12px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span style="color:#e879f9;font-weight:700;font-size:14px;">🎧 Next Set</span>
-      <span style="color:#665c78;font-size:11px;">${allSongs.length} tracks · ${collection.length} ready · ${wishlist.length} to download</span>
+      <span style="color:#665c78;font-size:11px;">${allSongs.length} tracks · ${collection.length} ready · ${wishlist.length} queued</span>
       <div style="margin-left:auto;display:flex;gap:4px;">${sortBtn('BPM','bpm')}${sortBtn('Key','key')}${sortBtn('Recent','recent')}</div>
     </div>`;
     // Re-sort all together

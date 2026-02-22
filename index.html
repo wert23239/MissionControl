@@ -693,7 +693,7 @@ async function syncFromSupabase(){
     if(cal.length)localStorage.setItem('mc-cal',JSON.stringify(cal));
     if(notes.length)localStorage.setItem('mc-notes',JSON.stringify(notes.map(n=>({text:n.text,cat:n.cat,time:n.created_at,id:n.id}))));
     if(dj.length){
-      djCache=dj.map(d=>({id:d.id,song:d.song,genre:d.genre||'Other',done:d.done||false,bpm:d.bpm||'',quality:d.quality||'',art:d.art||'',size:d.size||'',added_by:d.added_by||'Gatsby',time:d.created_at||''}));
+      djCache=dj.map(d=>({id:d.id,song:d.song,genre:d.genre||'Other',done:d.done||false,bpm:d.bpm||'',quality:d.quality||'',art:d.art||'',size:d.size||'',added_by:d.added_by||'Gatsby',time:d.created_at||'',source:d.source||''}));
     }
     if(bingo.length){const state={};bingo.forEach(b=>{if(b.done)state[b.cell_index]=true});localStorage.setItem('mc-bingo',JSON.stringify(state));}
     var active=document.querySelector('.nav-item.active');
@@ -1123,7 +1123,7 @@ async function syncDJFromSupabase(){
   try{
     const res=await fetch(SB_URL+'/rest/v1/dj?select=*&order=created_at.desc',{headers:sbHeaders});
     const remote=await res.json();
-    if(Array.isArray(remote))djCache=remote.map(r=>({id:r.id,song:r.song,genre:r.genre||'Other',done:r.done||false,bpm:r.bpm||'',quality:r.quality||'',art:r.art||'',size:r.size||'',added_by:r.added_by||'Gatsby',time:r.created_at||'',key:r.key||''}));
+    if(Array.isArray(remote))djCache=remote.map(r=>({id:r.id,song:r.song,genre:r.genre||'Other',done:r.done||false,bpm:r.bpm||'',quality:r.quality||'',art:r.art||'',size:r.size||'',added_by:r.added_by||'Gatsby',time:r.created_at||'',key:r.key||'',source:r.source||''}));
   }catch(e){console.log('DJ sync error',e);}
 }
 async function addDJ(){
@@ -1477,11 +1477,23 @@ function renderDJ(){
       </div>
     </div>`;
     html+=`<div style="max-height:400px;overflow-y:auto;">`;
+    // Build lookup from DB songs to match disk files with source info
+    const dbLookup={};
+    list.filter(d=>d.done).forEach(d=>{
+      const key=(d.song||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      if(key) dbLookup[key]=d;
+    });
     visible.forEach(f=>{
       const date=new Date(f.mtime*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const fkey=f.name.toLowerCase().replace(/[^a-z0-9]/g,'');
+      const dbMatch=Object.entries(dbLookup).find(([k])=>fkey.includes(k)||k.includes(fkey));
+      const src=dbMatch?dbMatch[1].source||'':'';
+      const srcColors={soulseek:'#7c3aed',youtube:'#FF0000',soundcloud:'#FF5500','already-on-disk':'#22c55e',spotify:'#1DB954'};
+      const srcLabel=src?src.split(':')[0]:'';
       html+=`<div class="dj-queue-item">
         <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${f.ext==='WAV'?'rgba(34,197,94,0.15)':'rgba(168,85,247,0.15)'};color:${f.ext==='WAV'?'#22c55e':'#a855f7'};font-weight:600;">${f.ext}</span>
         <div class="q-song" style="font-size:12px;">${f.name}</div>
+        ${srcLabel?`<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${(srcColors[srcLabel]||'#665c78')}22;color:${srcColors[srcLabel]||'#665c78'};font-weight:600;">${srcLabel}</span>`:''}
         <span style="font-size:10px;color:#665c78;">${f.size_mb}MB</span>
         <span style="font-size:10px;color:#665c78;">${date}</span>
       </div>`;

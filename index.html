@@ -1211,7 +1211,7 @@ async function djSearch(){
 
   // SoundCloud + YouTube search (via proxy on Mac mini)
   try{
-    const proxyUrl=localStorage.getItem('dj-proxy-url')||'https://register-seo-portion-lenders.trycloudflare.com';
+    const proxyUrl=localStorage.getItem('dj-proxy-url')||'https://dj-proxy-w7ff.onrender.com';
     const r=await fetch(`${proxyUrl}/search?q=${encodeURIComponent(query)}`);
     const data=await r.json();
     if(data.results){allOptions.push(...data.results);sources.soundcloud=data.sources?.soundcloud||0;sources.youtube=data.sources?.youtube||0;}

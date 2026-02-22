@@ -1171,7 +1171,10 @@ let djSearching=false;
 async function djSearch(){
   const input=document.getElementById('djInput');
   const query=input.value.trim();
-  if(!query||djSearching)return;
+  if(!query)return;
+  // If already searching (picker open), cancel the current one
+  if(djSearching&&window._djCancel){window._djCancel();await new Promise(r=>setTimeout(r,100));}
+  if(djSearching)return; // still busy somehow
   djSearching=true;
   try{
 

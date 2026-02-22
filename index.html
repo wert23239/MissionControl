@@ -1252,7 +1252,10 @@ async function djSearch(){
           <div style="color:${sel?'#e879f9':'#665c78'};font-size:10px;font-weight:500;flex-shrink:0;">${opt.tag}</div>
         </div>`;
       });
-      html+=`<button onclick="window._djConfirm()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;">Add ${selected.size} song${selected.size!==1?'s':''}</button>`;
+      html+=`<div style="display:flex;gap:8px;margin-top:6px;">
+        <button onclick="window._djCancel()" style="flex:1;background:rgba(255,255,255,0.06);color:#665c78;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;">Cancel</button>
+        <button onclick="window._djConfirm()" style="flex:2;background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;">Add ${selected.size} song${selected.size!==1?'s':''}</button>
+      </div>`;
       pipe.innerHTML=html;
     };
     window._djToggle=(i)=>{
@@ -1260,6 +1263,7 @@ async function djSearch(){
       if(selected.size===0)selected.add(0);
       render();
     };
+    window._djCancel=()=>resolve([]);
     window._djConfirm=()=>resolve([...selected].map(i=>allOptions[i]));
     render();
   });

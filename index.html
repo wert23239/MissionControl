@@ -1228,7 +1228,8 @@ async function djSearch(){
       canonTitle=t.name; canonArtist=t.artists.map(a=>a.name).join(', '); canonArt=t.album.images[0]?.url||'';
       // Add original
       allOptions.push({title:t.name,artist:canonArtist,art:canonArt,
-        source:'spotify',sourceIcon:'🟢',duration:Math.round(t.duration_ms/1000),tag:'Original'});
+        source:'spotify',sourceIcon:'🟢',duration:Math.round(t.duration_ms/1000),tag:'Original',
+        playUrl:`https://open.spotify.com/track/${t.id}`});
       sources.spotify++;
     }
   }catch(e){console.log('Spotify phase 1 error',e)}
@@ -1251,7 +1252,8 @@ async function djSearch(){
             const tag=classifyTag(t.name);
             if(tag==='Original') continue; // skip dupes of original
             results.push({title:t.name,artist:t.artists.map(a=>a.name).join(', '),art:t.album.images[0]?.url||'',
-              source:'spotify',sourceIcon:'🟢',duration:Math.round(t.duration_ms/1000),tag});
+              source:'spotify',sourceIcon:'🟢',duration:Math.round(t.duration_ms/1000),tag,
+              playUrl:`https://open.spotify.com/track/${t.id}`});
           }
         }catch(e){}
       }
@@ -1319,6 +1321,7 @@ async function djSearch(){
         html+=`<div onclick="window._djToggle(${i})" style="display:flex;gap:8px;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.04);border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:4px;cursor:pointer;transition:all 0.2s;">
           <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;${sel?'background:#e879f9;color:#fff;':''}">${sel?'✓':''}</div>
           ${opt.art?`<img src="${opt.art}" style="width:36px;height:36px;border-radius:6px;flex-shrink:0;">`:`<div style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${opt.sourceIcon||"🎵"}</div>`}
+          ${opt.playUrl?`<a href="${opt.playUrl}" target="_blank" onclick="event.stopPropagation()" style="color:#7c3aed;font-size:16px;text-decoration:none;flex-shrink:0;padding:0 2px;" title="Preview">▶</a>`:''}
           <div style="flex:1;min-width:0;">
             <div style="color:#d4c4f0;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.title}</div>
             <div style="color:#665c78;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.artist}${opt.duration?' · '+Math.floor(opt.duration/60)+':'+String(opt.duration%60).padStart(2,'0'):''}</div>

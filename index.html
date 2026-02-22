@@ -1305,8 +1305,10 @@ async function djSearch(){
   renderDJ();
   pipe.style.display='none';
   input.value='';
-  }catch(e){console.log('DJ search error',e);document.getElementById('djPipeline').style.display='none';}
-  djSearching=false;
+  }catch(e){console.log('DJ search error',e);}finally{
+    document.getElementById('djPipeline').style.display='none';
+    djSearching=false;
+  }
 }
 
 function djSetCollectionSort(s){djCollectionSort=s;renderDJ();}

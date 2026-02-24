@@ -217,6 +217,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 <script>
 const sections=[
   {id:'overview',icon:'🏠',label:'Overview',dot:'#e879f9'},
+  {id:'projects',icon:'🚀',label:'Projects',dot:'#22d3ee'},
   {id:'dj',icon:'🎵',label:'Music',dot:'#e879f9'},
   {id:'notebook',icon:'📋',label:'Notebook',dot:'#22d3ee'},
   {id:'book',icon:'📖',label:'Book',dot:'#f59e0b'},
@@ -628,6 +629,33 @@ bingo:`<h2 class="panel-title">🎯 2026 Bingo Board</h2>
 <div class="stat"><div class="stat-label">Remaining</div><div class="stat-value" id="bingoRemain">25</div></div>
 <div class="stat"><div class="stat-label">Bingo?</div><div class="stat-value" id="bingoStatus" style="color:#665c78">Not yet</div></div>
 </div>`,
+projects:`<h2 class="panel-title">🚀 Projects</h2>
+<div class="panel-sub">Active projects and builds</div>
+<div class="filter-tabs" id="projectFilters">
+<button class="filter-btn active" onclick="projectFilter='all';loadProjects()">All</button>
+<button class="filter-btn" onclick="projectFilter='active';loadProjects()">Active</button>
+<button class="filter-btn" onclick="projectFilter='paused';loadProjects()">Paused</button>
+<button class="filter-btn" onclick="projectFilter='done';loadProjects()">Done</button>
+</div>
+<div id="projectFormToggle" style="margin-bottom:16px">
+<button onclick="document.getElementById('projectForm').style.display=document.getElementById('projectForm').style.display==='none'?'block':'none'" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">+ New Project</button>
+</div>
+<div id="projectForm" style="display:none;margin-bottom:20px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;">
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+<input type="text" id="projName" placeholder="Project name" style="flex:2;min-width:200px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+<input type="text" id="projCategory" placeholder="Category" style="flex:1;min-width:120px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+<select id="projStatus" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+<option value="active">Active</option><option value="paused">Paused</option><option value="done">Done</option><option value="archived">Archived</option>
+</select>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+<input type="text" id="projDesc" placeholder="Description" style="flex:2;min-width:200px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+<input type="text" id="projRepo" placeholder="Repo URL (optional)" style="flex:1;min-width:200px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+</div>
+<button onclick="addProject()" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add Project</button>
+</div>
+<div id="projectGrid" class="grid2"></div>`,
+
 isaac:`<h2 class="panel-title">👹 Twisted R Key Mod</h2>
 <div class="panel-sub">Binding of Isaac modding project · <a href="https://github.com/wert23239/TwistedRKey" target="_blank" style="color:#e879f9;text-decoration:none;border-bottom:1px solid rgba(232,121,249,0.3);">GitHub Repo ↗</a></div>
 
@@ -1637,8 +1665,90 @@ switchPanel=function(id){
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
+  if(id==='projects'){loadProjects()}
   if(id==='spending'){loadSpending()}
   if(id==='calendar')renderCal();
+}
+
+/* ── Projects Tab ── */
+let projectFilter='all';
+let projectsCache=[];
+let expandedProject=null;
+
+async function loadProjects(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/projects?select=*&order=priority.desc,created_at.desc',{headers:sbHeaders});
+    projectsCache=r.ok?await r.json():[];
+  }catch(e){projectsCache=[];}
+  renderProjects();
+}
+
+async function addProject(){
+  const name=document.getElementById('projName').value.trim();
+  if(!name)return;
+  const body={
+    name,
+    description:document.getElementById('projDesc').value.trim()||null,
+    category:document.getElementById('projCategory').value.trim()||null,
+    status:document.getElementById('projStatus').value,
+    repo:document.getElementById('projRepo').value.trim()||null,
+    priority:3,progress:0
+  };
+  await sbInsert('projects',body);
+  document.getElementById('projName').value='';
+  document.getElementById('projDesc').value='';
+  document.getElementById('projCategory').value='';
+  document.getElementById('projRepo').value='';
+  document.getElementById('projectForm').style.display='none';
+  loadProjects();
+}
+
+function renderProjects(){
+  const statusOrder={active:0,paused:1,done:2,archived:3};
+  const statusColors={active:'rgba(34,197,94,0.12)',paused:'rgba(245,158,11,0.12)',done:'rgba(168,85,247,0.12)',archived:'rgba(255,255,255,0.06)'};
+  const statusText={active:'#22c55e',paused:'#f59e0b',done:'#a855f7',archived:'#665c78'};
+
+  // Update filter buttons
+  document.querySelectorAll('#projectFilters .filter-btn').forEach(b=>{
+    b.classList.toggle('active',b.textContent.toLowerCase()===projectFilter);
+  });
+
+  let list=[...projectsCache];
+  if(projectFilter!=='all') list=list.filter(p=>p.status===projectFilter);
+  list.sort((a,b)=>(b.priority||0)-(a.priority||0)||(statusOrder[a.status]||0)-(statusOrder[b.status]||0));
+
+  const grid=document.getElementById('projectGrid');
+  if(!grid)return;
+  if(!list.length){grid.innerHTML='<div class="empty-state">🚀 No projects yet — add one above!</div>';return;}
+
+  grid.innerHTML=list.map(p=>{
+    const isExpanded=expandedProject===p.id;
+    const desc=p.description||'';
+    const shortDesc=desc.length>100?desc.slice(0,100)+'…':desc;
+    const pct=p.progress||0;
+    const stars='★'.repeat(p.priority||0)+'☆'.repeat(5-(p.priority||0));
+    return `<div class="card" style="cursor:pointer;${isExpanded?'grid-column:1/-1;':''}" onclick="expandedProject=expandedProject===${p.id}?null:${p.id};renderProjects()">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="font-size:15px;font-weight:700;color:#e8e0f0">${p.name}</div>
+        <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${statusColors[p.status]||''};color:${statusText[p.status]||'#665c78'};text-transform:uppercase">${p.status}</span>
+      </div>
+      <div style="font-size:12px;color:#665c78;margin-bottom:8px">${isExpanded?desc:shortDesc}</div>
+      <div style="height:4px;background:#2a2535;border-radius:2px;overflow:hidden;margin-bottom:8px">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#e879f9,#7c3aed);border-radius:2px;transition:width .5s"></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
+        <span style="color:#f59e0b">${stars}</span>
+        <span style="color:#665c78">${pct}%</span>
+        ${p.category?`<span style="padding:2px 6px;border-radius:4px;background:rgba(34,211,238,0.12);color:#22d3ee;font-weight:600">${p.category}</span>`:''}
+        ${p.repo?`<a href="${p.repo}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🐙 Repo</a>`:''}
+        ${p.url?`<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🔗 Link</a>`:''}
+      </div>
+      ${isExpanded?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
+        ${p.notes?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Notes:</strong> ${p.notes}</div>`:''}
+        <div style="font-size:11px;color:#665c78">Created: ${new Date(p.created_at).toLocaleDateString()}${p.updated_at?' · Updated: '+new Date(p.updated_at).toLocaleDateString():''}</div>
+      </div>`:''}
+    </div>`;
+  }).join('');
 }
 
 /* ── Spending Tab ── */

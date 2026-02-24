@@ -1736,15 +1736,22 @@ function renderProjects(){
       <div style="height:4px;background:#2a2535;border-radius:2px;overflow:hidden;margin-bottom:8px">
         <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#e879f9,#7c3aed);border-radius:2px;transition:width .5s"></div>
       </div>
+      ${p.blocker&&!isExpanded?`<div style="font-size:11px;color:#fb923c;margin-bottom:8px;padding:4px 8px;background:rgba(239,68,68,0.08);border-radius:6px;border-left:2px solid #ef4444">🚧 Blocker: ${p.blocker.length>80?p.blocker.slice(0,80)+'…':p.blocker}</div>`:''}
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
         <span style="color:#f59e0b">${stars}</span>
         <span style="color:#665c78">${pct}%</span>
         ${p.category?`<span style="padding:2px 6px;border-radius:4px;background:rgba(34,211,238,0.12);color:#22d3ee;font-weight:600">${p.category}</span>`:''}
-        ${p.repo?`<a href="${p.repo}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🐙 Repo</a>`:''}
+        ${p.repo?`<a href="https://github.com/${p.repo}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none;font-weight:600">🐙 Code</a>`:''}
         ${p.url?`<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🔗 Link</a>`:''}
       </div>
       ${isExpanded?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
+        ${desc?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Description:</strong> ${desc}</div>`:''}
+        ${p.blocker?`<div style="font-size:12px;color:#fb923c;margin-bottom:8px;padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border-left:3px solid #ef4444;line-height:1.5">🚧 <strong>Blocker:</strong> ${p.blocker}</div>`:''}
         ${p.notes?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Notes:</strong> ${p.notes}</div>`:''}
+        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
+          ${p.repo?`<a href="https://github.com/${p.repo}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🐙 github.com/${p.repo}</a>`:''}
+          ${p.url?`<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="color:#22d3ee;text-decoration:none">🔗 ${p.url}</a>`:''}
+        </div>
         <div style="font-size:11px;color:#665c78">Created: ${new Date(p.created_at).toLocaleDateString()}${p.updated_at?' · Updated: '+new Date(p.updated_at).toLocaleDateString():''}</div>
       </div>`:''}
     </div>`;

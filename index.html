@@ -1744,6 +1744,7 @@ function renderProjects(){
         ${p.repo?`<a href="https://github.com/${p.repo}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none;font-weight:600">🐙 Code</a>`:''}
         ${p.url?`<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🔗 Link</a>`:''}
       </div>
+      ${!isExpanded&&p.blocker?`<div style="margin-top:6px;font-size:11px;color:#f97316;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🚧 ${p.blocker}</div>`:''}
       ${isExpanded?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
         ${desc?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Description:</strong> ${desc}</div>`:''}
         ${p.blocker?`<div style="font-size:12px;color:#fb923c;margin-bottom:8px;padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border-left:3px solid #ef4444;line-height:1.5">🚧 <strong>Blocker:</strong> ${p.blocker}</div>`:''}

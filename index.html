@@ -120,12 +120,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .notes-input button:hover{opacity:0.9;transform:translateY(-1px)}
 
 /* Bingo */
-.bingo-cell{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:#d4c4f0;line-height:1.3;min-height:80px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;user-select:none}
-.bingo-cell:hover{border-color:rgba(232,121,249,0.3);background:rgba(255,255,255,0.06)}
-.bingo-cell.done{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);text-decoration:line-through;color:#665c78}
-.bingo-cell.done::after{content:'✅';position:absolute;top:4px;right:4px;font-size:10px}
-.bingo-cell.free{background:rgba(232,121,249,0.1);border-color:rgba(232,121,249,0.3);cursor:default}
-.bingo-cell.crossed{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);text-decoration:line-through;color:#665c78}
+.bingo-cell{background:linear-gradient(135deg,rgba(139,92,246,0.08),rgba(232,121,249,0.05));border:1px solid rgba(139,92,246,0.15);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:#e2d5f8;line-height:1.3;min-height:80px;display:flex;align-items:center;justify-content:center;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.bingo-cell:hover{border-color:rgba(232,121,249,0.5);background:linear-gradient(135deg,rgba(139,92,246,0.18),rgba(232,121,249,0.12));transform:translateY(-2px) scale(1.03);box-shadow:0 6px 20px rgba(232,121,249,0.15)}
+.bingo-cell.done{background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(16,185,129,0.1));border-color:rgba(34,197,94,0.4);color:#6ee7b7;text-decoration:none;box-shadow:0 0 12px rgba(34,197,94,0.1)}
+.bingo-cell.done::after{content:'✅';position:absolute;top:4px;right:4px;font-size:12px;filter:drop-shadow(0 0 4px rgba(34,197,94,0.4))}
+.bingo-cell.done .cell-text{text-decoration:line-through;opacity:0.7}
+.bingo-cell.free{background:linear-gradient(135deg,rgba(250,204,21,0.12),rgba(232,121,249,0.1));border-color:rgba(250,204,21,0.35);cursor:default;font-size:13px;color:#fde68a;animation:freeGlow 3s ease-in-out infinite;box-shadow:0 0 15px rgba(250,204,21,0.08)}
+.bingo-cell.crossed{background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.06));border-color:rgba(239,68,68,0.35);text-decoration:line-through;color:#fca5a5;opacity:0.7}
+@keyframes freeGlow{0%,100%{box-shadow:0 0 15px rgba(250,204,21,0.08)}50%{box-shadow:0 0 25px rgba(250,204,21,0.18)}}
 .filter-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
 .filter-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;background:rgba(255,255,255,0.04);color:#998eb5;border:1px solid rgba(255,255,255,0.06);font-family:inherit;transition:all 0.2s}
 .filter-tab:hover{background:rgba(255,255,255,0.06);color:#d4c4f0}
@@ -623,7 +625,7 @@ crons:`<h2 class="panel-title">⏰ Cron Jobs</h2>
 
 bingo:`<h2 class="panel-title">🎯 2026 Bingo Board</h2>
 <div class="panel-sub">Things to happen this year — click to mark complete!</div>
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:700px;" id="bingoGrid"></div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:720px;" id="bingoGrid"></div>
 <div style="margin-top:16px;display:flex;gap:12px;align-items:center;">
 <div class="stat"><div class="stat-label">Completed</div><div class="stat-value" id="bingoCount">0</div></div>
 <div class="stat"><div class="stat-label">Remaining</div><div class="stat-value" id="bingoRemain">25</div></div>

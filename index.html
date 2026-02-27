@@ -230,7 +230,8 @@ const sections=[
   {id:'calendar',icon:'📅',label:'Calendar',dot:'#f59e0b'},
   {id:'bingo',icon:'🎯',label:'Bingo',dot:'#e879f9'},
   {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'},
-  {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'}
+  {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'},
+  {id:'deepgram',icon:'🎙️',label:'STT Investigation',dot:'#06b6d4'}
 ];
 
 const nav=document.getElementById('nav');
@@ -705,6 +706,72 @@ isaac:`<h2 class="panel-title">👹 Twisted R Key Mod</h2>
 <div class="stat"><div class="stat-label">Windows 11 VM</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
 <div class="stat"><div class="stat-label">Isaac + Repentogon</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
 <div class="stat"><div class="stat-label">Mod Testing</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
+</div>`,
+deepgram:`<h2 class="panel-title">🎙️ Deepgram STT Degradation Investigation</h2>
+<div class="panel-sub">Voice agent transcription quality has dropped over the past year — deep dive into all possible causes</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px">
+<div class="stat"><div class="stat-label">Possible Causes</div><div class="stat-value" style="color:#06b6d4">18</div></div>
+<div class="stat"><div class="stat-label">Questions to Answer</div><div class="stat-value amber">15</div></div>
+<div class="stat"><div class="stat-label">Status</div><div class="stat-value" style="color:#f59e0b">Investigating</div></div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🔴 Tier 1 — Almost Certainly Worth Investigating</h3>
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+<div class="kanban-item"><span style="color:#ef4444;font-weight:600">1. Model Version Silent Upgrade</span><br><span style="color:#998eb5;font-size:12px">Deepgram pushes updates without pinning versions. Nova-2 had a <strong>known bug with missing words/phrases</strong> (patched Jan 2024). Nova-3 and Flux are entirely different architectures.</span></div>
+<div class="kanban-item"><span style="color:#ef4444;font-weight:600">2. Encoding / Sample Rate Mismatch</span><br><span style="color:#998eb5;font-size:12px">Phone audio = mulaw 8kHz. If Deepgram expects linear16 @ 16kHz, it silently produces garbage — no error thrown. <strong>#1 cause of "missing obvious words."</strong></span></div>
+<div class="kanban-item"><span style="color:#ef4444;font-weight:600">3. Streaming Context Starvation</span><br><span style="color:#998eb5;font-size:12px">Streaming has <strong>5-20x less context than batch</strong>. Under load, medical terms, phone numbers, and addresses fail at higher rates.</span></div>
+<div class="kanban-item"><span style="color:#ef4444;font-weight:600">4. ElevenLabs Echo Bleed → STT</span><br><span style="color:#998eb5;font-size:12px">TTS output leaking back to mic. ElevenLabs changed audio spectral profiles (v1→v2→v2.5→v3), breaking previously-working echo cancellation.</span></div>
+<div class="kanban-item"><span style="color:#ef4444;font-weight:600">5. Endpointing / VAD Too Aggressive</span><br><span style="color:#998eb5;font-size:12px">Low endpointing ms cuts audio at pauses. Words at segment boundaries get dropped. Especially bad when patients pause to think of drug names.</span></div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🟡 Tier 2 — Very Plausible</h3>
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:600">6. smart_format Eating Words</span><br><span style="color:#998eb5;font-size:12px">Post-processing deletes words it thinks are noise. Medical terminology gets mangled by formatting heuristics.</span></div>
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:600">7. VAPI Infrastructure Changes</span><br><span style="color:#998eb5;font-size:12px">VAPI was caught <strong>clipping the first 200ms of every utterance</strong> (per Hamming AI). Changed audio routing, resampling, or default model.</span></div>
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:600">8. Telephony Provider Codec Change</span><br><span style="color:#998eb5;font-size:12px">Twilio/Vonage/Telnyx silently changing codec defaults (Opus vs mulaw vs G.722). Audio hitting Deepgram changed without you touching anything.</span></div>
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:600">9. Population Drift</span><br><span style="color:#998eb5;font-size:12px">Patient demographics shifted — more non-native speakers, different accents, older callers. Model accuracy drops for YOUR traffic even if benchmarks improved.</span></div>
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:600">10. Noise Reduction Paradox</span><br><span style="color:#998eb5;font-size:12px">Adding noise reduction <strong>often degrades STT accuracy</strong> (Deepgram's own warning). Removes spectral info the model needs.</span></div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🟠 Tier 3 — Less Obvious But Real</h3>
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">11. Interim vs Final Result Confusion</span><br><span style="color:#998eb5;font-size:12px">If app reads interim_results as final, you get incomplete transcripts. Interims are partial and get revised.</span></div>
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">12. WebSocket Drops / Reconnections</span><br><span style="color:#998eb5;font-size:12px">WS drops mid-utterance → audio during reconnection gap is lost. Happens silently under load.</span></div>
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">13. Multichannel Misconfiguration</span><br><span style="color:#998eb5;font-size:12px">multichannel=true on mono audio (or vice versa) = Deepgram splits/merges channels incorrectly.</span></div>
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">14. Deepgram SDK Version</span><br><span style="color:#998eb5;font-size:12px">Old SDK with WS protocol bugs, or auto-updated to incompatible version. Check package-lock.json.</span></div>
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">15. Filler Words Setting</span><br><span style="color:#998eb5;font-size:12px">filler_words=true (now recommended) changes word boundary behavior. Toggling this changes model output.</span></div>
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">16. Rate Limiting / Throttling</span><br><span style="color:#998eb5;font-size:12px">Hitting Deepgram rate limits → audio buffer overflow → dropped frames. More calls = more throttling.</span></div>
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">17. Audio Bitrate / Compression</span><br><span style="color:#998eb5;font-size:12px">Any new compression, resampling, or format conversion in the pipeline — even "transparent" ones.</span></div>
+<div class="kanban-item"><span style="color:#fb923c;font-weight:600">18. Keyword Boosting Regression</span><br><span style="color:#998eb5;font-size:12px">If keywords for medical terms were removed/changed, or Deepgram updated the boosting feature.</span></div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">❓ Questions To Answer</h3>
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px" id="sttQuestions">
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q1</span><span style="color:#d4c4f0;font-size:13px">What Deepgram model are you using? (nova-2, nova-3, flux, general?) Is it explicitly pinned or using default/latest?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q2</span><span style="color:#d4c4f0;font-size:13px">What encoding and sample_rate are you passing? (e.g., encoding=mulaw&sample_rate=8000) Has your telephony provider changed anything?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q3</span><span style="color:#d4c4f0;font-size:13px">Are you using VAPI as orchestrator or custom? When did VAPI last update on your end?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q4</span><span style="color:#d4c4f0;font-size:13px">What telephony provider? (Twilio, Vonage, Telnyx?) Did they change codecs or routing in the past year?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q5</span><span style="color:#d4c4f0;font-size:13px">Do you have echo cancellation? Software-based or telephony provider? Has the ElevenLabs voice model changed?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q6</span><span style="color:#d4c4f0;font-size:13px">Current streaming params? (endpointing, interim_results, utterance_end_ms, smart_format, vad_events, filler_words)</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q7</span><span style="color:#d4c4f0;font-size:13px">Is degradation on ALL calls or specific patterns? (accents, time of day, call flows)</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q8</span><span style="color:#d4c4f0;font-size:13px">Do you have before/after audio samples? Can you replay an old call through the same config?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q9</span><span style="color:#d4c4f0;font-size:13px">Are you reading interim results or only final results? Where in the pipeline do you consume the transcript?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q10</span><span style="color:#d4c4f0;font-size:13px">Has call volume significantly increased? More concurrent connections = potential throttling.</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q11</span><span style="color:#d4c4f0;font-size:13px">Did anyone add noise reduction, audio processing, or filtering in the pipeline?</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q12</span><span style="color:#d4c4f0;font-size:13px">What ElevenLabs model/voice now vs a year ago? (v1→v2→v2.5→v3 changed audio characteristics)</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q13</span><span style="color:#d4c4f0;font-size:13px">Deepgram shared cloud or self-hosted? Shared = subject to their infra changes.</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q14</span><span style="color:#d4c4f0;font-size:13px">What do confidence scores in Deepgram dashboard show? Trending down = audio issue. Stable but wrong words = model issue.</span></div>
+<div class="kanban-item" style="display:flex;align-items:flex-start;gap:8px"><span style="color:#06b6d4;font-weight:700;min-width:24px">Q15</span><span style="color:#d4c4f0;font-size:13px">Have you tried the Flux model? Purpose-built for voice agent conversations with native turn-taking.</span></div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🧪 Quick Diagnostic Steps</h3>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="kanban-item"><span style="color:#22c55e">①</span> Record raw audio from a live call → run through Deepgram <strong>batch</strong> API with explicit params → compare to streaming result</div>
+<div class="kanban-item"><span style="color:#22c55e">②</span> Check Deepgram changelog for model updates in the timeframe degradation started</div>
+<div class="kanban-item"><span style="color:#22c55e">③</span> A/B test Nova-2 vs Nova-3 vs Flux on the same audio sample</div>
+<div class="kanban-item"><span style="color:#22c55e">④</span> Verify encoding params match actual audio format (mulaw 8kHz for phone)</div>
+<div class="kanban-item"><span style="color:#22c55e">⑤</span> Audit VAPI's audio pipeline for any resampling or 200ms clipping</div>
 </div>`
 };
 

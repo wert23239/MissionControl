@@ -710,10 +710,78 @@ isaac:`<h2 class="panel-title">👹 Twisted R Key Mod</h2>
 deepgram:`<h2 class="panel-title">🎙️ Deepgram STT Degradation Investigation</h2>
 <div class="panel-sub">Voice agent transcription quality has dropped over the past year — deep dive into all possible causes</div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:24px">
 <div class="stat"><div class="stat-label">Possible Causes</div><div class="stat-value" style="color:#06b6d4">18</div></div>
-<div class="stat"><div class="stat-label">Questions to Answer</div><div class="stat-value amber">15</div></div>
-<div class="stat"><div class="stat-label">Status</div><div class="stat-value" style="color:#f59e0b">Investigating</div></div>
+<div class="stat"><div class="stat-label">Answered from Code</div><div class="stat-value" style="color:#22c55e">11/15</div></div>
+<div class="stat"><div class="stat-label">Need Alex Input</div><div class="stat-value" style="color:#f59e0b">4</div></div>
+<div class="stat"><div class="stat-label">Status</div><div class="stat-value" style="color:#06b6d4">Code Review Done</div></div>
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🔬 Codebase Analysis — Key Findings</h3>
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+
+<div class="kanban-item" style="border-left:3px solid #ef4444;padding-left:12px">
+<span style="color:#ef4444;font-weight:700">🚨 CRITICAL: endpointing=10</span><br>
+<span style="color:#998eb5;font-size:12px">Default English transcriber uses <code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">endpointing=10</code> (10ms). The code itself has a comment: <em>"use 300 if missing some transcriptions due to shorter context window. higher latency"</em>. With 10ms endpointing, Deepgram cuts audio at the slightest pause — drug names, addresses, and phone numbers get chopped. Spanish config has smartEndpointingPlan with livekit but English does NOT. This is the #1 suspect.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #ef4444;padding-left:12px">
+<span style="color:#ef4444;font-weight:700">🚨 CRITICAL: No encoding/sample_rate set</span><br>
+<span style="color:#998eb5;font-size:12px">The transcriber config does NOT explicitly set <code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">encoding</code> or <code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">sample_rate</code>. Telephony audio is mulaw 8kHz — if VAPI or Twilio changed their default codec/format, Deepgram would silently misinterpret the audio. The voice-testing scripts explicitly generate <code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">ulaw_8000</code> format, confirming this IS the expected format, but it's never declared to Deepgram.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #f59e0b;padding-left:12px">
+<span style="color:#f59e0b;font-weight:700">⚠️ HIGH: smartDenoisingPlan enabled</span><br>
+<span style="color:#998eb5;font-size:12px"><code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">backgroundSpeechDenoisingPlan.smartDenoisingPlan.enabled=true</code> is set on every call. Deepgram's own docs warn that noise reduction can DEGRADE accuracy by removing spectral information the model needs. Phone calls already have limited bandwidth — adding denoising on top may be stripping useful audio data.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #f59e0b;padding-left:12px">
+<span style="color:#f59e0b;font-weight:700">⚠️ HIGH: English vs Spanish config gap</span><br>
+<span style="color:#998eb5;font-size:12px">Spanish config has significantly better STT settings: smartEndpointingPlan (livekit with sigmoid function), transcriptionEndpointingPlan (punctuation=0.3s, noPunctuation=0.6s, number=0.5s), and customEndpointingRules for insurance/DOB/phone. English config has NONE of these — just raw endpointing=10. If Spanish calls transcribe better than English, this is why.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #06b6d4;padding-left:12px">
+<span style="color:#06b6d4;font-weight:700">💡 INSIGHT: TTS is Cartesia, NOT ElevenLabs</span><br>
+<span style="color:#998eb5;font-size:12px">Default voice is Cartesia sonic-3 (voiceId: f9836c6e) at speed 0.8. Original investigation assumed ElevenLabs — cause #4 (ElevenLabs echo bleed) doesn't apply. However, Cartesia model updates (sonic-2→sonic-3) could still change the audio spectral profile and break echo cancellation tuning.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #06b6d4;padding-left:12px">
+<span style="color:#06b6d4;font-weight:700">💡 INSIGHT: Flux already in use for English</span><br>
+<span style="color:#998eb5;font-size:12px"><code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">flux-general-en</code> with eotThreshold=0.7 and eotTimeoutMs=5000. Nova-3 only for Spanish/multilingual. Azure fallback configured for both. Flux has native end-of-turn detection which should help, but the endpointing=10 may override or conflict with Flux's built-in turn detection.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #06b6d4;padding-left:12px">
+<span style="color:#06b6d4;font-weight:700">💡 INSIGHT: Keyterms well-configured but narrow</span><br>
+<span style="color:#998eb5;font-size:12px">Dynamic keyterms include patient names, facility names, cities, provider names (tokenized). Static keyterms: gender identifiers, Spanish phrases, "Ambetter" (insurance). Missing: common medical terms, drug names, procedure names. The keyterms.json has only 41 entries — no medical vocabulary boosting at all.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #06b6d4;padding-left:12px">
+<span style="color:#06b6d4;font-weight:700">💡 INSIGHT: VAPI is a black box layer</span><br>
+<span style="color:#998eb5;font-size:12px">No Deepgram SDK used. Everything goes through VAPI's API (api.vapi.ai). Audio pipeline: Twilio → VAPI → Deepgram. Any VAPI infrastructure changes (the known 200ms clipping issue, codec changes, resampling) are invisible. No audio logging at the VAPI handoff point. VAPI version is not pinned.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #998eb5;padding-left:12px">
+<span style="color:#998eb5;font-weight:700">📝 NOTE: stopSpeakingPlan may be too aggressive</span><br>
+<span style="color:#998eb5;font-size:12px"><code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">numWords=2, voiceSeconds=0.2</code> — the agent stops speaking after detecting just 2 words or 0.2s of voice. Combined with endpointing=10, this creates a very "jumpy" conversation where the agent and patient constantly interrupt each other. More interruptions = more audio overlap = worse STT.</span>
+</div>
+
+<div class="kanban-item" style="border-left:3px solid #998eb5;padding-left:12px">
+<span style="color:#998eb5;font-weight:700">📝 NOTE: mipOptOut=true costs 50% more</span><br>
+<span style="color:#998eb5;font-size:12px">Code comment: "we will lose 50% discount when opting out." This opts out of Deepgram's model improvement program. No direct accuracy impact, but worth knowing for cost analysis.</span>
+</div>
+
+</div>
+
+<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🎯 Recommended Action Plan (Priority Order)</h3>
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+<div class="kanban-item"><span style="color:#ef4444;font-weight:700">P0:</span> A/B test endpointing=10 vs endpointing=255 on English calls. Measure WER on same audio. The comment in code already knows this is a problem.</div>
+<div class="kanban-item"><span style="color:#ef4444;font-weight:700">P0:</span> Explicitly set <code style="background:rgba(6,182,212,0.15);padding:1px 4px;border-radius:3px;font-size:10px">encoding=mulaw&sample_rate=8000</code> in transcriber config. Never rely on defaults for telephony audio.</div>
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:700">P1:</span> Port Spanish smartEndpointingPlan + transcriptionEndpointingPlan to English config. Spanish already has better settings.</div>
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:700">P1:</span> A/B test with smartDenoisingPlan disabled. Record raw audio with and without to compare spectrograms.</div>
+<div class="kanban-item"><span style="color:#f59e0b;font-weight:700">P1:</span> Add medical keyterms to keyterms.json — drug names, conditions, procedure terms relevant to primary care + cardiology.</div>
+<div class="kanban-item"><span style="color:#06b6d4;font-weight:700">P2:</span> Record raw audio at VAPI handoff point to check for 200ms clipping or codec mismatches.</div>
+<div class="kanban-item"><span style="color:#06b6d4;font-weight:700">P2:</span> Test endpointing interaction with Flux eotThreshold — they may conflict (Flux expects to handle turn detection itself).</div>
+<div class="kanban-item"><span style="color:#06b6d4;font-weight:700">P2:</span> Relax stopSpeakingPlan to numWords=3, voiceSeconds=0.4 to reduce interruption rate → less audio overlap.</div>
 </div>
 
 <h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🔴 Tier 1 — Almost Certainly Worth Investigating</h3>

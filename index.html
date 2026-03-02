@@ -1739,24 +1739,35 @@ function toggleBingo(i){
   renderBingo();
 }
 
-// Calendar
-function getCal(){return JSON.parse(localStorage.getItem('mc-cal')||'[]')}
-function saveCal(c){localStorage.setItem('mc-cal',JSON.stringify(c))}
-function addCal(){
+// Calendar (Supabase-backed)
+let calCache=[];
+async function loadCalFromSupabase(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/calendar?order=date',{headers:sbHeaders});
+    calCache=r.ok?await r.json():[];
+  }catch(e){calCache=[];}
+}
+async function addCal(){
   const d=document.getElementById('calDate').value;
   const e=document.getElementById('calEvent').value.trim();
   if(!d||!e)return;
-  const list=getCal();
-  list.push({date:d,event:e});
-  list.sort((a,b)=>a.date.localeCompare(b.date));
-  saveCal(list);
+  try{
+    await fetch(SB_URL+'/rest/v1/calendar',{method:'POST',headers:{...sbHeaders,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:d,event:e})});
+  }catch(err){console.log('Calendar insert failed',err)}
   document.getElementById('calEvent').value='';
+  await loadCalFromSupabase();
   renderCal();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='calEvent')addCal()});
-function deleteCal(i){const list=getCal();list.splice(i,1);saveCal(list);renderCal()}
+async function deleteCal(id){
+  try{
+    await fetch(SB_URL+'/rest/v1/calendar?id=eq.'+id,{method:'DELETE',headers:{...sbHeaders,'Prefer':'return=minimal'}});
+  }catch(err){console.log('Calendar delete failed',err)}
+  await loadCalFromSupabase();
+  renderCal();
+}
 function renderCal(){
-  const list=getCal();
+  const list=calCache;
   const el=document.getElementById('calList');
   if(!el)return;
   if(!list.length){el.innerHTML='<div class="empty-state">📅 No events yet — add some dates!</div>';return}
@@ -1782,7 +1793,7 @@ function renderCal(){
       </div>
       <div style="width:3px;height:28px;background:#e879f9;border-radius:2px;flex-shrink:0"></div>
       <div style="flex:1;font-size:14px;color:#d4c4f0">${item.event}</div>
-      <button onclick="deleteCal(${i})" style="background:none;border:none;color:#665c78;cursor:pointer;font-size:14px;padding:0 4px">×</button>
+      <button onclick="deleteCal(${item.id})" style="background:none;border:none;color:#665c78;cursor:pointer;font-size:14px;padding:0 4px">×</button>
     </div>`;
   });
   el.innerHTML=html;
@@ -1804,7 +1815,7 @@ switchPanel=function(id){
   if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
   if(id==='projects'){loadProjects()}
   if(id==='spending'){loadSpending()}
-  if(id==='calendar')renderCal();
+  if(id==='calendar'){loadCalFromSupabase().then(()=>renderCal());}
 }
 
 /* ── Projects Tab ── */

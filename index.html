@@ -867,14 +867,12 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </ul>
 <p>The rest of this document describes how we handle this.</p>
 <hr />
-<h1>Flow</h1>
-<p>Data moves through three layers:</p>
-<p><strong>1. EHR Layer</strong> — We call all FHIR APIs for a patient and store each raw response in <code>api_response</code> as JSONB. This table is append-only — we never update or delete responses. This is our audit trail.</p>
-<p><strong>2. Process Layer</strong> — Each data point type has a <strong>processor</strong>. After all APIs have been called for a patient, we route the responses to the relevant processors. A processor knows which APIs it needs, extracts the fields it cares about, and writes to its target table. One API response can be routed to multiple processors.</p>
-<p><strong>3. Data Point Tables</strong> — Clean, typed Prisma tables that the frontend reads directly. One table per data point type. This is what clinical staff see.</p>
-<p>The key thing: we call all APIs first, then run processors. We don't process one API at a time — we wait until everything is in, so each processor has the full picture before writing.</p>
-<hr />
 <h1>General Design</h1>
+<p>Data moves through three layers: <strong>EHR → Processors → Data Points</strong>.</p>
+<p>First, we call all FHIR APIs for a patient and store each raw response in an <code>api_response</code> table as JSONB. This is append-only — our audit trail. Then, each data point type has a <strong>processor</strong> that receives the relevant API responses, extracts and transforms the data, and writes to its target table. We call all APIs first, then run processors — so each processor has the full picture before writing. One API response can be routed to multiple processors.</p>
+<p>The frontend reads from clean, typed Prisma tables — one per data point type. This is what clinical staff see.</p>
+<hr />
+<h1>Data Design</h1>
 <p>We use <strong>Prisma</strong> as our ORM. All data lives in Postgres. We considered two approaches for how processed data gets stored:</p>
 <h3>Option A: One Big Table</h3>
 <p>Store every extracted value in a single universal table called <code>data_unit</code>. Each row is one field — like "bp_systolic = 120" or "ambulation = 2.5". The frontend reads through SQL views that pivot these rows into the shape each component needs.</p>

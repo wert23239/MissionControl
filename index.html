@@ -868,9 +868,17 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <p>The rest of this document describes how we handle this.</p>
 <hr />
 <h1>General Design</h1>
+<h3>The Frontend Is Disconnected from the EHR</h3>
+<p>This is important: the frontend never talks to Epic. It only reads from our data point tables. All the complexity of calling APIs, transforming data, and handling partial updates happens in background jobs. The frontend just reloads clean, pre-processed data.</p>
+<h3>Flow</h3>
 <p>Data moves through three layers: <strong>EHR → Processors → Data Points</strong>.</p>
 <p>First, we call all FHIR APIs for a patient and store each raw response in an <code>api_response</code> table as JSONB. This is append-only — our audit trail. Then, each data point type has a <strong>processor</strong> that receives the relevant API responses, extracts and transforms the data, and writes to its target table. We call all APIs first, then run processors — so each processor has the full picture before writing. One API response can be routed to multiple processors.</p>
-<p>The frontend reads from clean, typed Prisma tables — one per data point type. This is what clinical staff see.</p>
+<p>The frontend reads from the data point tables — one per data point type. This is what clinical staff see.</p>
+<h3>Jobs</h3>
+<p>Three recurring jobs keep the system current:</p>
+<p><strong>1. Patient Ingestion</strong> — Runs daily. Pulls the current list of patients with active episodes from Epic. New patients get added to our system. This is how we know who to fetch data for.</p>
+<p><strong>2. Patient Pruning</strong> — Runs daily. Checks for patients whose episodes have ended (discharged, transferred, deceased). Marks them inactive so we stop calling APIs for them. Keeps the active patient list lean.</p>
+<p><strong>3. Data Refresh</strong> — Runs on a schedule (every 5-15 days). Takes the active patient list, calls all relevant FHIR APIs for each patient, stores the raw responses, and runs the processors. This is the main ingestion cycle described in the flow above.</p>
 <hr />
 <h1>Data Design</h1>
 <p>We use <strong>Prisma</strong> as our ORM and <strong>Postgres</strong> as our database.</p>

@@ -888,10 +888,73 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <p><strong>We go with Option B.</strong> It's simpler, plays nicely with Prisma, and the traceability tradeoff is acceptable — the raw API responses are always there if we need to dig deeper.</p>
 <hr />
 <h1>In-Depth Design</h1>
-<h2>Data Points</h2>
-<h3>Vitals</h3>
-<p>A nurse takes vitals at each home visit — blood pressure, pulse, O2 saturation. Lab results like hemoglobin come from a separate API, sometimes days later.</p>
-<p>The <code>patient_vital</code> table stores <strong>one row per visit</strong> (identified by patient + episode + timestamp). When the vitals API returns, it fills in BP, pulse, O2. When the labs API returns later for the same visit timestamp, it UPSERTs hemoglobin into the existing row.</p>
+<p>Each data point section walks through the full story: what the raw API gives us, what the processor does with it, and what the final table looks like.</p>
+<h2>Vitals</h2>
+<h3>What the API Returns</h3>
+<p>A nurse takes vitals at each home visit. When we call <code>Observation.Search(VitalSigns)</code>, Epic returns a FHIR bundle with separate Observation resources — one for blood pressure, one for pulse, one for O2 saturation. Even though they were all measured at the same time, they come back as individual resources.</p>
+<p>Hemoglobin comes from a different API entirely — <code>Observation.Search(Labs)</code> — and might not return until days after the visit.</p>
+<h3>What the Processor Does</h3>
+<p>The VitalProcessor receives both API responses and:</p>
+<ol>
+<li>Parses each Observation resource from the vitals bundle</li>
+<li>Groups them by timestamp (occurred_at)</li>
+<li>Extracts the values — BP splits into systolic and diastolic, pulse and O2 are straightforward</li>
+<li>UPSERTs into <code>patient_vital</code> on (patient_id, episode_id, occurred_at)</li>
+<li>Only sets the columns it has data for — leaves the rest untouched</li>
+</ol>
+<p>When the labs API comes back later with hemoglobin for the same timestamp, the processor UPSERTs again — filling in the hemoglobin column on the existing row without touching the other values.</p>
+<h3>The Table</h3>
+<p><strong><code>patient_vital</code></strong> — one row per visit.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+</tr>
+<tr>
+<td>patient_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>episode_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>occurred_at</td>
+<td>timestamp</td>
+</tr>
+<tr>
+<td>bp_systolic</td>
+<td>float</td>
+</tr>
+<tr>
+<td>bp_diastolic</td>
+<td>float</td>
+</tr>
+<tr>
+<td>pulse</td>
+<td>float</td>
+</tr>
+<tr>
+<td>o2_saturation</td>
+<td>float</td>
+</tr>
+<tr>
+<td>hemoglobin</td>
+<td>float</td>
+</tr>
+<tr>
+<td>api_response_id</td>
+<td>uuid FK</td>
+</tr>
+</tbody>
+</table>
 <p><strong>Example — three visits in one episode:</strong></p>
 <table>
 <thead>
@@ -906,7 +969,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </thead>
 <tbody>
 <tr>
-<td>Mar 10, 10:00 AM</td>
+<td>Mar 10</td>
 <td>120</td>
 <td>80</td>
 <td>72</td>
@@ -914,7 +977,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <td>13.5</td>
 </tr>
 <tr>
-<td>Mar 17, 10:00 AM</td>
+<td>Mar 17</td>
 <td>118</td>
 <td>78</td>
 <td>70</td>
@@ -922,7 +985,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <td>13.2</td>
 </tr>
 <tr>
-<td>Mar 24, 10:00 AM</td>
+<td>Mar 24</td>
 <td>122</td>
 <td>82</td>
 <td>74</td>
@@ -931,18 +994,86 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </tr>
 </tbody>
 </table>
-<p>The third row's hemoglobin is NULL — the labs API hasn't returned yet. When it does, that cell gets filled in automatically via UPSERT.</p>
-<p>Since vitals mostly come from one API call, a single <code>api_response_id</code> per row is fine. If we ever need to trace which specific call set hemoglobin vs BP, we fall back to searching <code>api_response</code> by patient and timestamp.</p>
+<p>Row 3: hemoglobin is NULL because the labs API hasn't returned yet. When it does, that cell fills in via UPSERT.</p>
 <hr />
-<h3>LUPA Tracking</h3>
-<p>LUPA (Low Utilization Payment Adjustment) is a Medicare penalty. If a patient doesn't receive enough home health visits in an episode, the agency gets paid less. The frontend shows a simple card: how many visits have happened, how many are scheduled, and whether they're above or below the threshold.</p>
-<p>The <code>patient_lupa</code> table stores <strong>one row per episode</strong> that gets updated in place every cycle. There's no time series here — just the current state.</p>
-<p>Four different APIs feed this one row:
-- <strong>Encounter.Search(HH)</strong> — we count finished home health encounters to get <code>visits_completed</code>
-- <strong>CarePlan.Read</strong> — gives us <code>visits_scheduled</code> and <code>threshold</code>
-- <strong>EpisodeOfCare.Search</strong> — gives us <code>pdgm</code> and <code>episodes_completed</code></p>
-<p>Note: <code>visits_completed</code> isn't a field Epic gives us directly. The processor counts Encounter resources where status = finished and class = home health. It's a derived value.</p>
-<p><strong>Example — how one row evolves over a 60-day episode:</strong></p>
+<h2>LUPA Tracking</h2>
+<h3>What It Is</h3>
+<p>LUPA (Low Utilization Payment Adjustment) is a Medicare penalty. If a patient doesn't get enough home health visits during an episode, the agency gets paid significantly less. Clinical staff need to see at a glance: how many visits have happened, how many are planned, and whether they're on track.</p>
+<h3>What the APIs Return</h3>
+<p>No single API gives us a complete LUPA picture. We need four:</p>
+<ul>
+<li><strong>Encounter.Search(HH)</strong> — returns a list of home health encounters. We count the ones with status = finished to get visits completed. This is a derived number, not a field Epic hands us.</li>
+<li><strong>CarePlan.Read</strong> — returns the care plan with the total planned visits and the LUPA threshold.</li>
+<li><strong>EpisodeOfCare.Search</strong> — returns the episode details including PDGM period and how many episodes the patient has completed.</li>
+</ul>
+<h3>What the Processor Does</h3>
+<p>The LupaProcessor receives all three API responses and:</p>
+<ol>
+<li>Counts finished home health encounters → <code>visits_completed</code></li>
+<li>Extracts planned visits and threshold from the care plan → <code>visits_scheduled</code>, <code>threshold</code></li>
+<li>Extracts PDGM and episode count from EpisodeOfCare → <code>pdgm</code>, <code>episodes_completed</code></li>
+<li>UPSERTs everything into one row on (patient_id, episode_id)</li>
+</ol>
+<p>This runs every cycle. The row just keeps getting updated with the latest numbers.</p>
+<h3>The Table</h3>
+<p><strong><code>patient_lupa</code></strong> — one row per episode, updated in place.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+<td></td>
+</tr>
+<tr>
+<td>patient_id</td>
+<td>uuid FK</td>
+<td></td>
+</tr>
+<tr>
+<td>episode_id</td>
+<td>uuid FK</td>
+<td></td>
+</tr>
+<tr>
+<td>pdgm</td>
+<td>string</td>
+<td>EpisodeOfCare.Search</td>
+</tr>
+<tr>
+<td>visits_completed</td>
+<td>int</td>
+<td>Counted from Encounter.Search(HH)</td>
+</tr>
+<tr>
+<td>visits_scheduled</td>
+<td>int</td>
+<td>CarePlan.Read</td>
+</tr>
+<tr>
+<td>threshold</td>
+<td>int</td>
+<td>CarePlan.Read</td>
+</tr>
+<tr>
+<td>episodes_completed</td>
+<td>int</td>
+<td>EpisodeOfCare.Search</td>
+</tr>
+<tr>
+<td>api_response_id</td>
+<td>uuid FK</td>
+<td>Last API that wrote</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example — one episode over 60 days:</strong></p>
 <table>
 <thead>
 <tr>
@@ -989,26 +1120,26 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </tr>
 </tbody>
 </table>
-<p>Day 15: the doctor added visits, so <code>visits_scheduled</code> went from 12 to 14. Day 60: the episode ended with 7 visits — above the threshold of 6, so no LUPA penalty.</p>
-<p>Because four APIs feed this one row, sourcing is tricky. A single <code>api_response_id</code> would only tell you the last API that wrote. For LUPA, we may want per-column <code>api_response_id</code>s if traceability matters.</p>
+<p>Day 15: doctor added visits (12 → 14). Day 60: episode ended with 7 visits, above threshold of 6 — no LUPA penalty.</p>
+<p>Because four APIs feed this row, the single <code>api_response_id</code> only tracks the last one that wrote. If per-field traceability matters later, we can add per-column <code>api_response_id</code>s for this table specifically.</p>
 <hr />
-<h3>ADLs</h3>
-<p>ADL (Activities of Daily Living) scores measure a patient's functional independence — things like ambulation, bathing, dressing, feeding. Each is scored 0-5 (lower = more independent). The frontend displays these as trend lines over an episode.</p>
-<p><em>Detailed design TBD.</em></p>
+<h2>ADLs</h2>
+<p>ADL (Activities of Daily Living) scores measure a patient's functional independence — ambulation, bathing, dressing, feeding, and more. Each is scored 0-5 (lower = more independent). The frontend displays these as trend lines over an episode, showing improvement or regression.</p>
+<p><em>API response, processor, and table design TBD.</em></p>
 <hr />
-<h3>Hospital Admissions</h3>
+<h2>Hospital Admissions</h2>
 <p><em>Design TBD.</em></p>
 <hr />
-<h3>HCCs &amp; Problem List</h3>
+<h2>HCCs &amp; Problem List</h2>
 <p><em>Design TBD.</em></p>
 <hr />
-<h3>OASIS / Clinical Notes</h3>
+<h2>OASIS / Clinical Notes</h2>
 <p><em>Design TBD.</em></p>
 <hr />
-<h2>Processors</h2>
-<p><em>Design TBD — pending discussion.</em></p>
+<h1>Processors</h1>
+<p><em>Architecture TBD — registry pattern, error handling, orchestration.</em></p>
 <hr />
-<h2>Recommendation</h2>
+<h1>Recommendation</h1>
 <p>TBD — pending team discussion.</p></div>`
 };
 

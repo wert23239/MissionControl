@@ -967,42 +967,54 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <table>
 <thead>
 <tr>
+<th>patient_id</th>
+<th>episode_id</th>
 <th>occurred_at</th>
 <th>bp_sys</th>
 <th>bp_dia</th>
 <th>pulse</th>
 <th>o2_sat</th>
 <th>hemoglobin</th>
+<th>api_response_id</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Mar 10</td>
+<td>patient-42</td>
+<td>ep-1</td>
+<td>2024-03-10 10:00</td>
 <td>120</td>
 <td>80</td>
 <td>72</td>
 <td>98</td>
 <td>13.5</td>
+<td>api-55</td>
 </tr>
 <tr>
-<td>Mar 17</td>
+<td>patient-42</td>
+<td>ep-1</td>
+<td>2024-03-17 10:00</td>
 <td>118</td>
 <td>78</td>
 <td>70</td>
 <td>97</td>
 <td>13.2</td>
+<td>api-60</td>
 </tr>
 <tr>
-<td>Mar 24</td>
+<td>patient-42</td>
+<td>ep-1</td>
+<td>2024-03-24 10:00</td>
 <td>122</td>
 <td>82</td>
 <td>74</td>
 <td>99</td>
 <td>NULL</td>
+<td>api-65</td>
 </tr>
 </tbody>
 </table>
-<p>Row 3: hemoglobin is NULL because the labs API hasn't returned yet. When it does, that cell fills in via UPSERT.</p>
+<p>Row 3: hemoglobin is NULL because the labs API hasn't returned yet. When it does, that cell fills in via UPSERT and <code>api_response_id</code> updates to the labs call.</p>
 <hr />
 <h2>LUPA Tracking</h2>
 <h3>What It Is</h3>
@@ -1081,53 +1093,38 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </tr>
 </tbody>
 </table>
-<p><strong>Example — one episode over 30 days:</strong></p>
+<p><strong>Example — one episode over 30 days (same row, UPSERTed each cycle):</strong></p>
 <table>
 <thead>
 <tr>
-<th>Day</th>
+<th>patient_id</th>
+<th>episode_id</th>
+<th>pdgm</th>
 <th>visits_completed</th>
 <th>visits_scheduled</th>
 <th>threshold</th>
-<th>pdgm</th>
 <th>episodes_completed</th>
+<th>api_response_id</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>0</td>
-<td>0</td>
-<td>12</td>
-<td>6</td>
+<td>patient-42</td>
+<td>ep-1</td>
 <td>Early</td>
-<td>0</td>
-</tr>
-<tr>
-<td>5</td>
-<td>2</td>
-<td>12</td>
-<td>6</td>
-<td>Early</td>
-<td>0</td>
-</tr>
-<tr>
-<td>15</td>
-<td>5</td>
-<td>14</td>
-<td>6</td>
-<td>Early</td>
-<td>0</td>
-</tr>
-<tr>
-<td>30</td>
 <td>7</td>
 <td>14</td>
 <td>6</td>
-<td>Early</td>
 <td>1</td>
+<td>api-82</td>
 </tr>
 </tbody>
 </table>
+<p>How it evolved:
+- <strong>Day 0:</strong> visits_completed = 0, visits_scheduled = 12, threshold = 6
+- <strong>Day 5:</strong> visits_completed updated to 2
+- <strong>Day 15:</strong> visits_scheduled changed from 12 → 14 (doctor added visits)
+- <strong>Day 30:</strong> episode ended — visits_completed = 7, above threshold of 6, no LUPA penalty</p>
 <p>Day 15: doctor added visits (12 → 14). Day 30: episode ended with 7 visits, above threshold of 6 — no LUPA penalty.</p>
 <p>Because four APIs feed this row, the single <code>api_response_id</code> only tracks the last one that wrote. If per-field traceability matters later, we can add per-column <code>api_response_id</code>s for this table specifically.</p>
 <hr />

@@ -888,7 +888,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <li><strong>The frontend needs clean, typed data.</strong> A vitals table with real columns (bp_systolic, pulse, etc.) — not raw FHIR JSON.</li>
 <li><strong>Multiple APIs feed one data point.</strong> LUPA tracking needs four different API calls combined into one row. We need a place to merge them.</li>
 <li><strong>APIs return data at different times.</strong> Vitals might come back today, but hemoglobin from a separate labs API comes back next week. The row needs to handle partial updates.</li>
-<li><strong>We need to trace where data came from.</strong> If a number looks wrong, we need to be able to find the raw API response that produced it.</li>
+<li><strong>Doctors need to know where data came from.</strong> Clinical staff need to trust the numbers they're seeing. If a value looks wrong, they need to trace it back to the original source — which API call produced it, and what the raw response looked like. This is a compliance and trust requirement, not just a nice-to-have.</li>
 </ul>
 <h3>Two Options</h3>
 <p><strong>Option A: One universal table</strong> — Every extracted value goes into a single <code>data_unit</code> table as individual rows (e.g. one row for "bp_systolic = 120", another for "pulse = 72"). Full traceability since every row links to its exact API call. But querying is complex, Prisma can't type-check it, and the frontend needs SQL views to reshape the data.</p>

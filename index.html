@@ -1133,6 +1133,92 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <p><em>API response, processor, and table design TBD.</em></p>
 <hr />
 <h1>In-Depth Design: All Tables</h1>
+<h3><code>patient</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+</tr>
+<tr>
+<td>fhir_id</td>
+<td>string (unique)</td>
+</tr>
+<tr>
+<td>first_name</td>
+<td>string</td>
+</tr>
+<tr>
+<td>last_name</td>
+<td>string</td>
+</tr>
+<tr>
+<td>date_of_birth</td>
+<td>date</td>
+</tr>
+<tr>
+<td>status</td>
+<td>enum (active, inactive)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>timestamp</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>timestamp</td>
+</tr>
+</tbody>
+</table>
+<h3><code>episode</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+</tr>
+<tr>
+<td>patient_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>fhir_id</td>
+<td>string (unique)</td>
+</tr>
+<tr>
+<td>start_date</td>
+<td>date</td>
+</tr>
+<tr>
+<td>end_date</td>
+<td>date (nullable)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>enum (active, completed, cancelled)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>timestamp</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>timestamp</td>
+</tr>
+</tbody>
+</table>
 <h3><code>api_response</code></h3>
 <table>
 <thead>

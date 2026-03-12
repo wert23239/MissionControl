@@ -844,253 +844,52 @@ deepgram:`<h2 class="panel-title">🎙️ Deepgram STT Degradation Investigation
 </div>`,
 homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <div class="panel-sub">Patient data architecture • FHIR API ingestion • data point tables</div>
-<style>.hh h1{display:none}.hh h2{font-size:16px;font-weight:700;color:#fff;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)}.hh h3{font-size:14px;font-weight:700;color:#e879f9;margin:20px 0 8px}.hh h4{font-size:13px;font-weight:600;color:#c084fc;margin:16px 0 6px}.hh table{border-collapse:collapse;width:100%;margin:12px 0}.hh th,.hh td{padding:6px 10px;border:1px solid rgba(255,255,255,0.08);font-size:12px;text-align:left}.hh th{background:rgba(255,255,255,0.04);color:#fff;font-weight:600}.hh code{background:rgba(232,121,249,0.1);padding:1px 5px;border-radius:3px;font-size:12px;color:#e879f9}.hh pre{background:#1a1525;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;border:1px solid rgba(255,255,255,0.06)}.hh pre code{background:none;padding:0;color:#d4c4f0}.hh hr{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:24px 0}.hh ul,.hh li{color:#998eb5;font-size:13px}.hh p{margin:8px 0;color:#d4c4f0;font-size:13px}.hh strong{color:#fff}</style>
+<style>.hh h1{display:none}.hh h2{font-size:16px;font-weight:700;color:#fff;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)}.hh h3{font-size:14px;font-weight:700;color:#e879f9;margin:20px 0 8px}.hh h4{font-size:13px;font-weight:600;color:#c084fc;margin:16px 0 6px}.hh table{border-collapse:collapse;width:100%;margin:12px 0}.hh th,.hh td{padding:6px 10px;border:1px solid rgba(255,255,255,0.08);font-size:12px;text-align:left}.hh th{background:rgba(255,255,255,0.04);color:#fff;font-weight:600}.hh code{background:rgba(232,121,249,0.1);padding:1px 5px;border-radius:3px;font-size:12px;color:#e879f9}.hh pre{background:#1a1525;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;border:1px solid rgba(255,255,255,0.06)}.hh pre code{background:none;padding:0;color:#d4c4f0}.hh hr{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:24px 0}.hh ul,.hh li{color:#998eb5;font-size:13px;margin:4px 0}.hh p{margin:8px 0;color:#d4c4f0;font-size:13px;line-height:1.7}.hh strong{color:#fff}</style>
 <div class="hh"><h1>Home Health App — Schema Design</h1>
-<h2>Introduction</h2>
-<p>The Home Health app monitors patient health across episodes of care. It pulls data from ~30 Epic FHIR APIs on a periodic schedule (~every 5-15 days per patient), extracts structured data points, and serves them to a frontend for clinical staff.</p>
-<h3>Data Points</h3>
-<table>
-<thead>
-<tr>
-<th>Data Point</th>
-<th>What It Tracks</th>
-<th>Shape</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Vitals</strong></td>
-<td>BP, pulse, O2, hemoglobin</td>
-<td>Multiple rows per episode (one per visit)</td>
-</tr>
-<tr>
-<td><strong>ADLs</strong></td>
-<td>10 functional scores (ambulation, bathing, etc.)</td>
-<td>Multiple rows per episode (SOC, weekly assessments)</td>
-</tr>
-<tr>
-<td><strong>LUPA Tracking</strong></td>
-<td>Visit counts, thresholds, PDGM</td>
-<td>One row per episode, updated in place</td>
-</tr>
-<tr>
-<td><strong>Hospital Admissions</strong></td>
-<td>ER/inpatient stays, diagnosis, dates</td>
-<td>One row per admission</td>
-</tr>
-<tr>
-<td><strong>HCCs &amp; Problem List</strong></td>
-<td>ICD-10 codes, diagnoses</td>
-<td>One row per code</td>
-</tr>
-<tr>
-<td><strong>OASIS Assessment</strong></td>
-<td>Assessment documents</td>
-<td>TBD</td>
-</tr>
-<tr>
-<td><strong>Clinical Notes</strong></td>
-<td>12-24 month document history</td>
-<td>TBD</td>
-</tr>
-</tbody>
-</table>
-<h3>API to Data Point Mapping</h3>
-<p>Each data point is fed by one or more FHIR APIs. One API can feed multiple data points (many-to-many).</p>
-<table>
-<thead>
-<tr>
-<th>API</th>
-<th>Feeds</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Observation.Search(Vital Signs)</td>
-<td>Vitals</td>
-</tr>
-<tr>
-<td>Observation.Search(Labs)</td>
-<td>Vitals</td>
-</tr>
-<tr>
-<td>Observation.Search(ADL)</td>
-<td>ADLs</td>
-</tr>
-<tr>
-<td>Encounter.Search(HH)</td>
-<td>LUPA</td>
-</tr>
-<tr>
-<td>Encounter.Search(Patient Chart)</td>
-<td>Admissions</td>
-</tr>
-<tr>
-<td>CarePlan.Read</td>
-<td>LUPA</td>
-</tr>
-<tr>
-<td>EpisodeOfCare.Search</td>
-<td>LUPA</td>
-</tr>
-<tr>
-<td>Condition.Search(Problems)</td>
-<td>HCCs</td>
-</tr>
-<tr>
-<td>Condition.Search(Encounter Diagnosis)</td>
-<td>HCCs, Admissions</td>
-</tr>
-<tr>
-<td>DocumentReference.Search(OASIS)</td>
-<td>OASIS</td>
-</tr>
-<tr>
-<td>DocumentReference.Search(Clinical Notes)</td>
-<td>Clinical Notes</td>
-</tr>
-<tr>
-<td>Binary.Read</td>
-<td>OASIS, Clinical Notes</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h1>General Design</h1>
-<p>All raw API responses are stored as JSONB in a shared <code>api_response</code> table. From there, two approaches for how data reaches the frontend:</p>
-<h2>Option A: Universal <code>data_unit</code> Table</h2>
-<p>One table stores every extracted value from every API as individual rows. Each row has a <code>data_point_type</code>, <code>field_name</code>, typed value columns (<code>value_number</code>, <code>value_string</code>, <code>value_blob</code>, <code>value_date</code>), and a direct FK to <code>api_response_id</code>.</p>
-<p>Frontend reads through SQL views that pivot rows into typed columns per data point.</p>
-<p><strong>Pros:</strong> One ingestion path. Full per-field traceability (every value links to its exact API call). Easy to add new data points.</p>
-<p><strong>Cons:</strong> EAV pattern — harder queries, no ORM type safety, pivot performance, views are read-only in Prisma.</p>
-<h2>Option B: Direct Data Point Tables</h2>
-<p>Each data point type gets its own real Prisma table with typed columns. Ingestion writes directly to the appropriate table via UPSERT.</p>
-<p>Each table handles sourcing differently — simple tables store one <code>api_response_id</code> (last API that touched the row), complex tables like LUPA can store per-column <code>api_response_id</code>s.</p>
-<p><strong>Pros:</strong> Full Prisma/ORM support. Real typed columns, indexable, writable. Each table shaped exactly for its frontend component.</p>
-<p><strong>Cons:</strong> Per-table ingestion logic. New data point = new table + migration + processor.</p>
+<h1>Introduction</h1>
+<p>Home health care works in <strong>episodes</strong> — a patient gets assigned a care plan (typically 60 days), and nurses visit them at home throughout that period. During each visit, they record vitals, assess the patient's ability to perform daily activities, track visit counts, and more.</p>
+<p>Our app connects to <strong>Epic</strong> (the hospital's electronic health record system) through their FHIR APIs. Think of these as endpoints that return raw clinical data — things like observations, encounters, care plans, and documents. We call about 30 of these APIs per patient, on a recurring schedule (roughly every 5-15 days).</p>
+<p>The problem is that what Epic gives us and what the frontend needs to display are two very different things.</p>
+<h3>What's a Data Point?</h3>
+<p>A <strong>data point</strong> is what the clinical user actually sees on screen. It's a clean, structured table — like a patient's vitals over time, or their LUPA visit tracking summary.</p>
+<p>A data point might seem simple on the frontend, but behind the scenes it could be assembled from multiple API calls. For example, to build one row of LUPA tracking data, we need to call four separate APIs and combine the results.</p>
+<h3>What's an API Response?</h3>
+<p>Every time we call an Epic API, we get back a raw FHIR resource (JSON). We store this exactly as-is in a database table called <code>api_response</code>. This is our audit trail — if a number ever looks wrong, we can trace it back to the raw data Epic gave us.</p>
+<h3>The Many-to-Many Problem</h3>
+<p>This is the core design challenge:</p>
+<ul>
+<li>
+<p><strong>One data point can need multiple APIs.</strong> LUPA tracking needs data from Encounter.Search, CarePlan.Read, EpisodeOfCare.Search, and DocumentReference.Search — four different APIs feeding one table row.</p>
+</li>
+<li>
+<p><strong>One API can feed multiple data points.</strong> Encounter.Search returns encounter data that feeds both the LUPA tracker and the hospital admissions view.</p>
+</li>
+</ul>
+<p>The rest of this document describes how we handle this.</p>
 <hr />
 <h1>Flow</h1>
-<pre><code>┌─────────────┐     ┌─────────────────┐     ┌──────────────────┐
-│  EHR Layer   │ ──▸ │  Process Layer   │ ──▸ │  Data Point      │
-│              │     │                  │     │  Tables           │
-│ Call FHIR    │     │ One processor    │     │                  │
-│ APIs per     │     │ per data point.  │     │ patient_vital    │
-│ patient.     │     │ Extracts,        │     │ patient_adl      │
-│              │     │ transforms,      │     │ patient_lupa     │
-│ Store raw    │     │ UPSERTs.         │     │ patient_admission│
-│ JSONB in     │     │                  │     │ patient_hcc      │
-│ api_response │     │ Dedup by fhir_id │     │ ...              │
-└─────────────┘     └─────────────────┘     └──────────────────┘
-</code></pre>
-<h3>Per-Patient Ingestion Cycle</h3>
-<ol>
-<li>Call all FHIR APIs for a patient</li>
-<li>Store each raw response in <code>api_response</code> (append-only, JSONB)</li>
-<li>Route responses to processors based on registry</li>
-<li>Each processor extracts its fields and UPSERTs into its target table</li>
-</ol>
-<h3>Shared Table</h3>
-<p><strong><code>api_response</code></strong> — append-only audit log.</p>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Type</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>id</td>
-<td>uuid</td>
-<td>PK</td>
-</tr>
-<tr>
-<td>patient_id</td>
-<td>uuid</td>
-<td>FK</td>
-</tr>
-<tr>
-<td>episode_id</td>
-<td>uuid</td>
-<td>FK</td>
-</tr>
-<tr>
-<td>endpoint</td>
-<td>string</td>
-<td>e.g. <code>Observation.Search(VitalSigns)</code></td>
-</tr>
-<tr>
-<td>raw_response</td>
-<td>JSONB</td>
-<td>Full FHIR bundle</td>
-</tr>
-<tr>
-<td>fetched_at</td>
-<td>timestamp</td>
-<td></td>
-</tr>
-</tbody>
-</table>
+<p>Data moves through three layers:</p>
+<p><strong>1. EHR Layer</strong> — We call all FHIR APIs for a patient and store each raw response in <code>api_response</code> as JSONB. This table is append-only — we never update or delete responses. This is our audit trail.</p>
+<p><strong>2. Process Layer</strong> — Each data point type has a <strong>processor</strong>. After all APIs have been called for a patient, we route the responses to the relevant processors. A processor knows which APIs it needs, extracts the fields it cares about, and writes to its target table. One API response can be routed to multiple processors.</p>
+<p><strong>3. Data Point Tables</strong> — Clean, typed Prisma tables that the frontend reads directly. One table per data point type. This is what clinical staff see.</p>
+<p>The key thing: we call all APIs first, then run processors. We don't process one API at a time — we wait until everything is in, so each processor has the full picture before writing.</p>
+<hr />
+<h1>General Design</h1>
+<p>We use <strong>Prisma</strong> as our ORM. All data lives in Postgres. We considered two approaches for how processed data gets stored:</p>
+<h3>Option A: One Big Table</h3>
+<p>Store every extracted value in a single universal table called <code>data_unit</code>. Each row is one field — like "bp_systolic = 120" or "ambulation = 2.5". The frontend reads through SQL views that pivot these rows into the shape each component needs.</p>
+<p>This gives you full traceability (every value links directly to the API call that produced it) and one ingestion path for everything. But it's an EAV (Entity-Attribute-Value) pattern — querying is awkward, Prisma can't type-check the columns, and views are read-only.</p>
+<h3>Option B: One Table Per Data Point</h3>
+<p>Each data point type gets its own Prisma table with real, typed columns — <code>patient_vital</code>, <code>patient_adl</code>, <code>patient_lupa</code>, etc. The frontend queries these directly.</p>
+<p>You lose some traceability (when multiple APIs write to the same row, you only know which one wrote last), but you get full Prisma support, real column types, indexes, and each table is shaped exactly for its frontend component.</p>
+<p>The tradeoff is worth it. Each table can handle its own sourcing however it needs to — vitals only need one <code>api_response_id</code> per row, while LUPA can track one per column if needed. We go with <strong>Option B for the POC</strong>.</p>
 <hr />
 <h1>In-Depth Design</h1>
 <h2>Data Points</h2>
 <h3>Vitals</h3>
-<p><strong><code>patient_vital</code></strong> — one row per patient per visit timestamp.</p>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Type</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>id</td>
-<td>uuid PK</td>
-</tr>
-<tr>
-<td>patient_id</td>
-<td>uuid FK</td>
-</tr>
-<tr>
-<td>episode_id</td>
-<td>uuid FK</td>
-</tr>
-<tr>
-<td>occurred_at</td>
-<td>timestamp</td>
-</tr>
-<tr>
-<td>bp_systolic</td>
-<td>float</td>
-</tr>
-<tr>
-<td>bp_diastolic</td>
-<td>float</td>
-</tr>
-<tr>
-<td>pulse</td>
-<td>float</td>
-</tr>
-<tr>
-<td>o2_saturation</td>
-<td>float</td>
-</tr>
-<tr>
-<td>hemoglobin</td>
-<td>float</td>
-</tr>
-<tr>
-<td>api_response_id</td>
-<td>uuid FK</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Unique:</strong> <code>(patient_id, episode_id, occurred_at)</code></p>
-<p><strong>APIs:</strong> Observation.Search(VitalSigns), Observation.Search(Labs)</p>
-<p><strong>UPSERT on</strong> <code>(patient_id, episode_id, occurred_at)</code> — each API call fills in the columns it knows about, leaves the rest untouched.</p>
-<h4>Example — One Episode, Three Visits</h4>
+<p>A nurse takes vitals at each home visit — blood pressure, pulse, O2 saturation. Lab results like hemoglobin come from a separate API, sometimes days later.</p>
+<p>The <code>patient_vital</code> table stores <strong>one row per visit</strong> (identified by patient + episode + timestamp). When the vitals API returns, it fills in BP, pulse, O2. When the labs API returns later for the same visit timestamp, it UPSERTs hemoglobin into the existing row.</p>
+<p><strong>Example — three visits in one episode:</strong></p>
 <table>
 <thead>
 <tr>
@@ -1100,104 +899,47 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <th>pulse</th>
 <th>o2_sat</th>
 <th>hemoglobin</th>
-<th>api_response_id</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>2024-03-10 10:00</td>
+<td>Mar 10, 10:00 AM</td>
 <td>120</td>
 <td>80</td>
 <td>72</td>
 <td>98</td>
 <td>13.5</td>
-<td>api-55</td>
 </tr>
 <tr>
-<td>2024-03-17 10:00</td>
+<td>Mar 17, 10:00 AM</td>
 <td>118</td>
 <td>78</td>
 <td>70</td>
 <td>97</td>
 <td>13.2</td>
-<td>api-60</td>
 </tr>
 <tr>
-<td>2024-03-24 10:00</td>
+<td>Mar 24, 10:00 AM</td>
 <td>122</td>
 <td>82</td>
 <td>74</td>
 <td>99</td>
 <td>NULL</td>
-<td>api-65</td>
 </tr>
 </tbody>
 </table>
-<p>Row 3: hemoglobin NULL — labs API hasn't returned yet. When it does, UPSERT fills it in and <code>api_response_id</code> updates to the labs call.</p>
-<p><strong>Sourcing tradeoff:</strong> <code>api_response_id</code> is the last API that touched the row. If vitals and labs come from different calls, you lose which call set which column. Acceptable for POC — raw JSONB in <code>api_response</code> is the fallback.</p>
+<p>The third row's hemoglobin is NULL — the labs API hasn't returned yet. When it does, that cell gets filled in automatically via UPSERT.</p>
+<p>Since vitals mostly come from one API call, a single <code>api_response_id</code> per row is fine. If we ever need to trace which specific call set hemoglobin vs BP, we fall back to searching <code>api_response</code> by patient and timestamp.</p>
 <hr />
 <h3>LUPA Tracking</h3>
-<p><strong><code>patient_lupa</code></strong> — one row per episode, updated in place.</p>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Type</th>
-<th>Source</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>id</td>
-<td>uuid PK</td>
-<td></td>
-</tr>
-<tr>
-<td>patient_id</td>
-<td>uuid FK</td>
-<td></td>
-</tr>
-<tr>
-<td>episode_id</td>
-<td>uuid FK</td>
-<td></td>
-</tr>
-<tr>
-<td>pdgm</td>
-<td>string</td>
-<td>EpisodeOfCare.Search</td>
-</tr>
-<tr>
-<td>visits_completed</td>
-<td>int</td>
-<td>Counted from Encounter.Search(HH)</td>
-</tr>
-<tr>
-<td>visits_scheduled</td>
-<td>int</td>
-<td>CarePlan.Read</td>
-</tr>
-<tr>
-<td>threshold</td>
-<td>int</td>
-<td>CarePlan.Read</td>
-</tr>
-<tr>
-<td>episodes_completed</td>
-<td>int</td>
-<td>EpisodeOfCare.Search</td>
-</tr>
-<tr>
-<td>api_response_id</td>
-<td>uuid FK</td>
-<td>Last response (or per-column)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Unique:</strong> <code>(patient_id, episode_id)</code></p>
-<p><strong>APIs:</strong> Encounter.Search(HH), CarePlan.Read, EpisodeOfCare.Search, DocumentReference.Search</p>
-<p><strong>Key detail:</strong> <code>visits_completed</code> is derived — the processor counts Encounter resources with <code>status=finished</code> and <code>class=HH</code> for this episode. It's not a field Epic hands you directly.</p>
-<h4>Example — One Episode Over 60 Days</h4>
+<p>LUPA (Low Utilization Payment Adjustment) is a Medicare penalty. If a patient doesn't receive enough home health visits in an episode, the agency gets paid less. The frontend shows a simple card: how many visits have happened, how many are scheduled, and whether they're above or below the threshold.</p>
+<p>The <code>patient_lupa</code> table stores <strong>one row per episode</strong> that gets updated in place every cycle. There's no time series here — just the current state.</p>
+<p>Four different APIs feed this one row:
+- <strong>Encounter.Search(HH)</strong> — we count finished home health encounters to get <code>visits_completed</code>
+- <strong>CarePlan.Read</strong> — gives us <code>visits_scheduled</code> and <code>threshold</code>
+- <strong>EpisodeOfCare.Search</strong> — gives us <code>pdgm</code> and <code>episodes_completed</code></p>
+<p>Note: <code>visits_completed</code> isn't a field Epic gives us directly. The processor counts Encounter resources where status = finished and class = home health. It's a derived value.</p>
+<p><strong>Example — how one row evolves over a 60-day episode:</strong></p>
 <table>
 <thead>
 <tr>
@@ -1227,14 +969,6 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <td>0</td>
 </tr>
 <tr>
-<td>10</td>
-<td>4</td>
-<td>12</td>
-<td>6</td>
-<td>Early</td>
-<td>0</td>
-</tr>
-<tr>
 <td>15</td>
 <td>5</td>
 <td>14</td>
@@ -1252,84 +986,12 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </tr>
 </tbody>
 </table>
-<p>Same row UPSERTed each cycle. Day 15: doctor added visits, <code>visits_scheduled</code> went from 12 → 14. Day 60: episode complete, above LUPA threshold (7 &gt; 6).</p>
-<p><strong>Sourcing:</strong> 4 different APIs feed this one row. Option B weakness — single <code>api_response_id</code> loses per-field source. Can use per-column <code>api_response_id</code>s here if needed since this table always has multi-source writes.</p>
+<p>Day 15: the doctor added visits, so <code>visits_scheduled</code> went from 12 to 14. Day 60: the episode ended with 7 visits — above the threshold of 6, so no LUPA penalty.</p>
+<p>Because four APIs feed this one row, sourcing is tricky. A single <code>api_response_id</code> would only tell you the last API that wrote. For LUPA, we may want per-column <code>api_response_id</code>s if traceability matters.</p>
 <hr />
 <h3>ADLs</h3>
-<p><strong><code>patient_adl</code></strong> — one row per assessment date.</p>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Type</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>id</td>
-<td>uuid PK</td>
-</tr>
-<tr>
-<td>patient_id</td>
-<td>uuid FK</td>
-</tr>
-<tr>
-<td>episode_id</td>
-<td>uuid FK</td>
-</tr>
-<tr>
-<td>occurred_at</td>
-<td>timestamp</td>
-</tr>
-<tr>
-<td>ambulation</td>
-<td>float</td>
-</tr>
-<tr>
-<td>bathing</td>
-<td>float</td>
-</tr>
-<tr>
-<td>transferring</td>
-<td>float</td>
-</tr>
-<tr>
-<td>continence</td>
-<td>float</td>
-</tr>
-<tr>
-<td>dressing_upper</td>
-<td>float</td>
-</tr>
-<tr>
-<td>dressing_lower</td>
-<td>float</td>
-</tr>
-<tr>
-<td>grooming</td>
-<td>float</td>
-</tr>
-<tr>
-<td>toileting</td>
-<td>float</td>
-</tr>
-<tr>
-<td>feeding</td>
-<td>float</td>
-</tr>
-<tr>
-<td>med_management</td>
-<td>float</td>
-</tr>
-<tr>
-<td>api_response_id</td>
-<td>uuid FK</td>
-</tr>
-</tbody>
-</table>
-<p><strong>API:</strong> Observation.Search(ADL)</p>
-<p>Multiple rows per episode (SOC, Week 1, Week 2, etc.) — frontend uses these for trend graphing (scores over time, 0-5 scale).</p>
-<p><em>Design TBD — pending further discussion.</em></p>
+<p>ADL (Activities of Daily Living) scores measure a patient's functional independence — things like ambulation, bathing, dressing, feeding. Each is scored 0-5 (lower = more independent). The frontend displays these as trend lines over an episode.</p>
+<p><em>Detailed design TBD.</em></p>
 <hr />
 <h3>Hospital Admissions</h3>
 <p><em>Design TBD.</em></p>
@@ -1341,7 +1003,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <p><em>Design TBD.</em></p>
 <hr />
 <h2>Processors</h2>
-<p><em>Design TBD — pending discussion on processor architecture, registry pattern, and error handling.</em></p>
+<p><em>Design TBD — pending discussion.</em></p>
 <hr />
 <h2>Recommendation</h2>
 <p>TBD — pending team discussion.</p></div>`

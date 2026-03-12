@@ -873,14 +873,19 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <p>The frontend reads from clean, typed Prisma tables — one per data point type. This is what clinical staff see.</p>
 <hr />
 <h1>Data Design</h1>
-<p>We use <strong>Prisma</strong> as our ORM. All data lives in Postgres. We considered two approaches for how processed data gets stored:</p>
-<h3>Option A: One Big Table</h3>
-<p>Store every extracted value in a single universal table called <code>data_unit</code>. Each row is one field — like "bp_systolic = 120" or "ambulation = 2.5". The frontend reads through SQL views that pivot these rows into the shape each component needs.</p>
-<p>This gives you full traceability (every value links directly to the API call that produced it) and one ingestion path for everything. But it's an EAV (Entity-Attribute-Value) pattern — querying is awkward, Prisma can't type-check the columns, and views are read-only.</p>
-<h3>Option B: One Table Per Data Point</h3>
-<p>Each data point type gets its own Prisma table with real, typed columns — <code>patient_vital</code>, <code>patient_adl</code>, <code>patient_lupa</code>, etc. The frontend queries these directly.</p>
-<p>You lose some traceability (when multiple APIs write to the same row, you only know which one wrote last), but you get full Prisma support, real column types, indexes, and each table is shaped exactly for its frontend component.</p>
-<p>The tradeoff is worth it. Each table can handle its own sourcing however it needs to — vitals only need one <code>api_response_id</code> per row, while LUPA can track one per column if needed. We go with <strong>Option B for the POC</strong>.</p>
+<p>We use <strong>Prisma</strong> as our ORM and <strong>Postgres</strong> as our database.</p>
+<h3>Why This Needs Thought</h3>
+<p>The naive approach would be to just save whatever the APIs give us and query it directly. But that doesn't work here because:</p>
+<ul>
+<li><strong>The frontend needs clean, typed data.</strong> A vitals table with real columns (bp_systolic, pulse, etc.) — not raw FHIR JSON.</li>
+<li><strong>Multiple APIs feed one data point.</strong> LUPA tracking needs four different API calls combined into one row. We need a place to merge them.</li>
+<li><strong>APIs return data at different times.</strong> Vitals might come back today, but hemoglobin from a separate labs API comes back next week. The row needs to handle partial updates.</li>
+<li><strong>We need to trace where data came from.</strong> If a number looks wrong, we need to be able to find the raw API response that produced it.</li>
+</ul>
+<h3>Two Options</h3>
+<p><strong>Option A: One universal table</strong> — Every extracted value goes into a single <code>data_unit</code> table as individual rows (e.g. one row for "bp_systolic = 120", another for "pulse = 72"). Full traceability since every row links to its exact API call. But querying is complex, Prisma can't type-check it, and the frontend needs SQL views to reshape the data.</p>
+<p><strong>Option B: One table per data point</strong> — Each data point type gets its own Prisma table with real columns (<code>patient_vital</code>, <code>patient_lupa</code>, etc.). Simple to query, full ORM support, each table shaped exactly for its frontend component. We keep a simple <code>api_response_id</code> on each row pointing to the last API call that touched it. For deeper tracing, we fall back to the raw JSONB in <code>api_response</code>.</p>
+<p><strong>We go with Option B.</strong> It's simpler, plays nicely with Prisma, and the traceability tradeoff is acceptable — the raw API responses are always there if we need to dig deeper.</p>
 <hr />
 <h1>In-Depth Design</h1>
 <h2>Data Points</h2>

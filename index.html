@@ -844,10 +844,10 @@ deepgram:`<h2 class="panel-title">🎙️ Deepgram STT Degradation Investigation
 </div>`,
 homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <div class="panel-sub">Patient data architecture • FHIR API ingestion • data point tables</div>
-<style>.hh h1{display:none}.hh h2{font-size:16px;font-weight:700;color:#fff;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)}.hh h3{font-size:14px;font-weight:700;color:#e879f9;margin:20px 0 8px}.hh h4{font-size:13px;font-weight:600;color:#c084fc;margin:16px 0 6px}.hh table{border-collapse:collapse;width:100%;margin:12px 0}.hh th,.hh td{padding:6px 10px;border:1px solid rgba(255,255,255,0.08);font-size:12px;text-align:left}.hh th{background:rgba(255,255,255,0.04);color:#fff;font-weight:600}.hh code{background:rgba(232,121,249,0.1);padding:1px 5px;border-radius:3px;font-size:12px;color:#e879f9}.hh pre{background:#1a1525;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;border:1px solid rgba(255,255,255,0.06)}.hh pre code{background:none;padding:0;color:#d4c4f0}.hh hr{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:24px 0}.hh ul,.hh li{color:#998eb5;font-size:13px;margin:4px 0}.hh p{margin:8px 0;color:#d4c4f0;font-size:13px;line-height:1.7}.hh strong{color:#fff}</style>
+<style>.hh h1{font-size:20px;font-weight:700;color:#fff;margin:32px 0 16px;padding-bottom:10px;border-bottom:2px solid rgba(232,121,249,0.3)}.hh h1:first-child{display:none}.hh h2{font-size:16px;font-weight:700;color:#fff;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)}.hh h3{font-size:14px;font-weight:700;color:#e879f9;margin:20px 0 8px}.hh h4{font-size:13px;font-weight:600;color:#c084fc;margin:16px 0 6px}.hh table{border-collapse:collapse;width:100%;margin:12px 0}.hh th,.hh td{padding:6px 10px;border:1px solid rgba(255,255,255,0.08);font-size:12px;text-align:left}.hh th{background:rgba(255,255,255,0.04);color:#fff;font-weight:600}.hh code{background:rgba(232,121,249,0.1);padding:1px 5px;border-radius:3px;font-size:12px;color:#e879f9}.hh pre{background:#1a1525;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;border:1px solid rgba(255,255,255,0.06)}.hh pre code{background:none;padding:0;color:#d4c4f0}.hh hr{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:24px 0}.hh ul,.hh li{color:#998eb5;font-size:13px;margin:4px 0}.hh p{margin:8px 0;color:#d4c4f0;font-size:13px;line-height:1.7}.hh strong{color:#fff}</style>
 <div class="hh"><h1>Home Health App — Schema Design</h1>
 <h1>Introduction</h1>
-<p>Home health care works in <strong>episodes</strong> — a patient gets assigned a care plan (typically 60 days), and nurses visit them at home throughout that period. During each visit, they record vitals, assess the patient's ability to perform daily activities, track visit counts, and more.</p>
+<p>Home health care works in <strong>episodes</strong> — a patient gets assigned a care plan (typically 30 days), and nurses visit them at home throughout that period. During each visit, they record vitals, assess the patient's ability to perform daily activities, track visit counts, and more.</p>
 <p>Our app connects to <strong>Epic</strong> (the hospital's electronic health record system) through their FHIR APIs. Think of these as endpoints that return raw clinical data — things like observations, encounters, care plans, and documents. We call about 30 of these APIs per patient, on a recurring schedule (roughly every 5-15 days).</p>
 <p>The problem is that what Epic gives us and what the frontend needs to display are two very different things.</p>
 <h3>What's a Data Point?</h3>
@@ -1081,7 +1081,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </tr>
 </tbody>
 </table>
-<p><strong>Example — one episode over 60 days:</strong></p>
+<p><strong>Example — one episode over 30 days:</strong></p>
 <table>
 <thead>
 <tr>
@@ -1119,7 +1119,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <td>0</td>
 </tr>
 <tr>
-<td>60</td>
+<td>30</td>
 <td>7</td>
 <td>14</td>
 <td>6</td>
@@ -1128,7 +1128,7 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 </tr>
 </tbody>
 </table>
-<p>Day 15: doctor added visits (12 → 14). Day 60: episode ended with 7 visits, above threshold of 6 — no LUPA penalty.</p>
+<p>Day 15: doctor added visits (12 → 14). Day 30: episode ended with 7 visits, above threshold of 6 — no LUPA penalty.</p>
 <p>Because four APIs feed this row, the single <code>api_response_id</code> only tracks the last one that wrote. If per-field traceability matters later, we can add per-column <code>api_response_id</code>s for this table specifically.</p>
 <hr />
 <h2>ADLs</h2>

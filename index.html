@@ -1135,20 +1135,211 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <p>ADL (Activities of Daily Living) scores measure a patient's functional independence — ambulation, bathing, dressing, feeding, and more. Each is scored 0-5 (lower = more independent). The frontend displays these as trend lines over an episode, showing improvement or regression.</p>
 <p><em>API response, processor, and table design TBD.</em></p>
 <hr />
-<h2>Hospital Admissions</h2>
-<p><em>Design TBD.</em></p>
-<hr />
-<h2>HCCs &amp; Problem List</h2>
-<p><em>Design TBD.</em></p>
-<hr />
-<h2>OASIS / Clinical Notes</h2>
-<p><em>Design TBD.</em></p>
-<hr />
-<h1>Processors</h1>
-<p><em>Architecture TBD — registry pattern, error handling, orchestration.</em></p>
-<hr />
-<h1>Recommendation</h1>
-<p>TBD — pending team discussion.</p></div>`
+<h1>Appendix: All Tables</h1>
+<h3><code>api_response</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+</tr>
+<tr>
+<td>patient_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>episode_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>endpoint</td>
+<td>string</td>
+</tr>
+<tr>
+<td>raw_response</td>
+<td>JSONB</td>
+</tr>
+<tr>
+<td>fetched_at</td>
+<td>timestamp</td>
+</tr>
+</tbody>
+</table>
+<h3><code>patient_vital</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+</tr>
+<tr>
+<td>patient_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>episode_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>occurred_at</td>
+<td>timestamp</td>
+</tr>
+<tr>
+<td>bp_systolic</td>
+<td>float</td>
+</tr>
+<tr>
+<td>bp_diastolic</td>
+<td>float</td>
+</tr>
+<tr>
+<td>pulse</td>
+<td>float</td>
+</tr>
+<tr>
+<td>o2_saturation</td>
+<td>float</td>
+</tr>
+<tr>
+<td>hemoglobin</td>
+<td>float</td>
+</tr>
+<tr>
+<td>api_response_id</td>
+<td>uuid FK</td>
+</tr>
+</tbody>
+</table>
+<h3><code>patient_lupa</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+</tr>
+<tr>
+<td>patient_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>episode_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>pdgm</td>
+<td>string</td>
+</tr>
+<tr>
+<td>visits_completed</td>
+<td>int</td>
+</tr>
+<tr>
+<td>visits_scheduled</td>
+<td>int</td>
+</tr>
+<tr>
+<td>threshold</td>
+<td>int</td>
+</tr>
+<tr>
+<td>episodes_completed</td>
+<td>int</td>
+</tr>
+<tr>
+<td>api_response_id</td>
+<td>uuid FK</td>
+</tr>
+</tbody>
+</table>
+<h3><code>patient_adl</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>uuid PK</td>
+</tr>
+<tr>
+<td>patient_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>episode_id</td>
+<td>uuid FK</td>
+</tr>
+<tr>
+<td>occurred_at</td>
+<td>timestamp</td>
+</tr>
+<tr>
+<td>ambulation</td>
+<td>float</td>
+</tr>
+<tr>
+<td>bathing</td>
+<td>float</td>
+</tr>
+<tr>
+<td>transferring</td>
+<td>float</td>
+</tr>
+<tr>
+<td>continence</td>
+<td>float</td>
+</tr>
+<tr>
+<td>dressing_upper</td>
+<td>float</td>
+</tr>
+<tr>
+<td>dressing_lower</td>
+<td>float</td>
+</tr>
+<tr>
+<td>grooming</td>
+<td>float</td>
+</tr>
+<tr>
+<td>toileting</td>
+<td>float</td>
+</tr>
+<tr>
+<td>feeding</td>
+<td>float</td>
+</tr>
+<tr>
+<td>med_management</td>
+<td>float</td>
+</tr>
+<tr>
+<td>api_response_id</td>
+<td>uuid FK</td>
+</tr>
+</tbody>
+</table></div>`
 };
 
 // Supabase sync

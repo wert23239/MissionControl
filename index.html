@@ -495,6 +495,15 @@ ${stat('Loading...','—','')}
 </div>
 
 <div class="card" style="margin-bottom:20px">
+<h3 style="margin-bottom:16px">🔍 Transaction Search</h3>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<input type="text" id="txnSearchInput" placeholder="Search transactions (e.g. UBER, DOORDASH, AMAZON)..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')searchTxns()">
+<button onclick="searchTxns()" style="padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,#e879f9,#7c3aed);color:white;border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px">Search</button>
+</div>
+<div id="txnSearchResults" style="font-size:13px;color:#998eb5">Type a merchant name or keyword to search all transactions.</div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
 <h3 style="margin-bottom:16px">📈 Spending Over Time (Card + Rent)</h3>
 <canvas id="spendTrend" height="220"></canvas>
 </div>
@@ -2490,7 +2499,7 @@ function renderProjects(){
 }
 
 /* ── Spending Tab ── */
-let spendChartInstance=null, spendTrendInstance=null;
+let spendChartInstance=null, spendTrendInstance=null, allSpendingTxns=[];
 const RENT=3000;
 const SUBS_MAP={
   'BARRYS WILLIAMSBURG':{name:'Barry\'s Bootcamp',avg:260,essential:false,tip:'$260/mo — consider cheaper gyms ($30-50) or ClassPass'},
@@ -2517,6 +2526,8 @@ async function loadSpending(){
     const d=await r.json(); all=all.concat(d);
     if(d.length<batch) break; offset+=batch;
   }
+
+  allSpendingTxns=all;
 
   // Group by month
   const byMonth={};
@@ -2733,6 +2744,19 @@ async function loadSpending(){
     </div>
     <div style="margin-top:12px;color:#998eb5;font-size:12px">Weekends cost more per day — restaurants, bars, and rideshares spike Fri–Sun</div>
   `;
+}
+
+function searchTxns(){
+  const q=document.getElementById('txnSearchInput').value.trim().toUpperCase();
+  const el=document.getElementById('txnSearchResults');
+  if(!q){el.innerHTML='Type a merchant name or keyword to search all transactions.';return;}
+  const matches=allSpendingTxns.filter(t=>t.description&&t.description.toUpperCase().includes(q));
+  if(!matches.length){el.innerHTML=`<span style="color:#ef4444">No transactions matching "${q}"</span>`;return;}
+  const total=matches.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const showing=matches.slice(0,20);
+  el.innerHTML=`<div style="margin-bottom:8px;color:#e8e0f0;font-weight:600">${matches.length} transaction${matches.length>1?'s':''} • $${Math.round(total).toLocaleString()} total</div>`+
+    showing.map(t=>`<div class="expense-row"><span>${t.description} <span style="color:#665c78">${t.transaction_date}</span></span><strong>$${Math.abs(t.amount).toFixed(2)}</strong></div>`).join('')+
+    (matches.length>20?`<div style="color:#665c78;margin-top:8px">...and ${matches.length-20} more</div>`:'');
 }
 
 function renderMonth(data,label){

@@ -3037,11 +3037,31 @@ const womensBracket={
 function confColor(c){return c==='high'?'#22c55e':c==='upset'?'#ef4444':'#f59e0b';}
 function confBorder(c){return `border-left:3px solid ${confColor(c)}`;}
 
+var bracketTipEl=null;
+function showBracketTip(el,text){
+  if(!bracketTipEl){
+    bracketTipEl=document.createElement('div');
+    bracketTipEl.style.cssText='position:fixed;z-index:9999;max-width:280px;padding:10px 14px;background:#2a2535;border:1px solid rgba(232,121,249,0.3);border-radius:10px;font-size:12px;color:#e8e0f0;line-height:1.5;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);transition:opacity 0.15s;opacity:0';
+    document.body.appendChild(bracketTipEl);
+  }
+  bracketTipEl.textContent=text.replace(/&quot;/g,'"');
+  bracketTipEl.style.opacity='1';
+  var r=el.getBoundingClientRect();
+  var x=r.left+r.width/2, y=r.top-8;
+  bracketTipEl.style.left=Math.min(x,window.innerWidth-290)+'px';
+  bracketTipEl.style.top='0px';
+  bracketTipEl.style.display='block';
+  var th=bracketTipEl.offsetHeight;
+  bracketTipEl.style.top=(y-th<8?r.bottom+8:y-th)+'px';
+}
+function hideBracketTip(){if(bracketTipEl)bracketTipEl.style.opacity='0';}
+
 function gameCard(g,showSeeds){
   const isW1=g.w===g.t1, isW2=g.w===g.t2;
   const s1=showSeeds&&g.s1?`(${g.s1}) `:'';
   const s2=showSeeds&&g.s2?`(${g.s2}) `:'';
-  return `<div class="bracket-game" style="${confBorder(g.conf)};background:rgba(255,255,255,0.03);border-radius:8px;padding:6px 10px;margin:3px 0;min-width:165px;font-size:11px;cursor:default;position:relative" title="${g.tip.replace(/"/g,'&quot;')}">
+  const esc=g.tip.replace(/`/g,'\\`').replace(/"/g,'&quot;');
+  return `<div class="bracket-game" style="${confBorder(g.conf)};background:rgba(255,255,255,0.03);border-radius:8px;padding:6px 10px;margin:3px 0;min-width:165px;font-size:11px;cursor:pointer;position:relative" onmouseenter="showBracketTip(this,'${esc}')" onmouseleave="hideBracketTip()">
     <div style="color:${isW1?'#e879f9':'#665c78'};font-weight:${isW1?'700':'400'}">${isW1?'▸ ':''}${s1}${g.t1}</div>
     <div style="color:${isW2?'#e879f9':'#665c78'};font-weight:${isW2?'700':'400'}">${isW2?'▸ ':''}${s2}${g.t2}</div>
   </div>`;

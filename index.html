@@ -494,6 +494,8 @@ spending:`<h2 class="panel-title">🏦 Spending</h2>
 ${stat('Loading...','—','')}
 </div>
 
+<div id="spend-pace" class="card" style="margin-bottom:20px;display:none"></div>
+
 <div class="card" style="margin-bottom:20px">
 <h3 style="margin-bottom:16px">🔍 Transaction Search</h3>
 <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -2733,6 +2735,37 @@ async function loadSpending(){
       <div style="font-weight:700;text-align:right;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);color:#22c55e">-$${(currentTotal-targetTotal).toLocaleString()}/mo</div>
     </div>
   `;
+
+  // ── Current Month Pace ──
+  const now=new Date();
+  const curMonth=now.toISOString().slice(0,7);
+  const dayOfMonth=now.getDate();
+  const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const paceEl=document.getElementById('spend-pace');
+  if(byMonth[curMonth]){
+    const spent=byMonth[curMonth].total;
+    const projected=Math.round(spent/(dayOfMonth/daysInMonth));
+    const diff=projected-avgSpend;
+    const pct=Math.round(dayOfMonth/daysInMonth*100);
+    const color=diff>200?'#ef4444':diff<-200?'#22c55e':'#f59e0b';
+    const status=diff>200?'🔴 Over pace':diff<-200?'🟢 Under pace':'🟡 On track';
+    paceEl.style.display='block';
+    paceEl.innerHTML=`
+      <h3 style="margin-bottom:16px">📊 ${curMonth} Spending Pace</h3>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+        <div><div style="font-size:28px;font-weight:700;color:#e8e0f0">$${Math.round(spent).toLocaleString()}</div><div style="color:#665c78;font-size:12px">spent so far (card)</div></div>
+        <div><div style="font-size:28px;font-weight:700;color:${color}">$${projected.toLocaleString()}</div><div style="color:#665c78;font-size:12px">projected total</div></div>
+        <div><div style="font-size:28px;font-weight:700;color:${color}">${status}</div><div style="color:#665c78;font-size:12px">vs $${Math.round(avgSpend).toLocaleString()} avg</div></div>
+      </div>
+      <div style="margin-top:14px;background:rgba(255,255,255,0.06);border-radius:8px;height:10px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#e879f9,#7c3aed);border-radius:8px;transition:width 0.5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#665c78">
+        <span>Day ${dayOfMonth} of ${daysInMonth} (${pct}% through month)</span>
+        <span>${diff>0?'+':''}$${Math.round(diff).toLocaleString()} vs avg</span>
+      </div>
+    `;
+  }
 
   // ── Weekend vs Weekday ──
   let wkday={total:0,count:0},wkend={total:0,count:0};

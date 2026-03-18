@@ -232,7 +232,8 @@ const sections=[
   {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'},
   {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'},
   {id:'deepgram',icon:'🎙️',label:'STT Investigation',dot:'#06b6d4'},
-  {id:'homehealth',icon:'🏥',label:'Home Health',dot:'#22c55e'}
+  {id:'homehealth',icon:'🏥',label:'Home Health',dot:'#22c55e'},
+  {id:'bracket',icon:'🏀',label:'March Madness',dot:'#f59e0b'}
 ];
 
 const nav=document.getElementById('nav');
@@ -591,6 +592,19 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 .dj-section-header h3{font-size:14px;font-weight:700;color:#e8e0f0;margin:0;}
 .dj-section-header .count{font-size:12px;color:#665c78;font-weight:400;}
 .dj-disk-search{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;color:#e8e0f0;font-family:inherit;font-size:12px;outline:none;width:200px;}
+.djtip-toggle{display:flex;align-items:center;gap:8px;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;user-select:none;}
+.djtip-toggle h3{font-size:14px;font-weight:700;color:#e8e0f0;margin:0;}
+.djtip-toggle .chevron{color:#665c78;font-size:12px;transition:transform 0.2s;}
+.djtip-toggle.open .chevron{transform:rotate(90deg);}
+.djtip-card{background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:12px;padding:14px 18px;margin:6px 0;cursor:pointer;transition:all 0.2s;}
+.djtip-card:hover{border-color:rgba(168,85,247,0.35);background:rgba(168,85,247,0.1);}
+.djtip-card h4{margin:0 0 3px;font-size:14px;color:#c084fc;font-weight:700;}
+.djtip-card .djtip-sum{color:#998eb5;font-size:12px;margin:0;}
+.djtip-card .djtip-detail{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(168,85,247,0.15);color:#d4c4f0;font-size:12px;line-height:1.7;}
+.djtip-card.open .djtip-detail{display:block;}
+.djtip-card .djtip-detail ul{margin:4px 0;padding-left:16px;}
+.djtip-card .djtip-detail li{margin:3px 0;color:#d4c4f0;}
+.djtip-card .djtip-detail strong{color:#e0d0f0;}
 </style>
 <div id="djCount" style="display:none">0</div><div id="djDone" style="display:none">0</div>
 <div id="djStats" class="stats" style="margin-bottom:16px;"></div>
@@ -614,7 +628,8 @@ dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <div id="djPipeline" style="display:none;margin:12px 0;"></div>
 <div id="djQueue"></div>
 <div id="djFailures"></div>
-<div id="djOnDisk"></div>`,
+<div id="djOnDisk"></div>
+<div id="djTips"></div>`,
 
 crons:`<h2 class="panel-title">⏰ Cron Jobs</h2>
 <div class="panel-sub">Scheduled tasks and automated jobs</div>
@@ -1433,7 +1448,25 @@ homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <td>uuid FK</td>
 </tr>
 </tbody>
-</table></div>`
+</table></div>`,
+
+bracket:`<h2 class="panel-title">🏀 March Madness 2026</h2>
+<div class="panel-sub">NCAA Tournament Bracket Picks</div>
+<div class="card" style="margin-bottom:16px;padding:14px 18px;border-left:3px solid #f59e0b">
+<div style="font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:4px">📊 SEED BONUS SCORING</div>
+<div style="font-size:13px;color:#d4c4f0;line-height:1.6">Higher seed upsets earn bonus points. A 12 beating a 5 = +7 bonus. A 1 beating a 16 = +0 bonus. Pick strategically — safe picks score consistent points, but upsets win pools.</div>
+</div>
+<div class="card" style="margin-bottom:16px;padding:14px 18px;border-left:3px solid #e879f9">
+<div style="font-size:12px;color:#e879f9;font-weight:700;margin-bottom:4px">🏆 MY CHAMPIONS</div>
+<div style="font-size:14px;color:#d4c4f0;margin-bottom:6px"><strong>Men's — Arizona (1)</strong> &nbsp;|&nbsp; <strong>Women's — UCLA (1)</strong></div>
+<div style="font-size:12px;color:#998eb5;margin-bottom:4px"><strong>Final Four:</strong> Men's — Duke, Arizona, Iowa State, Houston &nbsp;|&nbsp; Women's — UConn, UCLA, Texas, South Carolina</div>
+<div style="font-size:12px;color:#998eb5"><strong>Key Upsets:</strong> <span style="color:#ef4444">USF(11)&gt;Louisville(6)</span>, <span style="color:#ef4444">UCF(10)&gt;UCLA(7)</span>, <span style="color:#ef4444">High Point(12)&gt;Wisconsin(5)</span>, <span style="color:#ef4444">Missouri(10)&gt;Miami(7)</span>, <span style="color:#ef4444">Akron(12)&gt;Texas Tech(5)</span>, <span style="color:#ef4444">Santa Clara(10)&gt;Kentucky(7)</span>, <span style="color:#ef4444">VCU(11)&gt;UNC(6)</span>, <span style="color:#ef4444">Texas A&amp;M(10)&gt;St Mary's(7)</span></div>
+</div>
+<div class="filter-tabs" id="bracketToggle">
+<button class="filter-tab active" onclick="switchBracket('men')">🏀 Men's</button>
+<button class="filter-tab" onclick="switchBracket('women')">🏀 Women's</button>
+</div>
+<div id="bracketContent" style="overflow-x:auto"></div>`
 };
 
 // Supabase sync
@@ -2278,6 +2311,24 @@ function renderDJ(){
     }
     diskEl.innerHTML=html;
   }
+
+  // ── DJ Tips & Techniques ──
+  const tipsEl=document.getElementById('djTips');
+  if(tipsEl&&!tipsEl.dataset.init){
+    tipsEl.dataset.init='1';
+    const tips=[
+      {t:'🎛️ Filter Transitions',s:'Use low-pass/high-pass filters to smoothly blend between tracks.',d:'<ul><li><strong>Low-pass filter</strong> — gradually cuts highs, making a track sound "underwater." Great for pulling a song out.</li><li><strong>High-pass filter</strong> — cuts the lows/bass, leaving airy highs. Use on the incoming track then sweep down to bring it in full.</li><li><strong>Noise/resonance</strong> — adding slight resonance at the cutoff creates a sweep effect for build-ups.</li><li><strong>Technique:</strong> Filter out the outgoing track while simultaneously opening the filter on the incoming track. The crossover point is where the magic happens.</li><li><strong>Pro tip:</strong> Combine with a slow volume fade for ultra-smooth transitions the dancefloor won\'t even notice.</li></ul>'},
+      {t:'🎚️ EQ Mixing',s:'Swap bass, mid, and treble frequencies between two tracks for clean blends.',d:'<ul><li><strong>Bass swap</strong> — the most important technique. Never have two bass lines playing at full simultaneously. Cut the bass on the incoming track, then swap: bring its bass in while cutting the outgoing track\'s bass.</li><li><strong>Mid control</strong> — mids carry vocals and melodies. Reduce mids on one track to avoid vocal clashes.</li><li><strong>Treble blending</strong> — hi-hats and cymbals layer more easily, but watch for harshness. Slight treble cuts help.</li><li><strong>Kill switch vs gradual:</strong> Use gradual knob turns for smooth blends, kills for dramatic drops.</li><li><strong>Pro tip:</strong> Practice the "bass swap" until it\'s muscle memory — it\'s the foundation of clean mixing.</li></ul>'},
+      {t:'⏱️ Beatmatching Basics',s:'Sync tempos and align beats so two tracks play in perfect time.',d:'<ul><li><strong>Tempo matching</strong> — adjust the pitch fader until both tracks run at the same BPM. If the incoming track drifts ahead, it\'s too fast.</li><li><strong>Phase alignment</strong> — beats should land at the same time. Nudge the jog wheel to push or pull the track into alignment.</li><li><strong>Visual vs ear</strong> — waveform displays help, but train your ears first. Listen in headphones with cue/master split.</li><li><strong>Sync button</strong> — fine as a starting point, but learn manual beatmatching for tracks with tempo drift or live drummers.</li><li><strong>Pro tip:</strong> Focus on the kick drums. When they sound like one single kick, you\'re locked in.</li></ul>'},
+      {t:'🎼 Phrasing',s:'Mix on musical boundaries — count 8-bar and 16-bar phrases for natural transitions.',d:'<ul><li><strong>What is a phrase?</strong> — most electronic music is built in 8-bar (or 16-bar) blocks. Intros, breakdowns, drops all start on phrase boundaries.</li><li><strong>Mixing on the 1</strong> — start your blend at the beginning of a phrase (beat 1 of bar 1). This keeps transitions musical.</li><li><strong>Counting</strong> — count "1-2-3-4, 2-2-3-4, 3-2-3-4..." up to 8 (or 16). Start the incoming track on the next "1."</li><li><strong>Energy points</strong> — breakdowns and build-ups are natural mix points.</li><li><strong>Pro tip:</strong> Set hot cues at phrase boundaries so you always know where the 1 is.</li></ul>'},
+      {t:'📈 Energy Management',s:'Read the room and control the energy arc — build tension, release, repeat.',d:'<ul><li><strong>The energy arc</strong> — a great set has waves: build → peak → release → build again. Don\'t peak too early or stay flat.</li><li><strong>Reading the room</strong> — watch the crowd. If energy drops, bring in a familiar vocal or rhythmic track to re-engage.</li><li><strong>Opening vs peak hour</strong> — opening sets should build gradually (deep, groovy). Peak hour is for the bangers.</li><li><strong>The 3-track rule</strong> — don\'t play more than 3 tracks at the same energy level in a row. Go up, down, or sideways.</li><li><strong>Pro tip:</strong> Have "rescue tracks" — reliable crowd-pleasers you can drop if the vibe is dying.</li></ul>'},
+      {t:'🌀 Effects',s:'Use reverb, echo, delay, and other FX to enhance transitions and drops.',d:'<ul><li><strong>Reverb</strong> — adds space. Great for making a track "wash out" at the end of a phrase.</li><li><strong>Echo/delay</strong> — rhythmic repeats that fill gaps. Set to tempo-synced values (1/2 beat, 1 beat). Great before drops.</li><li><strong>The echo-out</strong> — hit echo on the last beat of the outgoing track, cut the fader. Echoes fade naturally while the new track takes over.</li><li><strong>Less is more</strong> — FX should enhance, not dominate. If the crowd notices the effect more than the music, you\'ve overdone it.</li><li><strong>Pro tip:</strong> Master the echo-out first before adding other effects to your toolkit.</li></ul>'},
+      {t:'🎵 Song Selection',s:'Harmonic mixing with the Camelot wheel, genre flow, and building a setlist.',d:'<ul><li><strong>Camelot wheel</strong> — assigns a key code (1A-12A, 1B-12B) to every track. Mix between same numbers, ±1, or A↔B of the same number for harmonic blends.</li><li><strong>Key clashing</strong> — two tracks in incompatible keys sound dissonant. Always check keys for long blends.</li><li><strong>Genre flow</strong> — moving between genres should feel natural. Find bridge tracks that share elements with both.</li><li><strong>Digging for music</strong> — explore Beatport, Bandcamp, SoundCloud. Listen to DJ mixes for track IDs.</li><li><strong>Pro tip:</strong> Tag all tracks with Camelot key, energy level (1-10), and genre. Sort by key for easy harmonic mixing.</li></ul>'},
+      {t:'⚠️ Common Mistakes',s:'Avoid trainwrecks, key clashes, and the most frequent beginner errors.',d:'<ul><li><strong>Trainwrecks</strong> — beats out of sync creating a galloping mess. Fix: nudge the jog wheel immediately, or cut the fader and reset.</li><li><strong>Clashing keys</strong> — long blends in incompatible keys sound awful. Fix: keep blends short if keys don\'t match.</li><li><strong>Over-effects</strong> — drowning everything in reverb and flanger. Fix: use effects sparingly and with purpose.</li><li><strong>Redlining</strong> — pushing gain into the red. Fix: keep levels in the yellow/green.</li><li><strong>Not knowing your music</strong> — playing tracks you haven\'t previewed. Fix: listen to every track fully before adding it to a set.</li><li><strong>Pro tip:</strong> Record every practice set. Listen back — you\'ll catch mistakes you didn\'t notice in the moment.</li></ul>'}
+    ];
+    const cards=tips.map(c=>'<div class="djtip-card" onclick="this.classList.toggle(\'open\')"><h4>'+c.t+'</h4><p class="djtip-sum">'+c.s+'</p><div class="djtip-detail">'+c.d+'</div></div>').join('');
+    tipsEl.innerHTML='<div class="djtip-toggle" onclick="this.classList.toggle(\'open\');this.nextElementSibling.style.display=this.classList.contains(\'open\')?\'block\':\'none\'"><span class="chevron">▶</span><h3>🎧 DJ Tips & Techniques</h3><span class="count" style="font-size:12px;color:#665c78;">'+tips.length+' topics</span></div><div style="display:none">'+cards+'</div>';
+  }
 }
 
 // Crons
@@ -2823,6 +2874,217 @@ function renderMonth(data,label){
     ${cats.map(([c,v])=>`<div class="expense-row"><span><span style="color:${CAT_COLORS[c]||'#665c78'}">●</span> ${c}</span><strong>$${Math.round(v).toLocaleString()} <span style="color:#665c78;font-weight:400">${Math.round(v/data.total*100)}%</span></strong></div>`).join('')}
   `;
 }
+
+/* ── March Madness Bracket ── */
+let currentBracket='men';
+
+const mensBracket={
+  regions:[
+    {name:'EAST',color:'#e879f9',rounds:[
+      [{s1:1,t1:'Duke',s2:16,t2:'Siena',w:'Duke',tip:"No. 1 overall seed, Cameron Boozer is likely NPOY (22.5/10.2/4.2). Too much talent despite Caleb Foster injury concerns.",conf:'high'},
+       {s1:8,t1:'Ohio State',s2:9,t2:'TCU',w:'TCU',tip:"Classic 8/9 toss-up. TCU's defensive intensity and tournament experience edge them here.",conf:'med'},
+       {s1:5,t1:"St. John's",s2:12,t2:'Northern Iowa',w:"St. John's",tip:"St. John's is a legitimate Final Four contender. Northern Iowa doesn't have the firepower.",conf:'high'},
+       {s1:4,t1:'Kansas',s2:13,t2:'Cal Baptist',w:'Kansas',tip:"Kansas tournament pedigree. Cal Baptist is a 13-seed making early tournament appearances.",conf:'high'},
+       {s1:6,t1:'Louisville',s2:11,t2:'South Florida',w:'South Florida',tip:"UPSET PICK. USF is 19-3 since late December, losses by combined 5 points. Louisville's Mikel Brown Jr. has back issues.",conf:'upset'},
+       {s1:3,t1:'Michigan State',s2:14,t2:'North Dakota State',w:'Michigan State',tip:"Izzo in March. 14-seeds rarely pull off upsets and MSU is too experienced.",conf:'high'},
+       {s1:7,t1:'UCLA',s2:10,t2:'UCF',w:'UCF',tip:"UPSET PICK. 7-10 matchups are historically volatile. UCF has the athleticism to cause problems.",conf:'upset'},
+       {s1:2,t1:'UConn',s2:15,t2:'Furman',w:'UConn',tip:"UConn has recent championship pedigree. 15-over-2 upsets are extremely rare.",conf:'high'}],
+      [{t1:'Duke',t2:'TCU',w:'Duke',tip:"Blue Devils' size and Boozer's dominance too much for TCU.",conf:'high'},
+       {t1:"St. John's",t2:'Kansas',w:"St. John's",tip:"St. John's playing their best basketball of the season. Strong guard play carries them.",conf:'med'},
+       {t1:'South Florida',t2:'Michigan State',w:'Michigan State',tip:"Izzo's March magic continues. USF's Cinderella run ends against tournament-tested Spartans.",conf:'med'},
+       {t1:'UCF',t2:'UConn',w:'UConn',tip:"UConn's depth and defensive versatility overwhelm UCF.",conf:'high'}],
+      [{t1:'Duke',t2:"St. John's",w:'Duke',tip:"Boozer's versatility is the difference-maker. Duke's length causes matchup nightmares.",conf:'high'},
+       {t1:'Michigan State',t2:'UConn',w:'UConn',tip:"UConn's championship experience and nonconference wins prove they're battle-tested.",conf:'med'}],
+      [{t1:'Duke',t2:'UConn',w:'Duke',tip:"Cameron Boozer's dominance carries Duke past UConn. The Blue Devils' size advantage is decisive.",conf:'med'}]
+    ]},
+    {name:'WEST',color:'#22d3ee',rounds:[
+      [{s1:1,t1:'Arizona',s2:16,t2:'LIU',w:'Arizona',tip:"Arizona is the most stable 1-seed — great backcourt + tremendous size.",conf:'high'},
+       {s1:8,t1:'Villanova',s2:9,t2:'Utah State',w:'Villanova',tip:"Big East tournament experience gives Villanova the edge.",conf:'med'},
+       {s1:5,t1:'Wisconsin',s2:12,t2:'High Point',w:'High Point',tip:"UPSET PICK. High Point has the highest upset probability (24%) of any 12-seed per ESPN BPI.",conf:'upset'},
+       {s1:4,t1:'Arkansas',s2:13,t2:'Hawaii',w:'Arkansas',tip:"SEC team with too much physicality for Hawaii.",conf:'high'},
+       {s1:6,t1:'BYU',s2:11,t2:'Texas',w:'BYU',tip:"Texas has lost 5 of last 6 entering the tournament.",conf:'med'},
+       {s1:3,t1:'Gonzaga',s2:14,t2:'Kennesaw State',w:'Gonzaga',tip:"Gonzaga is too polished offensively for Kennesaw.",conf:'high'},
+       {s1:7,t1:'Miami (FL)',s2:10,t2:'Missouri',w:'Missouri',tip:"UPSET PICK. SEC team with more talent, 7-10 games are historically close.",conf:'upset'},
+       {s1:2,t1:'Purdue',s2:15,t2:'Queens',w:'Purdue',tip:"Purdue jumped to 2-seed after Big Ten tournament win.",conf:'high'}],
+      [{t1:'Arizona',t2:'Villanova',w:'Arizona',tip:"Arizona's size and defensive versatility are too much.",conf:'high'},
+       {t1:'High Point',t2:'Arkansas',w:'Arkansas',tip:"Cinderella's clock strikes midnight. Arkansas physicality overwhelms High Point.",conf:'med'},
+       {t1:'BYU',t2:'Gonzaga',w:'Gonzaga',tip:"Gonzaga's offensive efficiency and WCC tournament form carry the day.",conf:'med'},
+       {t1:'Missouri',t2:'Purdue',w:'Purdue',tip:"Purdue's experience keeps them rolling.",conf:'high'}],
+      [{t1:'Arizona',t2:'Arkansas',w:'Arizona',tip:"Arizona's elite defense shuts down Arkansas. Krivas dominates the paint.",conf:'high'},
+       {t1:'Gonzaga',t2:'Purdue',w:'Purdue',tip:"Purdue's size and Big Ten toughness give them the edge.",conf:'med'}],
+      [{t1:'Arizona',t2:'Purdue',w:'Arizona',tip:"Arizona is the experts' most popular title pick (6/10 USA Today). Elite defense, clutch play.",conf:'high'}]
+    ]},
+    {name:'MIDWEST',color:'#22c55e',rounds:[
+      [{s1:1,t1:'Michigan',s2:16,t2:'UMBC/Howard',w:'Michigan',tip:"Michigan is a 1-seed for a reason. 16-seeds almost never win.",conf:'high'},
+       {s1:8,t1:'Georgia',s2:9,t2:'Saint Louis',w:'Georgia',tip:"SEC talent edge, but a close game.",conf:'med'},
+       {s1:5,t1:'Texas Tech',s2:12,t2:'Akron',w:'Akron',tip:"UPSET PICK. Akron is a dangerous mid-major and 12-over-5 is the most common upset.",conf:'upset'},
+       {s1:4,t1:'Alabama',s2:13,t2:'Hofstra',w:'Alabama',tip:"Alabama's athleticism and SEC caliber too much.",conf:'high'},
+       {s1:6,t1:'Tennessee',s2:11,t2:'SMU/Miami (OH)',w:'Tennessee',tip:"Tennessee is the nation's best offensive rebounding team.",conf:'high'},
+       {s1:3,t1:'Virginia',s2:14,t2:'Wright State',w:'Virginia',tip:"Virginia's pack-line defense stifles Wright State.",conf:'high'},
+       {s1:7,t1:'Kentucky',s2:10,t2:'Santa Clara',w:'Santa Clara',tip:"UPSET PICK. 7-10 matchups are volatile. Santa Clara plays disciplined WCC basketball.",conf:'upset'},
+       {s1:2,t1:'Iowa State',s2:15,t2:'Tennessee State',w:'Iowa State',tip:"Iowa State is a consensus Final Four pick.",conf:'high'}],
+      [{t1:'Michigan',t2:'Georgia',w:'Michigan',tip:"Michigan's depth and talent at the 1-seed level.",conf:'high'},
+       {t1:'Akron',t2:'Alabama',w:'Alabama',tip:"Alabama's talent wins out in round 2.",conf:'high'},
+       {t1:'Tennessee',t2:'Virginia',w:'Virginia',tip:"Virginia's elite defense slows Tennessee's tempo.",conf:'med'},
+       {t1:'Santa Clara',t2:'Iowa State',w:'Iowa State',tip:"Iowa State's 3-point prowess and Big 12 toughness end Santa Clara's run.",conf:'high'}],
+      [{t1:'Michigan',t2:'Alabama',w:'Michigan',tip:"Michigan's overall depth and 1-seed quality.",conf:'med'},
+       {t1:'Virginia',t2:'Iowa State',w:'Iowa State',tip:"Iowa State's offense cracks Virginia's pack-line eventually.",conf:'med'}],
+      [{t1:'Michigan',t2:'Iowa State',w:'Iowa State',tip:"Iowa State's 3-point prowess levels the playing field. Multiple experts had Iowa State in the Final Four.",conf:'med'}]
+    ]},
+    {name:'SOUTH',color:'#f59e0b',rounds:[
+      [{s1:1,t1:'Florida',s2:16,t2:'Prairie View/Lehigh',w:'Florida',tip:"Defending champs. Streaky guards but still the 1-seed.",conf:'high'},
+       {s1:8,t1:'Clemson',s2:9,t2:'Iowa',w:'Iowa',tip:"Iowa's offensive efficiency gives them the edge.",conf:'med'},
+       {s1:5,t1:'Vanderbilt',s2:12,t2:'McNeese',w:'Vanderbilt',tip:"Vandy takes care of the ball. Tyler Tanner and Duke Miles are too good.",conf:'high'},
+       {s1:4,t1:'Nebraska',s2:13,t2:'Troy',w:'Nebraska',tip:"Big Ten team with more depth.",conf:'high'},
+       {s1:6,t1:'North Carolina',s2:11,t2:'VCU',w:'VCU',tip:"UPSET PICK. Highest upset probability at 39% per ESPN BPI. Caleb Wilson out for UNC.",conf:'upset'},
+       {s1:3,t1:'Illinois',s2:14,t2:'Penn',w:'Illinois',tip:"Illinois is a Sweet 16 contender. Penn lacks the depth.",conf:'high'},
+       {s1:7,t1:"Saint Mary's",s2:10,t2:'Texas A&M',w:'Texas A&M',tip:"UPSET PICK. SEC talent in a 7-10 toss-up.",conf:'upset'},
+       {s1:2,t1:'Houston',s2:15,t2:'Idaho',w:'Houston',tip:"Houston is the title favorite for multiple CBS experts. Kingston Flemings is a lock top-10 NBA pick.",conf:'high'}],
+      [{t1:'Florida',t2:'Iowa',w:'Florida',tip:"Florida's championship experience and home-region advantage.",conf:'high'},
+       {t1:'Vanderbilt',t2:'Nebraska',w:'Vanderbilt',tip:"Vandy's guard play carries them.",conf:'med'},
+       {t1:'VCU',t2:'Illinois',w:'Illinois',tip:"Illinois' talent advantage shows in the second weekend.",conf:'high'},
+       {t1:'Texas A&M',t2:'Houston',w:'Houston',tip:"Houston gets Sweet 16/Elite 8 played in Houston — massive home-court advantage.",conf:'high'}],
+      [{t1:'Florida',t2:'Vanderbilt',w:'Florida',tip:"Defending champs' experience in crunch time.",conf:'high'},
+       {t1:'Illinois',t2:'Houston',w:'Houston',tip:"Houston's defense is elite and they have home-court advantage in Houston.",conf:'high'}],
+      [{t1:'Florida',t2:'Houston',w:'Houston',tip:"Houston playing Elite 8 in their home city. Cougars' defense smothers Florida's streaky guards.",conf:'high'}]
+    ]}
+  ],
+  finalFour:[
+    {t1:'Duke',t2:'Arizona',w:'Arizona',tip:"Arizona's elite defense and balanced attack. 6-2 in close games vs top seeds. Experts' most popular champion pick.",conf:'high'},
+    {t1:'Iowa State',t2:'Houston',w:'Houston',tip:"Houston's defense suffocates Iowa State's shooters. Home-state advantage. Kelvin Sampson's masterclass.",conf:'high'}
+  ],
+  championship:{t1:'Arizona',t2:'Houston',w:'Arizona',tip:"Arizona wins it all. Most popular expert pick (6/10 USA Today, 3/6 CBS). Best combination of elite backcourt, dominant size (Krivas 7'2\"), clutch freshman scorer (Brayden Burries), and elite defense.",conf:'high'}
+};
+
+const womensBracket={
+  regions:[
+    {name:'REGION 1 (FORT WORTH)',color:'#e879f9',rounds:[
+      [{s1:1,t1:'UConn',s2:16,t2:'UTSA',w:'UConn',tip:"34-0, defending champs, 50-game win streak. Sarah Strong is the national POY front-runner.",conf:'high'},
+       {s1:8,t1:'Iowa State',s2:9,t2:'Syracuse',w:'Iowa State',tip:"Solid mid-seed team, slight edge.",conf:'med'},
+       {s1:5,t1:'Maryland',s2:12,t2:'Murray State',w:'Maryland',tip:"Power conference talent wins.",conf:'high'},
+       {s1:4,t1:'UNC',s2:13,t2:'Western Illinois',w:'UNC',tip:"Too much talent gap.",conf:'high'},
+       {s1:6,t1:'Notre Dame',s2:11,t2:'Fairfield',w:'Notre Dame',tip:"Hannah Hidalgo is made for the big stage.",conf:'high'},
+       {s1:3,t1:'Ohio State',s2:14,t2:'Howard',w:'Ohio State',tip:"Jaloni Cambridge is dynamic. OSU kept it close with UCLA twice.",conf:'high'},
+       {s1:7,t1:'Illinois',s2:10,t2:'Colorado',w:'Colorado',tip:"UPSET PICK. 7-10 toss-up, Colorado's athleticism.",conf:'upset'},
+       {s1:2,t1:'Vanderbilt',s2:15,t2:'High Point',w:'Vanderbilt',tip:"Mikayla Blakes is the top scorer in women's college basketball.",conf:'high'}],
+      [{t1:'UConn',t2:'Iowa State',w:'UConn',tip:"No contest. UConn is historically dominant.",conf:'high'},
+       {t1:'Maryland',t2:'UNC',w:'UNC',tip:"Slight edge in depth.",conf:'med'},
+       {t1:'Notre Dame',t2:'Ohio State',w:'Notre Dame',tip:"Hidalgo's scoring ability in the clutch.",conf:'med'},
+       {t1:'Colorado',t2:'Vanderbilt',w:'Vanderbilt',tip:"Blakes takes over.",conf:'high'}],
+      [{t1:'UConn',t2:'UNC',w:'UConn',tip:"Unbeatable this season.",conf:'high'},
+       {t1:'Notre Dame',t2:'Vanderbilt',w:'Vanderbilt',tip:"Blakes vs Hidalgo — Vandy's overall balance wins.",conf:'med'}],
+      [{t1:'UConn',t2:'Vanderbilt',w:'UConn',tip:"UConn's defense (50.4 PPG allowed, #1 nationally) and Sarah Strong shut down even Blakes.",conf:'high'}]
+    ]},
+    {name:'REGION 2 (SACRAMENTO)',color:'#22d3ee',rounds:[
+      [{s1:1,t1:'UCLA',s2:16,t2:'Cal Baptist',w:'UCLA',tip:"31-1, swept Big Ten, won tournament by 51 points.",conf:'high'},
+       {s1:8,t1:'Oklahoma State',s2:9,t2:'Princeton',w:'Princeton',tip:"UPSET PICK. Princeton's Ivy League discipline and shooting.",conf:'upset'},
+       {s1:5,t1:'Ole Miss',s2:12,t2:'Gonzaga',w:'Ole Miss',tip:"Sweet 16 in 2 of last 3 years. More athletic.",conf:'high'},
+       {s1:4,t1:'Minnesota',s2:13,t2:'Green Bay',w:'Minnesota',tip:"Top-16 seed, too talented.",conf:'high'},
+       {s1:6,t1:'Baylor',s2:11,t2:'Nebraska/Richmond',w:'Baylor',tip:"Power conference edge.",conf:'high'},
+       {s1:3,t1:'Duke',s2:14,t2:'Charleston',w:'Duke',tip:"Duke is much improved from early season.",conf:'high'},
+       {s1:7,t1:'Texas Tech',s2:10,t2:'Villanova',w:'Villanova',tip:"UPSET PICK. Big East tournament experience.",conf:'upset'},
+       {s1:2,t1:'LSU',s2:15,t2:'Jacksonville',w:'LSU',tip:"LSU's talent is overwhelming.",conf:'high'}],
+      [{t1:'UCLA',t2:'Princeton',w:'UCLA',tip:"UCLA's depth is absurd. Betts + Rice + Kneepkens.",conf:'high'},
+       {t1:'Ole Miss',t2:'Minnesota',w:'Minnesota',tip:"Minnesota's home-region advantage and top-16 seed status.",conf:'med'},
+       {t1:'Baylor',t2:'Duke',w:'Duke',tip:"Duke improved significantly since December.",conf:'med'},
+       {t1:'Villanova',t2:'LSU',w:'LSU',tip:"LSU's talent takes over.",conf:'high'}],
+      [{t1:'UCLA',t2:'Minnesota',w:'UCLA',tip:"UCLA dismantled the Big Ten. Minnesota can't match their depth.",conf:'high'},
+       {t1:'Duke',t2:'LSU',w:'LSU',tip:"LSU's star power edges Duke.",conf:'med'}],
+      [{t1:'UCLA',t2:'LSU',w:'UCLA',tip:"Lauren Betts (6'7\"), Kiki Rice, Gianna Kneepkens — too many weapons.",conf:'high'}]
+    ]},
+    {name:'REGION 3 (FORT WORTH)',color:'#22c55e',rounds:[
+      [{s1:1,t1:'Texas',s2:16,t2:'Missouri St/SF Austin',w:'Texas',tip:"SEC tournament champs, 8-game winning streak.",conf:'high'},
+       {s1:8,t1:'Oregon',s2:9,t2:'Virginia Tech',w:'Oregon',tip:"Pac-12 experience, slight edge.",conf:'med'},
+       {s1:5,t1:'Kentucky',s2:12,t2:'James Madison',w:'Kentucky',tip:"SEC talent.",conf:'high'},
+       {s1:4,t1:'West Virginia',s2:13,t2:'Miami (OH)',w:'West Virginia',tip:"Top-16 seed.",conf:'high'},
+       {s1:6,t1:'Alabama',s2:11,t2:'Rhode Island',w:'Alabama',tip:"SEC physicality.",conf:'high'},
+       {s1:3,t1:'Louisville',s2:14,t2:'Vermont',w:'Louisville',tip:"Imari Berry leads Louisville deep.",conf:'high'},
+       {s1:7,t1:'NC State',s2:10,t2:'Tennessee',w:'Tennessee',tip:"UPSET PICK. Tennessee has been in EVERY women's NCAA tournament since 1982.",conf:'upset'},
+       {s1:2,t1:'Michigan',s2:15,t2:'Holy Cross',w:'Michigan',tip:"Michigan is a darkhorse Final Four pick.",conf:'high'}],
+      [{t1:'Texas',t2:'Oregon',w:'Texas',tip:"Madison Booker (18.9 PPG) and Rori Harmon control the game.",conf:'high'},
+       {t1:'Kentucky',t2:'West Virginia',w:'West Virginia',tip:"Home-region advantage, top-16 seed.",conf:'med'},
+       {t1:'Alabama',t2:'Louisville',w:'Louisville',tip:"Imari Berry's star turn continues.",conf:'med'},
+       {t1:'Tennessee',t2:'Michigan',w:'Michigan',tip:"Michigan's potential 'history-making' run.",conf:'med'}],
+      [{t1:'Texas',t2:'West Virginia',w:'Texas',tip:"Texas beat UCLA and South Carolina on consecutive days in November.",conf:'high'},
+       {t1:'Louisville',t2:'Michigan',w:'Michigan',tip:"Michigan's depth and Wolverine magic.",conf:'med'}],
+      [{t1:'Texas',t2:'Michigan',w:'Texas',tip:"Madison Booker and Rori Harmon are the best backcourt left.",conf:'high'}]
+    ]},
+    {name:'REGION 4 (SACRAMENTO)',color:'#f59e0b',rounds:[
+      [{s1:1,t1:'South Carolina',s2:16,t2:'Southern/Samford',w:'South Carolina',tip:"6th consecutive 1-seed. Dawn Staley's dynasty.",conf:'high'},
+       {s1:8,t1:'Clemson',s2:9,t2:'USC',w:'USC',tip:"UPSET PICK. USC's talent and Pac-12 pedigree.",conf:'upset'},
+       {s1:5,t1:'Michigan State',s2:12,t2:'Colorado State',w:'Michigan State',tip:"Big Ten team, more depth.",conf:'high'},
+       {s1:4,t1:'Oklahoma',s2:13,t2:'Idaho',w:'Oklahoma',tip:"Top-16 seed.",conf:'high'},
+       {s1:6,t1:'Washington',s2:11,t2:'South Dakota State',w:'South Dakota State',tip:"UPSET PICK. SDSU's mid-major magic.",conf:'upset'},
+       {s1:3,t1:'TCU',s2:14,t2:'UC San Diego',w:'TCU',tip:"Top-16 seed, too talented.",conf:'high'},
+       {s1:7,t1:'Georgia',s2:10,t2:'Virginia/Arizona St',w:'Georgia',tip:"SEC talent.",conf:'high'},
+       {s1:2,t1:'Iowa',s2:15,t2:'Fairleigh Dickinson',w:'Iowa',tip:"Iowa is a legit 2-seed. Chazadi Wright running the show.",conf:'high'}],
+      [{t1:'South Carolina',t2:'USC',w:'South Carolina',tip:"Joyce Edwards (19.6 PPG) and Dawn Staley's coaching.",conf:'high'},
+       {t1:'Michigan State',t2:'Oklahoma',w:'Oklahoma',tip:"Oklahoma's top-16 seed status and talent.",conf:'med'},
+       {t1:'South Dakota State',t2:'TCU',w:'TCU',tip:"TCU too strong.",conf:'high'},
+       {t1:'Georgia',t2:'Iowa',w:'Iowa',tip:"Iowa's efficiency and balance.",conf:'med'}],
+      [{t1:'South Carolina',t2:'Oklahoma',w:'South Carolina',tip:"Gamecocks' championship DNA.",conf:'high'},
+       {t1:'TCU',t2:'Iowa',w:'Iowa',tip:"Iowa's ball movement and efficiency.",conf:'med'}],
+      [{t1:'South Carolina',t2:'Iowa',w:'South Carolina',tip:"Dawn Staley going for 6th straight Final Four. Too much talent and experience.",conf:'high'}]
+    ]}
+  ],
+  finalFour:[
+    {t1:'UConn',t2:'UCLA',w:'UCLA',tip:"UCLA's 51-point Big Ten final demolition shows their ceiling. Deepest roster in the country.",conf:'med'},
+    {t1:'Texas',t2:'South Carolina',w:'South Carolina',tip:"South Carolina beat Texas twice before. Dawn Staley's motivation drives the Gamecocks.",conf:'med'}
+  ],
+  championship:{t1:'UCLA',t2:'South Carolina',w:'UCLA',tip:"UCLA wins the program's first-ever national championship. Lauren Betts is the most dominant post player, surrounded by elite shooters. Cori Close's masterpiece.",conf:'high'}
+};
+
+function confColor(c){return c==='high'?'#22c55e':c==='upset'?'#ef4444':'#f59e0b';}
+function confBorder(c){return `border-left:3px solid ${confColor(c)}`;}
+
+function gameCard(g,showSeeds){
+  const isW1=g.w===g.t1, isW2=g.w===g.t2;
+  const s1=showSeeds&&g.s1?`(${g.s1}) `:'';
+  const s2=showSeeds&&g.s2?`(${g.s2}) `:'';
+  return `<div class="bracket-game" style="${confBorder(g.conf)};background:rgba(255,255,255,0.03);border-radius:8px;padding:6px 10px;margin:3px 0;min-width:165px;font-size:11px;cursor:default;position:relative" title="${g.tip.replace(/"/g,'&quot;')}">
+    <div style="color:${isW1?'#e879f9':'#665c78'};font-weight:${isW1?'700':'400'}">${isW1?'▸ ':''}${s1}${g.t1}</div>
+    <div style="color:${isW2?'#e879f9':'#665c78'};font-weight:${isW2?'700':'400'}">${isW2?'▸ ':''}${s2}${g.t2}</div>
+  </div>`;
+}
+
+function renderBracketData(data){
+  const roundNames=['R64','R32','Sweet 16','Elite 8'];
+  let html='';
+  data.regions.forEach(reg=>{
+    html+=`<div style="margin-bottom:24px"><div style="font-size:14px;font-weight:700;color:${reg.color};margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">${reg.name}</div>`;
+    html+=`<div style="display:flex;gap:12px;overflow-x:auto;align-items:flex-start;padding-bottom:8px">`;
+    reg.rounds.forEach((round,ri)=>{
+      html+=`<div style="min-width:175px"><div style="font-size:10px;color:#665c78;font-weight:700;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px">${roundNames[ri]||'Round '+(ri+1)}</div>`;
+      round.forEach(g=>{ html+=gameCard(g,ri===0); });
+      html+=`</div>`;
+    });
+    html+=`</div></div>`;
+  });
+  // Final Four
+  html+=`<div style="margin-bottom:24px"><div style="font-size:14px;font-weight:700;color:#a855f7;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🏟️ FINAL FOUR</div>`;
+  html+=`<div style="display:flex;gap:12px;align-items:flex-start">`;
+  html+=`<div style="min-width:175px"><div style="font-size:10px;color:#665c78;font-weight:700;text-transform:uppercase;margin-bottom:6px">Semifinals</div>`;
+  data.finalFour.forEach(g=>{ html+=gameCard(g,false); });
+  html+=`</div><div style="min-width:175px"><div style="font-size:10px;color:#665c78;font-weight:700;text-transform:uppercase;margin-bottom:6px">🏆 Championship</div>`;
+  html+=gameCard(data.championship,false);
+  html+=`<div style="margin-top:8px;padding:8px 12px;background:linear-gradient(135deg,rgba(232,121,249,0.15),rgba(168,85,247,0.1));border-radius:8px;font-size:13px;font-weight:700;color:#e879f9;text-align:center">👑 ${data.championship.w} WINS IT ALL</div>`;
+  html+=`</div></div></div>`;
+  return html;
+}
+
+function switchBracket(type){
+  currentBracket=type;
+  document.querySelectorAll('#bracketToggle .filter-tab').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(type)));
+  const el=document.getElementById('bracketContent');
+  if(el) el.innerHTML=renderBracketData(type==='men'?mensBracket:womensBracket);
+}
+
+// Auto-render bracket when panel shown
+const _origSwitch2=switchPanel;
+switchPanel=function(id){
+  _origSwitch2(id);
+  if(id==='bracket')switchBracket(currentBracket);
+};
 </script>
 </body>
 </html>

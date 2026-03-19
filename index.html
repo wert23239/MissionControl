@@ -1574,7 +1574,8 @@ sections.forEach((s,i)=>{
   }
   const el=document.createElement('div');
   el.className='nav-item'+(s.id===savedTab?' active':'');
-  el.innerHTML=`<span class="dot" style="background:${s.dot}"></span><span>${s.icon} ${s.label}</span>`;
+  const shortcut=i<9?(i+1):i===9?'0':'';
+  el.innerHTML=`<span class="dot" style="background:${s.dot}"></span><span>${s.icon} ${s.label}</span>${shortcut?`<span style="margin-left:auto;font-size:10px;color:#555;background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px;font-family:monospace">${shortcut}</span>`:''}`;
   el.onclick=()=>switchPanel(s.id);
   el.dataset.id=s.id;
   nav.appendChild(el);
@@ -1606,6 +1607,25 @@ function switchPanel(id){
   if(id==='crons')renderCrons();
   if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
 }
+
+// ── Keyboard shortcuts: 1-9,0 switch tabs, Esc blurs ──
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable){
+    if(e.key==='Escape')document.activeElement.blur();
+    return;
+  }
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key>='1'&&e.key<='9'){
+    const idx=parseInt(e.key)-1;
+    if(idx<sections.length){e.preventDefault();switchPanel(sections[idx].id);}
+  }else if(e.key==='0'&&sections.length>=10){
+    e.preventDefault();switchPanel(sections[9].id);
+  }else if(e.key==='?'){
+    const overlay=document.getElementById('kb-help');
+    if(overlay)overlay.style.display=overlay.style.display==='flex'?'none':'flex';
+  }
+});
 
 function switchNB(tab){
   document.querySelectorAll('.nb-tab').forEach(t=>t.classList.toggle('active',t.textContent.toLowerCase().replace('-','').includes(tab)));
@@ -3106,5 +3126,16 @@ switchPanel=function(id){
   if(id==='bracket')switchBracket(currentBracket);
 };
 </script>
+<div id="kb-help" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="this.style.display='none'">
+<div style="background:#231e30;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px 32px;max-width:360px;width:90%" onclick="event.stopPropagation()">
+<h3 style="color:#e879f9;margin-bottom:16px;font-size:16px">⌨️ Keyboard Shortcuts</h3>
+<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;color:#d4c4f0">
+<kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-family:monospace;color:#e879f9">1-9, 0</kbd><span>Switch tabs</span>
+<kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-family:monospace;color:#e879f9">Esc</kbd><span>Unfocus input</span>
+<kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-family:monospace;color:#e879f9">?</kbd><span>Toggle this help</span>
+</div>
+<div style="margin-top:16px;font-size:11px;color:#665c78;text-align:center">Press ? or click outside to close</div>
+</div>
+</div>
 </body>
 </html>

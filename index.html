@@ -1781,7 +1781,10 @@ function renderTasks(){
   const done=tasksCache.filter(t=>t.status==='done');
   // Stats
   const statsEl=document.getElementById('taskStats');
-  if(statsEl)statsEl.innerHTML=stat('Todo',todo.length,'queued')+stat('In Progress',prog.length,'active')+stat('Done',done.length,'completed ✅');
+  const todayISO=new Date().toISOString().slice(0,10);
+  const overdue=tasksCache.filter(t=>t.due_date&&t.due_date<todayISO&&t.status!=='done');
+  const overdueStr=overdue.length?' · <span style="color:#ef4444">'+overdue.length+' overdue</span>':'';
+  if(statsEl)statsEl.innerHTML=stat('Todo',todo.length,'queued'+overdueStr)+stat('In Progress',prog.length,'active')+stat('Done',done.length,'completed ✅');
   // Daily Todo
   const today=new Date().toISOString().slice(0,10);
   const daily=tasksCache.filter(t=>t.due_date===today&&t.status!=='done');
@@ -1798,11 +1801,15 @@ function renderTasks(){
   function renderCol(icon,label,items,allowAdvance,allowRevert){
     let html='<div class="kanban-col card"><h4>'+icon+' '+label+' ('+items.length+')</h4>';
     items.forEach(t=>{
-      const dueStr=t.due_date?'<div style="font-size:10px;color:#665c78;margin-top:4px">📅 '+t.due_date+'</div>':'';
+      const isOverdue=t.due_date&&t.due_date<today&&t.status!=='done';
+      const dueColor=isOverdue?'#ef4444':'#665c78';
+      const duePrefix=isOverdue?'⚠️ Overdue · ':'📅 ';
+      const dueStr=t.due_date?'<div style="font-size:10px;color:'+dueColor+';margin-top:4px;'+(isOverdue?'font-weight:600':'')+'">'+duePrefix+t.due_date+'</div>':'';
       const advBtn=allowAdvance?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="advanceTask('+t.id+')" title="Advance">→</span>':'';
       const revBtn=allowRevert?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="revertTask('+t.id+')" title="Move back">←</span>':'';
       const delBtn='<span style="cursor:pointer;font-size:14px;color:#ef4444;opacity:0.5" onclick="deleteTask('+t.id+')" title="Delete">×</span>';
-      html+='<div class="kanban-item"><div style="display:flex;justify-content:space-between;align-items:start"><span>'+t.title+'</span><span style="display:flex;gap:2px">'+revBtn+advBtn+delBtn+'</span></div>'+
+      const overdueStyle=isOverdue?'border-left:3px solid #ef4444;':'';
+      html+='<div class="kanban-item" style="'+overdueStyle+'"><div style="display:flex;justify-content:space-between;align-items:start"><span>'+t.title+'</span><span style="display:flex;gap:2px">'+revBtn+advBtn+delBtn+'</span></div>'+
         (t.tag?'<br><span class="tag tag-'+(t.tag||'human')+'">'+t.tag+'</span>':'')+dueStr+'</div>';
     });
     html+='</div>';return html;

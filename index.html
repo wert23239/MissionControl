@@ -566,6 +566,7 @@ ${stat('Loading...','—','')}
 
 calendar:`<h2 class="panel-title">📅 Calendar</h2>
 <div class="panel-sub">Upcoming events and schedule</div>
+<div id="calMonthGrid" class="card" style="margin-bottom:16px;padding:16px 20px;"></div>
 <div style="display:flex;gap:8px;margin-bottom:16px;">
 <input type="date" id="calDate" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
 <input type="text" id="calEvent" placeholder="Event description..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
@@ -2473,7 +2474,7 @@ function renderCal(){
     const dt=new Date(parseInt(y),parseInt(m)-1,dayNum);
     const dayName=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()];
     const isPast=new Date(item.date)<new Date(new Date().toDateString());
-    html+=`<div style="display:flex;align-items:center;gap:12px;padding:8px 4px;${isPast?'opacity:0.4;':''}">
+    html+=`<div data-cal-date="${item.date}" style="display:flex;align-items:center;gap:12px;padding:8px 4px;border-radius:8px;transition:background 0.3s;${isPast?'opacity:0.4;':''}">
       <div style="min-width:60px;text-align:right;">
         <span style="font-size:20px;font-weight:700;color:#e8e0f0">${dayNum}</span>
         <span style="font-size:11px;color:#665c78;margin-left:4px">${dayName}</span>
@@ -2484,6 +2485,62 @@ function renderCal(){
     </div>`;
   });
   el.innerHTML=html;
+}
+  renderCalGrid();
+
+// Month Grid Calendar
+let calGridMonth=new Date().getMonth();
+let calGridYear=new Date().getFullYear();
+function renderCalGrid(){
+  const el=document.getElementById('calMonthGrid');
+  if(!el)return;
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const days=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  // Build event-date set
+  const eventDates={};
+  calCache.forEach(item=>{eventDates[item.date]=(eventDates[item.date]||0)+1;});
+  const firstDay=new Date(calGridYear,calGridMonth,1).getDay();
+  const daysInMonth=new Date(calGridYear,calGridMonth+1,0).getDate();
+  const todayISO=new Date().toISOString().slice(0,10);
+  let grid='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  grid+='<button onclick="calGridMonth--;if(calGridMonth<0){calGridMonth=11;calGridYear--;}renderCalGrid()" style="background:none;border:none;color:#e879f9;cursor:pointer;font-size:18px;padding:4px 8px">‹</button>';
+  grid+='<span style="font-size:15px;font-weight:700;color:#e8e0f0">'+months[calGridMonth]+' '+calGridYear+'</span>';
+  grid+='<button onclick="calGridMonth++;if(calGridMonth>11){calGridMonth=0;calGridYear++;}renderCalGrid()" style="background:none;border:none;color:#e879f9;cursor:pointer;font-size:18px;padding:4px 8px">›</button>';
+  grid+='</div>';
+  grid+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">';
+  days.forEach(d=>{grid+='<div style="font-size:10px;color:#665c78;font-weight:600;padding:4px 0">'+d+'</div>';});
+  for(let i=0;i<firstDay;i++)grid+='<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const iso=calGridYear+'-'+String(calGridMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isToday=iso===todayISO;
+    const evtCount=eventDates[iso]||0;
+    const bg=isToday?'rgba(232,121,249,0.2)':evtCount?'rgba(139,92,246,0.1)':'transparent';
+    const border=isToday?'1px solid #e879f9':'1px solid transparent';
+    const dot=evtCount?'<div style="width:5px;height:5px;background:#e879f9;border-radius:50%;margin:2px auto 0"></div>':'';
+    const multi=evtCount>1?'<div style="font-size:8px;color:#e879f9;margin-top:1px">'+evtCount+'</div>':'';
+    const cursor=evtCount?'cursor:pointer':'';
+    const onclick=evtCount?'onclick="calGridClickDay(\''+iso+'\')"':'';
+    grid+='<div '+onclick+' style="padding:6px 2px;border-radius:8px;background:'+bg+';border:'+border+';'+cursor+';transition:all 0.15s" onmouseover="this.style.background=\'rgba(232,121,249,0.15)\'" onmouseout="this.style.background=\''+bg+'\'">';
+    grid+='<div style="font-size:12px;color:'+(isToday?'#e879f9':'#d4c4f0')+'">'+d+'</div>'+dot+multi+'</div>';
+  }
+  grid+='</div>';
+  el.innerHTML=grid;
+}
+function calGridClickDay(iso){
+  // Set the date input and scroll to that event in the list
+  const dateInput=document.getElementById('calDate');
+  if(dateInput)dateInput.value=iso;
+  // Find and highlight matching events
+  const calList=document.getElementById('calList');
+  if(!calList)return;
+  const items=calList.querySelectorAll('[data-cal-date]');
+  items.forEach(el=>{
+    if(el.dataset.calDate===iso){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.style.background='rgba(232,121,249,0.15)';
+      setTimeout(()=>{el.style.background='';},2000);
+    }
+  });
 }
 
 // Initialize

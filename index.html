@@ -1653,16 +1653,24 @@ let noteFilter='All';
 function getNotes(){return JSON.parse(localStorage.getItem('mc-notes')||'[]')}
 function saveNotes(n){localStorage.setItem('mc-notes',JSON.stringify(n))}
 
-function addNote(){
+async function addNote(){
   const input=document.getElementById('noteInput');
   const text=input.value.trim();if(!text)return;
-  const notes=getNotes();
-  notes.unshift({text,cat:document.getElementById('noteCat').value,time:new Date().toISOString()});
-  saveNotes(notes);input.value='';renderNotes();
+  const cat=document.getElementById('noteCat').value;
+  const time=new Date().toISOString();
+  input.value='';
+  try{
+    const rows=await sbInsert('notes',{text,cat,created_at:time});
+    const note=rows&&rows[0]?{text,cat,time,id:rows[0].id}:{text,cat,time};
+    const notes=getNotes();notes.unshift(note);saveNotes(notes);
+  }catch(e){
+    const notes=getNotes();notes.unshift({text,cat,time});saveNotes(notes);
+  }
+  renderNotes();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='noteInput')addNote()});
 
-function deleteNote(i){const n=getNotes();n.splice(i,1);saveNotes(n);renderNotes()}
+async function deleteNote(i){const n=getNotes();const note=n.splice(i,1)[0];saveNotes(n);renderNotes();if(note&&note.id)try{await sbDelete('notes',note.id)}catch(e){}}
 function toggleNote(i){const n=getNotes();n[i].done=!n[i].done;saveNotes(n);renderNotes()}
 
 function renderNotes(){

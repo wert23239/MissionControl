@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Williamsburg Bars</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:-apple-system,sans-serif}
+#map{height:100%;width:100%}
+.leaflet-popup-content{font-size:14px;line-height:1.4}
+.leaflet-popup-content b{font-size:15px}
+.leaflet-popup-content a{color:#2563eb;text-decoration:none}
+.bar-icon{background:#1e1e1e;border:2px solid #fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+const map = L.map('map',{zoomControl:false}).setView([40.7081,-73.9571],15);
+L.control.zoom({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OSM &copy; CARTO',maxZoom:19
+}).addTo(map);
+
+const icon=(emoji)=>L.divIcon({className:'',html:`<div class="bar-icon">${emoji}</div>`,iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-16]});
+
+const bars=[
+  {name:"Maracuja",lat:40.7138,lng:-73.9563,type:"🍹",vibe:"Tropical cocktails, chill",addr:"330 Grand St"},
+  {name:"Whiskey Brooklyn",lat:40.7101,lng:-73.9614,type:"🥃",vibe:"Whiskey bar, cozy",addr:"44 Berry St"},
+  {name:"Westlight",lat:40.7107,lng:-73.9655,type:"🌃",vibe:"Rooftop, views, bougie",addr:"111 N 12th St (22nd fl)"},
+  {name:"The Levee",lat:40.7112,lng:-73.9559,type:"🍺",vibe:"Dive bar, free cheese balls",addr:"212 Berry St"},
+  {name:"Radegast Hall",lat:40.7146,lng:-73.9611,type:"🍻",vibe:"Beer hall, live music",addr:"113 N 3rd St"},
+  {name:"Spritzenhaus 33",lat:40.7148,lng:-73.9588,type:"🍻",vibe:"Beer garden, big space",addr:"33 Nassau Ave"},
+  {name:"Night of Joy",lat:40.7139,lng:-73.9577,type:"🎶",vibe:"Wine bar, DJ nights",addr:"667 Lorimer St"},
+  {name:"Union Pool",lat:40.7142,lng:-73.9504,type:"🎸",vibe:"Live music, taco truck, scene-y",addr:"484 Union Ave"},
+  {name:"The Commodore",lat:40.7088,lng:-73.9568,type:"🍗",vibe:"Fried chicken + drinks, always packed",addr:"366 Metropolitan Ave"},
+  {name:"Loosie's",lat:40.7082,lng:-73.9390,type:"🎵",vibe:"Hip-hop, dancing, late night",addr:"91 S 6th St → now at Montrose Ave"},
+  {name:"Donna",lat:40.7085,lng:-73.9567,type:"🍸",vibe:"Cocktails, tropical, date night",addr:"27 Broadway"},
+  {name:"Hotel Delmano",lat:40.7118,lng:-73.9614,type:"🍸",vibe:"Speakeasy vibes, cocktails",addr:"82 Berry St"},
+  {name:"Alligator Lounge",lat:40.7089,lng:-73.9429,type:"🍕",vibe:"Free pizza with every drink",addr:"600 Metropolitan Ave"},
+  {name:"Berry Park",lat:40.7153,lng:-73.9601,type:"🌇",vibe:"Rooftop beer garden, skyline views",addr:"4 Berry St"},
+  {name:"The Shanty",lat:40.7220,lng:-73.9510,type:"🧪",vibe:"Attached to NY Distilling Co",addr:"79 Richardson St"},
+  {name:"Skinny Dennis",lat:40.7101,lng:-73.9568,type:"🤠",vibe:"Honky-tonk, live country, cheap beer",addr:"152 Metropolitan Ave"},
+  {name:"The Roof at Williamsburg Hotel",lat:40.7133,lng:-73.9612,type:"🌃",vibe:"Rooftop, waterfront views",addr:"96 Wythe Ave"},
+  {name:"Maison Premiere",lat:40.7120,lng:-73.9595,type:"🦪",vibe:"Oysters, absinthe, fancy AF",addr:"298 Bedford Ave"},
+  {name:"Lucky Dog",lat:40.7069,lng:-73.9437,type:"🐶",vibe:"Neighborhood dive, pool table",addr:"303 Bedford Ave"},
+  {name:"Output/Elsewhere",lat:40.7098,lng:-73.9601,type:"🎧",vibe:"Club, electronic music, late night",addr:"599 Johnson Ave"},
+];
+
+bars.forEach(b=>{
+  const gmaps=`https://maps.google.com/?q=${encodeURIComponent(b.name+' '+b.addr+' Brooklyn NY')}`;
+  L.marker([b.lat,b.lng],{icon:icon(b.type)})
+    .addTo(map)
+    .bindPopup(`<b>${b.type} ${b.name}</b><br>${b.vibe}<br><small>${b.addr}</small><br><a href="${gmaps}" target="_blank">📍 Directions</a>`);
+});
+</script>
+</body>
+</html>

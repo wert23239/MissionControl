@@ -495,6 +495,12 @@ spending:`<h2 class="panel-title">🏦 Spending</h2>
 ${stat('Loading...','—','')}
 </div>
 
+<div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap">
+<button onclick="exportSpendingCSV('all')" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.06);color:#d4c4f0;border:1px solid rgba(255,255,255,0.08);cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;transition:all 0.2s" onmouseover="this.style.background='rgba(232,121,249,0.15)';this.style.borderColor='rgba(232,121,249,0.3)';this.style.color='#e879f9'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#d4c4f0'">📥 Export All (CSV)</button>
+<button onclick="exportSpendingCSV('month')" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.06);color:#d4c4f0;border:1px solid rgba(255,255,255,0.08);cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;transition:all 0.2s" onmouseover="this.style.background='rgba(232,121,249,0.15)';this.style.borderColor='rgba(232,121,249,0.3)';this.style.color='#e879f9'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#d4c4f0'">📥 Export Current Month</button>
+<button onclick="exportSpendingCSV('search')" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.06);color:#d4c4f0;border:1px solid rgba(255,255,255,0.08);cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;transition:all 0.2s" onmouseover="this.style.background='rgba(232,121,249,0.15)';this.style.borderColor='rgba(232,121,249,0.3)';this.style.color='#e879f9'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#d4c4f0'">📥 Export Search Results</button>
+</div>
+
 <div id="spend-pace" class="card" style="margin-bottom:20px;display:none"></div>
 
 <div class="card" style="margin-bottom:20px">
@@ -2966,6 +2972,32 @@ function searchTxns(){
       datasets:[{data:moKeys.map(m=>Math.round(byMo[m])),backgroundColor:'rgba(232,121,249,0.5)',borderRadius:4}]
     },options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString()}}},scales:{x:{ticks:{color:'#665c78',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#665c78',callback:v=>'$'+v},grid:{color:'rgba(255,255,255,0.04)'}}}}});
   }
+}
+
+function exportSpendingCSV(mode){
+  if(!allSpendingTxns.length){alert('No spending data loaded yet.');return;}
+  let txns=[];
+  if(mode==='all'){
+    txns=allSpendingTxns;
+  }else if(mode==='month'){
+    const cur=new Date().toISOString().slice(0,7);
+    txns=allSpendingTxns.filter(t=>t.transaction_date&&t.transaction_date.startsWith(cur));
+    if(!txns.length){alert('No transactions for current month yet.');return;}
+  }else if(mode==='search'){
+    const q=document.getElementById('txnSearchInput').value.trim().toUpperCase();
+    if(!q){alert('Enter a search term first.');return;}
+    txns=allSpendingTxns.filter(t=>t.description&&t.description.toUpperCase().includes(q));
+    if(!txns.length){alert('No matching transactions.');return;}
+  }
+  const esc=v=>{const s=String(v??'');return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s;};
+  const header='Date,Description,Amount,Category,Type';
+  const rows=txns.map(t=>[t.transaction_date,esc(t.description),t.amount,esc(t.category||''),esc(t.type||'')].join(','));
+  const csv=header+'\n'+rows.join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`spending-${mode}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 
 function renderMonth(data,label){

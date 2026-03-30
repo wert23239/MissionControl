@@ -279,10 +279,8 @@ ${stat('Test Coverage','<span id="covPct">—</span>','<span id="covSub">loading
 <a class="quick-link" href="#" onclick="return false">💬 Discord — openclawboy #9415</a>
 <a class="quick-link" href="https://clawhub.com" target="_blank">🔌 ClawHub — 700+ skills</a>
 </div>
-<h3 style="font-size:13px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Today's Activity</h3>
-<div class="card">
-${[['1:08','Alex boot — system initialized'],['1:20','Discord connected — openclawboy online'],['1:31','GitHub + repo — wert23239/HyperReality'],['1:56','Site v3 — built and deployed locally'],['3:14','Brave Search API + Mac app + Canvas'],['3:30','Dashboard v1 built'],['4:00','17 skills installed from ClawHub'],['4:30','OpenClaw news roundup — 180k GitHub stars!'],['5:00','Prediction market arbitrage research'],['5:18','Money tab merged, TODO.md created'],['5:20','Daily tip cron set up (11 PM)']].map(([t,d])=>`<div class="timeline-item"><span class="timeline-time">${t}</span><span class="timeline-dot"></span><span>${d}</span></div>`).join('')}
-</div>`,
+<h3 style="font-size:13px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Recent Activity</h3>
+<div class="card" id="overviewActivity"><div style="color:#665c78;font-size:13px">Loading recent activity...</div></div>`,
 
 notebook:`<h2 class="panel-title">📋 Notebook</h2>
 <div class="panel-sub">Tasks, notes, and daily wins</div>
@@ -1547,6 +1545,35 @@ async function loadTodayTomorrow(){
   }catch(e){console.log('Calendar load failed',e)}
 }
 loadTodayTomorrow();
+
+// Recent activity feed (overview)
+async function loadRecentActivity(){
+  const el=document.getElementById('overviewActivity');
+  if(!el)return;
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const r=await fetch(SB_URL+'/rest/v1/journal?order=created_at.desc&limit=15',{headers:sbHeaders});
+    const entries=r.ok?await r.json():[];
+    if(!entries.length){el.innerHTML='<div style="color:#665c78;font-size:13px">No journal entries yet</div>';return}
+    let html='';
+    let lastDate='';
+    entries.forEach(e=>{
+      const d=e.date||'Unknown';
+      if(d!==lastDate){
+        const label=d===today?'Today':d===yesterday?'Yesterday':new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        if(lastDate)html+='<div style="height:8px"></div>';
+        html+=`<div style="font-size:11px;color:#e879f9;font-weight:600;margin-bottom:6px">${label}</div>`;
+        lastDate=d;
+      }
+      const cc=jCatColors[e.category||'General']||'#e879f9';
+      const time=e.created_at?new Date(e.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
+      html+=`<div class="timeline-item"><span class="timeline-time">${time}</span><span class="timeline-dot"></span><span>${e.entry}${e.category?` <span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px">${e.category}</span>`:''}</span></div>`;
+    });
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<div style="color:#665c78;font-size:13px">Failed to load activity</div>'}
+}
+loadRecentActivity();
 
 // Coverage badge
 (async()=>{

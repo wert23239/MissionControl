@@ -127,6 +127,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .bingo-cell.done .cell-text{text-decoration:line-through;opacity:0.7}
 .bingo-cell.free{background:linear-gradient(135deg,rgba(250,204,21,0.12),rgba(232,121,249,0.1));border-color:rgba(250,204,21,0.35);cursor:default;font-size:13px;color:#fde68a;animation:freeGlow 3s ease-in-out infinite;box-shadow:0 0 15px rgba(250,204,21,0.08)}
 .bingo-cell.crossed{background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.06));border-color:rgba(239,68,68,0.35);text-decoration:line-through;color:#fca5a5;opacity:0.7}
+.bingo-cell.bingo-line{border-color:rgba(250,204,21,0.8)!important;box-shadow:0 0 16px rgba(250,204,21,0.3),inset 0 0 8px rgba(250,204,21,0.08)!important;animation:bingoGlow 2s ease-in-out infinite}
+@keyframes bingoGlow{0%,100%{box-shadow:0 0 16px rgba(250,204,21,0.3),inset 0 0 8px rgba(250,204,21,0.08)}50%{box-shadow:0 0 24px rgba(250,204,21,0.5),inset 0 0 12px rgba(250,204,21,0.15)}}
 @keyframes freeGlow{0%,100%{box-shadow:0 0 15px rgba(250,204,21,0.08)}50%{box-shadow:0 0 25px rgba(250,204,21,0.18)}}
 .filter-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
 .filter-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;background:rgba(255,255,255,0.04);color:#998eb5;border:1px solid rgba(255,255,255,0.06);font-family:inherit;transition:all 0.2s}
@@ -2456,7 +2458,12 @@ function renderBingo(){
   const lines=[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
     [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
     [0,6,12,18,24],[4,8,12,16,20]];
-  const hasBingo=lines.some(l=>l.every(s));
+  const winCells=new Set();
+  lines.forEach(l=>{if(l.every(s))l.forEach(c=>winCells.add(c))});
+  grid.querySelectorAll('.bingo-cell').forEach((cell,i)=>{
+    if(winCells.has(i))cell.classList.add('bingo-line');
+  });
+  const hasBingo=winCells.size>0;
   document.getElementById('bingoStatus').textContent=hasBingo?'BINGO! 🎉':'Not yet';
   document.getElementById('bingoStatus').style.color=hasBingo?'#22c55e':'#665c78';
 }

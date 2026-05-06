@@ -2438,7 +2438,7 @@ const bingoItems=[
   '1:10 Letter Blitz Avg','Release Inverse Calendar','Do a Solo Trip','18R of Golf','Finish Lord of the Rings Books'
 ];
 
-function getBingo(){return JSON.parse(localStorage.getItem('mc-bingo')||'{}')}
+function getBingo(){return JSON.parse(localStorage.getItem('mc-bingo')||'{"0":true,"1":true,"2":true,"8":true,"23":true}')}
 function saveBingo(b){localStorage.setItem('mc-bingo',JSON.stringify(b))}
 
 function renderBingo(){

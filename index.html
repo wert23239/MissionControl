@@ -1480,6 +1480,10 @@ bracket:`<h2 class="panel-title">🏀 March Madness 2026</h2>
 const SB_URL='https://aihworyfcgstwbpzkzoy.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE';
 const sbHeaders={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+const htmlEscapes={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>htmlEscapes[ch]);}
+function inlineJsString(value){return JSON.stringify(String(value??'')).replace(/"/g,'&quot;');}
+function safeTagClass(value){return String(value||'human').replace(/[^a-z0-9_-]/gi,'').toLowerCase()||'human';}
 async function sbGet(table){const r=await fetch(SB_URL+'/rest/v1/'+table+'?order=id',{headers:sbHeaders});return r.ok?r.json():[];}
 async function sbInsert(table,data){return fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)}).then(r=>r.json());}
 async function sbDelete(table,id){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+id,{method:'DELETE',headers:sbHeaders});}
@@ -1570,7 +1574,8 @@ async function loadRecentActivity(){
       }
       const cc=jCatColors[e.category||'General']||'#e879f9';
       const time=e.created_at?new Date(e.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
-      html+=`<div class="timeline-item"><span class="timeline-time">${time}</span><span class="timeline-dot"></span><span>${e.entry}${e.category?` <span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px">${e.category}</span>`:''}</span></div>`;
+      const category=e.category?escapeHtml(e.category):'';
+      html+=`<div class="timeline-item"><span class="timeline-time">${escapeHtml(time)}</span><span class="timeline-dot"></span><span>${escapeHtml(e.entry)}${category?` <span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px">${category}</span>`:''}</span></div>`;
     });
     el.innerHTML=html;
   }catch(e){el.innerHTML='<div style="color:#665c78;font-size:13px">Failed to load activity</div>'}
@@ -1712,7 +1717,7 @@ function renderNotes(){
   const notes=getNotes();
   const cats=['All',...new Set(notes.map(n=>n.cat))];
   const tabs=document.getElementById('filterTabs');
-  if(tabs)tabs.innerHTML=cats.map(c=>`<button class="filter-tab${c===noteFilter?' active':''}" onclick="noteFilter='${c}';renderNotes()">${c}</button>`).join('');
+  if(tabs)tabs.innerHTML=cats.map(c=>`<button class="filter-tab${c===noteFilter?' active':''}" onclick="noteFilter=${inlineJsString(c)};renderNotes()">${escapeHtml(c)}</button>`).join('');
   const list=document.getElementById('notesList');
   if(!list)return;
   const filtered=noteFilter==='All'?notes:notes.filter(n=>n.cat===noteFilter);
@@ -1724,11 +1729,13 @@ function renderNotes(){
     const checked=n.done?'checked':'';
     const strike=n.done?'text-decoration:line-through;opacity:0.5':'';
     const cb=isBook?`<input type="checkbox" ${checked} onchange="toggleNote(${idx})" style="cursor:pointer;accent-color:#e879f9;min-width:18px;min-height:18px">`:'';
-    const long=n.text.length>120;
-    const preview=long?n.text.split(/[.|!|?|\n]/)[0]:'';
+    const text=String(n.text||'');
+    const long=text.length>120;
+    const preview=long?escapeHtml(text.split(/[.|!|?|\n]/)[0]):'';
+    const fullText=escapeHtml(text).replace(/\|/g,' · ');
     const collapsed=long?'note-collapsed':'';
-    const body=long?`<div class="${collapsed}" style="cursor:pointer" onclick="this.classList.toggle('note-collapsed');this.classList.toggle('note-expanded')"><div class="note-short">${preview} <span style="color:#e879f9;font-size:11px">▶</span></div><div class="note-long">${n.text.replace(/\|/g,' · ')} <span style="color:#e879f9;font-size:11px">▲</span></div></div>`:n.text;
-    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'#e879f9'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${n.cat} · ${t.toLocaleString()}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
+    const body=long?`<div class="${collapsed}" style="cursor:pointer" onclick="this.classList.toggle('note-collapsed');this.classList.toggle('note-expanded')"><div class="note-short">${preview} <span style="color:#e879f9;font-size:11px">▶</span></div><div class="note-long">${fullText} <span style="color:#e879f9;font-size:11px">▲</span></div></div>`:fullText;
+    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'#e879f9'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${escapeHtml(n.cat)} · ${escapeHtml(t.toLocaleString())}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
   }).join('');
 }
 
@@ -1753,7 +1760,7 @@ async function renderJournal(){
     if(!entries.length){list.innerHTML='<div class="empty-state">🎉 No entries yet — tell Alex what you did today!</div>';return}
     const cats=['All',...new Set(entries.map(e=>e.category||'General'))];
     const tabs=document.getElementById('journalFilterTabs');
-    if(tabs)tabs.innerHTML=cats.map(c=>`<button class="filter-btn${journalFilter===c?' active':''}" onclick="journalFilter='${c}';renderJournal()">${c}</button>`).join('');
+    if(tabs)tabs.innerHTML=cats.map(c=>`<button class="filter-btn${journalFilter===c?' active':''}" onclick="journalFilter=${inlineJsString(c)};renderJournal()">${escapeHtml(c)}</button>`).join('');
     const filtered=journalFilter==='All'?entries:entries.filter(e=>(e.category||'General')===journalFilter);
     const grouped={};
     filtered.forEach(e=>{const d=e.date||'Unknown';if(!grouped[d])grouped[d]=[];grouped[d].push(e)});
@@ -1764,7 +1771,7 @@ async function renderJournal(){
       html+=`<div class="card" style="margin-bottom:12px;padding:12px 16px"><h4 style="color:#f59e0b;margin-bottom:8px;font-size:13px">${label}</h4>`;
       grouped[date].forEach(e=>{
         const cc=jCatColors[e.category||'General']||'#e879f9';
-        html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="color:#22c55e;font-size:16px">✓</span><span style="font-size:13px;line-height:1.5;color:#d4c4f0">${e.entry}</span><span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px;white-space:nowrap;margin-left:4px">${e.category||'General'}</span><button onclick="deleteJournal(${e.id})" style="margin-left:auto;background:none;border:none;color:#665c78;cursor:pointer;font-size:12px;opacity:0.5">×</button></div>`;
+        html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="color:#22c55e;font-size:16px">✓</span><span style="font-size:13px;line-height:1.5;color:#d4c4f0">${escapeHtml(e.entry)}</span><span style="font-size:10px;color:${cc};background:${cc}22;padding:1px 6px;border-radius:4px;white-space:nowrap;margin-left:4px">${escapeHtml(e.category||'General')}</span><button onclick="deleteJournal(${e.id})" style="margin-left:auto;background:none;border:none;color:#665c78;cursor:pointer;font-size:12px;opacity:0.5">×</button></div>`;
       });
       html+=`</div>`;
     });
@@ -1836,7 +1843,7 @@ function renderTasks(){
   if(dailyEl){
     if(daily.length){
       dailyEl.innerHTML='<div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b;padding:14px 18px"><div style="font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:8px">📌 TODAY\'S TASKS</div>'+
-        daily.map(t=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:#d4c4f0"><span style="cursor:pointer" onclick="advanceTask('+t.id+')">○</span> '+t.title+' <span class="tag tag-'+(t.tag||'human')+'">'+(t.tag||'')+'</span></div>').join('')+'</div>';
+        daily.map(t=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:#d4c4f0"><span style="cursor:pointer" onclick="advanceTask('+t.id+')">○</span> '+escapeHtml(t.title)+' <span class="tag tag-'+safeTagClass(t.tag)+'">'+escapeHtml(t.tag||'')+'</span></div>').join('')+'</div>';
     } else dailyEl.innerHTML='';
   }
   // Kanban
@@ -1848,13 +1855,13 @@ function renderTasks(){
       const isOverdue=t.due_date&&t.due_date<today&&t.status!=='done';
       const dueColor=isOverdue?'#ef4444':'#665c78';
       const duePrefix=isOverdue?'⚠️ Overdue · ':'📅 ';
-      const dueStr=t.due_date?'<div style="font-size:10px;color:'+dueColor+';margin-top:4px;'+(isOverdue?'font-weight:600':'')+'">'+duePrefix+t.due_date+'</div>':'';
+      const dueStr=t.due_date?'<div style="font-size:10px;color:'+dueColor+';margin-top:4px;'+(isOverdue?'font-weight:600':'')+'">'+duePrefix+escapeHtml(t.due_date)+'</div>':'';
       const advBtn=allowAdvance?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="advanceTask('+t.id+')" title="Advance">→</span>':'';
       const revBtn=allowRevert?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="revertTask('+t.id+')" title="Move back">←</span>':'';
       const delBtn='<span style="cursor:pointer;font-size:14px;color:#ef4444;opacity:0.5" onclick="deleteTask('+t.id+')" title="Delete">×</span>';
       const overdueStyle=isOverdue?'border-left:3px solid #ef4444;':'';
-      html+='<div class="kanban-item" style="'+overdueStyle+'"><div style="display:flex;justify-content:space-between;align-items:start"><span>'+t.title+'</span><span style="display:flex;gap:2px">'+revBtn+advBtn+delBtn+'</span></div>'+
-        (t.tag?'<br><span class="tag tag-'+(t.tag||'human')+'">'+t.tag+'</span>':'')+dueStr+'</div>';
+      html+='<div class="kanban-item" style="'+overdueStyle+'"><div style="display:flex;justify-content:space-between;align-items:start"><span>'+escapeHtml(t.title)+'</span><span style="display:flex;gap:2px">'+revBtn+advBtn+delBtn+'</span></div>'+
+        (t.tag?'<br><span class="tag tag-'+safeTagClass(t.tag)+'">'+escapeHtml(t.tag)+'</span>':'')+dueStr+'</div>';
     });
     html+='</div>';return html;
   }

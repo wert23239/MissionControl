@@ -1484,6 +1484,12 @@ const htmlEscapes={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>htmlEscapes[ch]);}
 function inlineJsString(value){return JSON.stringify(String(value??'')).replace(/"/g,'&quot;');}
 function safeTagClass(value){return String(value||'human').replace(/[^a-z0-9_-]/gi,'').toLowerCase()||'human';}
+function localDateKey(date=new Date()){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
 async function sbGet(table){const r=await fetch(SB_URL+'/rest/v1/'+table+'?order=id',{headers:sbHeaders});return r.ok?r.json():[];}
 async function sbInsert(table,data){return fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)}).then(r=>r.json());}
 async function sbDelete(table,id){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+id,{method:'DELETE',headers:sbHeaders});}
@@ -1538,16 +1544,19 @@ loadDailyTip();
 async function loadTodayTomorrow(){
   try{
     const now=new Date();
-    const today=now.toISOString().slice(0,10);
-    const tom=new Date(now.getTime()+86400000).toISOString().slice(0,10);
+    const tomorrow=new Date(now);
+    tomorrow.setDate(now.getDate()+1);
+    const today=localDateKey(now);
+    const tom=localDateKey(tomorrow);
     const r=await fetch(SB_URL+'/rest/v1/calendar?order=date',{headers:sbHeaders});
     const events=r.ok?await r.json():[];
     const todayEv=events.filter(e=>e.date===today);
     const tomEv=events.filter(e=>e.date===tom);
+    const renderEvents=items=>items.map(e=>'<div>• '+escapeHtml(e.event)+'</div>').join('');
     const el1=document.getElementById('todayEvents');
     const el2=document.getElementById('tomorrowEvents');
-    if(el1)el1.innerHTML=todayEv.length?todayEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:#665c78">Nothing scheduled</div>';
-    if(el2)el2.innerHTML=tomEv.length?tomEv.map(e=>'<div>• '+e.event+'</div>').join(''):'<div style="color:#665c78">Nothing scheduled</div>';
+    if(el1)el1.innerHTML=todayEv.length?renderEvents(todayEv):'<div style="color:#665c78">Nothing scheduled</div>';
+    if(el2)el2.innerHTML=tomEv.length?renderEvents(tomEv):'<div style="color:#665c78">Nothing scheduled</div>';
   }catch(e){console.log('Calendar load failed',e)}
 }
 loadTodayTomorrow();

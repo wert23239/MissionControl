@@ -1841,12 +1841,11 @@ function renderTasks(){
   const done=tasksCache.filter(t=>t.status==='done');
   // Stats
   const statsEl=document.getElementById('taskStats');
-  const todayISO=new Date().toISOString().slice(0,10);
-  const overdue=tasksCache.filter(t=>t.due_date&&t.due_date<todayISO&&t.status!=='done');
+  const today=localDateKey();
+  const overdue=tasksCache.filter(t=>t.due_date&&t.due_date<today&&t.status!=='done');
   const overdueStr=overdue.length?' · <span style="color:#ef4444">'+overdue.length+' overdue</span>':'';
   if(statsEl)statsEl.innerHTML=stat('Todo',todo.length,'queued'+overdueStr)+stat('In Progress',prog.length,'active')+stat('Done',done.length,'completed ✅');
   // Daily Todo
-  const today=new Date().toISOString().slice(0,10);
   const daily=tasksCache.filter(t=>t.due_date===today&&t.status!=='done');
   const dailyEl=document.getElementById('taskDailyTodo');
   if(dailyEl){

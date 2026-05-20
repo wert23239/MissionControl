@@ -2631,12 +2631,44 @@ switchPanel=function(id){
 let projectFilter='all';
 let projectsCache=[];
 let expandedProject=null;
+const fallbackProjects=[
+  {
+    id:901,
+    name:'Salesforce Health Cloud + Epic voice-agent integration',
+    description:'Prototype a hospital-facing app where the existing voice agent can read/write Salesforce Health Cloud data and coordinate with Epic/EHR data. Market reference: Ellipsis Health Sage Voice AI Care Management on AppExchange; workflow reference: Hyro AI assistants inside Salesforce. Current proof: Health Cloud trial can query Account data and create a test Case; External Client App KouperHealth created for OAuth/API testing.',
+    category:'Health Cloud',
+    status:'active',
+    priority:5,
+    progress:25,
+    url:'https://appexchange.salesforce.com/appxListingDetail?listingId=a0N4V00000FN8eRUAT&tab=d',
+    blocker:'Supabase project is still inactive, so this card is hardcoded until projects table sync is restored.',
+    notes:'Next: finish OAuth/API curl or Postman test, then create a minimal backend adapter with two paths: get patient/care context from Health Cloud and write call results back as Case/Task/Note/Assessment. Epic path should be scoped separately through FHIR/SMART sandbox or vendor middleware. Decide later whether AppExchange technology is API solution, managed package, or both.',
+    created_at:'2026-05-20T14:15:00-04:00',
+    updated_at:'2026-05-20T14:15:00-04:00'
+  },
+  {
+    id:902,
+    name:'Supabase restore for Mission Control sync',
+    description:'Restore the inactive Supabase project so Mission Control tasks/calendar/projects/daily-tip can sync normally again. Current DNS failures are expected while the project is inactive.',
+    category:'Infra',
+    status:'active',
+    priority:5,
+    progress:10,
+    blocker:'Project aihworyfcgstwbpzkzoy shows INACTIVE in Supabase CLI; restore/reactivate from dashboard, then rerun DNS/API/psql checks.',
+    notes:'After restore, verify REST host and db host resolve, fetch API keys if changed, update config if needed, and confirm Mission Control/crons work.',
+    created_at:'2026-05-19T18:45:00-04:00',
+    updated_at:'2026-05-20T14:15:00-04:00'
+  }
+];
 
 async function loadProjects(){
   try{
     const r=await fetch(SB_URL+'/rest/v1/projects?select=*&order=priority.desc,created_at.desc',{headers:sbHeaders});
     projectsCache=r.ok?await r.json():[];
   }catch(e){projectsCache=[];}
+  fallbackProjects.forEach(fp=>{
+    if(!projectsCache.some(p=>p.name===fp.name)) projectsCache.unshift(fp);
+  });
   renderProjects();
 }
 

@@ -1492,8 +1492,8 @@ function localDateKey(date=new Date()){
 }
 async function sbGet(table){const r=await fetch(SB_URL+'/rest/v1/'+table+'?order=id',{headers:sbHeaders});return r.ok?r.json():[];}
 async function sbInsert(table,data){return fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)}).then(r=>r.json());}
-async function sbDelete(table,id){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+id,{method:'DELETE',headers:sbHeaders});}
-async function sbUpdate(table,id,data){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+id,{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)});}
+async function sbDelete(table,id){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:sbHeaders});}
+async function sbUpdate(table,id,data){return fetch(SB_URL+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)});}
 
 async function syncFromSupabase(){
   try{
@@ -1845,13 +1845,14 @@ function renderTasks(){
   const overdue=tasksCache.filter(t=>t.due_date&&t.due_date<today&&t.status!=='done');
   const overdueStr=overdue.length?' · <span style="color:#ef4444">'+overdue.length+' overdue</span>':'';
   if(statsEl)statsEl.innerHTML=stat('Todo',todo.length,'queued'+overdueStr)+stat('In Progress',prog.length,'active')+stat('Done',done.length,'completed ✅');
+  function taskActionArg(id){return "decodeURIComponent('"+encodeURIComponent(String(id))+"')";}
   // Daily Todo
   const daily=tasksCache.filter(t=>t.due_date===today&&t.status!=='done');
   const dailyEl=document.getElementById('taskDailyTodo');
   if(dailyEl){
     if(daily.length){
       dailyEl.innerHTML='<div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b;padding:14px 18px"><div style="font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:8px">📌 TODAY\'S TASKS</div>'+
-        daily.map(t=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:#d4c4f0"><span style="cursor:pointer" onclick="advanceTask('+t.id+')">○</span> '+escapeHtml(t.title)+' <span class="tag tag-'+safeTagClass(t.tag)+'">'+escapeHtml(t.tag||'')+'</span></div>').join('')+'</div>';
+        daily.map(t=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:#d4c4f0"><span style="cursor:pointer" onclick="advanceTask('+taskActionArg(t.id)+')">○</span> '+escapeHtml(t.title)+' <span class="tag tag-'+safeTagClass(t.tag)+'">'+escapeHtml(t.tag||'')+'</span></div>').join('')+'</div>';
     } else dailyEl.innerHTML='';
   }
   // Kanban
@@ -1860,13 +1861,14 @@ function renderTasks(){
   function renderCol(icon,label,items,allowAdvance,allowRevert){
     let html='<div class="kanban-col card"><h4>'+icon+' '+label+' ('+items.length+')</h4>';
     items.forEach(t=>{
+      const actionArg=taskActionArg(t.id);
       const isOverdue=t.due_date&&t.due_date<today&&t.status!=='done';
       const dueColor=isOverdue?'#ef4444':'#665c78';
       const duePrefix=isOverdue?'⚠️ Overdue · ':'📅 ';
       const dueStr=t.due_date?'<div style="font-size:10px;color:'+dueColor+';margin-top:4px;'+(isOverdue?'font-weight:600':'')+'">'+duePrefix+escapeHtml(t.due_date)+'</div>':'';
-      const advBtn=allowAdvance?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="advanceTask('+t.id+')" title="Advance">→</span>':'';
-      const revBtn=allowRevert?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="revertTask('+t.id+')" title="Move back">←</span>':'';
-      const delBtn='<span style="cursor:pointer;font-size:14px;color:#ef4444;opacity:0.5" onclick="deleteTask('+t.id+')" title="Delete">×</span>';
+      const advBtn=allowAdvance?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="advanceTask('+actionArg+')" title="Advance">→</span>':'';
+      const revBtn=allowRevert?'<span style="cursor:pointer;font-size:14px;margin-right:4px" onclick="revertTask('+actionArg+')" title="Move back">←</span>':'';
+      const delBtn='<span style="cursor:pointer;font-size:14px;color:#ef4444;opacity:0.5" onclick="deleteTask('+actionArg+')" title="Delete">×</span>';
       const overdueStyle=isOverdue?'border-left:3px solid #ef4444;':'';
       html+='<div class="kanban-item" style="'+overdueStyle+'"><div style="display:flex;justify-content:space-between;align-items:start"><span>'+escapeHtml(t.title)+'</span><span style="display:flex;gap:2px">'+revBtn+advBtn+delBtn+'</span></div>'+
         (t.tag?'<br><span class="tag tag-'+safeTagClass(t.tag)+'">'+escapeHtml(t.tag)+'</span>':'')+dueStr+'</div>';

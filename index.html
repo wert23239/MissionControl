@@ -1484,6 +1484,13 @@ const htmlEscapes={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>htmlEscapes[ch]);}
 function inlineJsString(value){return JSON.stringify(String(value??'')).replace(/"/g,'&quot;');}
 function safeTagClass(value){return String(value||'human').replace(/[^a-z0-9_-]/gi,'').toLowerCase()||'human';}
+function safeExternalUrl(value){
+  try{
+    const url=new URL(String(value??''),window.location.href);
+    return ['http:','https:'].includes(url.protocol)?url.href:'';
+  }catch(e){return '';}
+}
+function safeGithubRepo(value){return String(value||'').replace(/[^a-z0-9_.\/-]/gi,'').replace(/^\/+|\/+$/g,'');}
 function localDateKey(date=new Date()){
   const y=date.getFullYear();
   const m=String(date.getMonth()+1).padStart(2,'0');
@@ -2711,38 +2718,48 @@ function renderProjects(){
   if(!list.length){grid.innerHTML='<div class="empty-state">🚀 No projects yet — add one above!</div>';return;}
 
   grid.innerHTML=list.map(p=>{
-    const isExpanded=expandedProject===p.id;
-    const desc=p.description||'';
+    const projectKey=String(p.id??p.name??'');
+    const projectKeyArg=inlineJsString(projectKey);
+    const isExpanded=expandedProject===projectKey;
+    const desc=String(p.description||'');
     const shortDesc=desc.length>100?desc.slice(0,100)+'…':desc;
-    const pct=p.progress||0;
-    const stars='★'.repeat(p.priority||0)+'☆'.repeat(5-(p.priority||0));
-    return `<div class="card" style="cursor:pointer;${isExpanded?'grid-column:1/-1;':''}" onclick="expandedProject=expandedProject===${p.id}?null:${p.id};renderProjects()">
+    const pct=Math.max(0,Math.min(100,Number(p.progress)||0));
+    const priority=Math.max(0,Math.min(5,Number(p.priority)||0));
+    const stars='★'.repeat(priority)+'☆'.repeat(5-priority);
+    const status=String(p.status||'active');
+    const repo=safeGithubRepo(p.repo);
+    const url=safeExternalUrl(p.url);
+    const created=p.created_at?new Date(p.created_at).toLocaleDateString():'Unknown';
+    const updated=p.updated_at?new Date(p.updated_at).toLocaleDateString():'';
+    const blocker=String(p.blocker||'');
+    const shortBlocker=blocker.length>80?blocker.slice(0,80)+'…':blocker;
+    return `<div class="card" style="cursor:pointer;${isExpanded?'grid-column:1/-1;':''}" onclick="expandedProject=expandedProject===${projectKeyArg}?null:${projectKeyArg};renderProjects()">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div style="font-size:15px;font-weight:700;color:#e8e0f0">${p.name}</div>
-        <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${statusColors[p.status]||''};color:${statusText[p.status]||'#665c78'};text-transform:uppercase">${p.status}</span>
+        <div style="font-size:15px;font-weight:700;color:#e8e0f0">${escapeHtml(p.name)}</div>
+        <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${statusColors[status]||''};color:${statusText[status]||'#665c78'};text-transform:uppercase">${escapeHtml(status)}</span>
       </div>
-      <div style="font-size:12px;color:#665c78;margin-bottom:8px">${isExpanded?desc:shortDesc}</div>
+      <div style="font-size:12px;color:#665c78;margin-bottom:8px">${escapeHtml(isExpanded?desc:shortDesc)}</div>
       <div style="height:4px;background:#2a2535;border-radius:2px;overflow:hidden;margin-bottom:8px">
         <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#e879f9,#7c3aed);border-radius:2px;transition:width .5s"></div>
       </div>
-      ${p.blocker&&!isExpanded?`<div style="font-size:11px;color:#fb923c;margin-bottom:8px;padding:4px 8px;background:rgba(239,68,68,0.08);border-radius:6px;border-left:2px solid #ef4444">🚧 Blocker: ${p.blocker.length>80?p.blocker.slice(0,80)+'…':p.blocker}</div>`:''}
+      ${blocker&&!isExpanded?`<div style="font-size:11px;color:#fb923c;margin-bottom:8px;padding:4px 8px;background:rgba(239,68,68,0.08);border-radius:6px;border-left:2px solid #ef4444">🚧 Blocker: ${escapeHtml(shortBlocker)}</div>`:''}
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
         <span style="color:#f59e0b">${stars}</span>
         <span style="color:#665c78">${pct}%</span>
-        ${p.category?`<span style="padding:2px 6px;border-radius:4px;background:rgba(34,211,238,0.12);color:#22d3ee;font-weight:600">${p.category}</span>`:''}
-        ${p.repo?`<a href="https://github.com/${p.repo}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none;font-weight:600">🐙 Code</a>`:''}
-        ${p.url?`<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🔗 Link</a>`:''}
+        ${p.category?`<span style="padding:2px 6px;border-radius:4px;background:rgba(34,211,238,0.12);color:#22d3ee;font-weight:600">${escapeHtml(p.category)}</span>`:''}
+        ${repo?`<a href="https://github.com/${escapeHtml(repo)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none;font-weight:600">🐙 Code</a>`:''}
+        ${url?`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🔗 Link</a>`:''}
       </div>
-      ${!isExpanded&&p.blocker?`<div style="margin-top:6px;font-size:11px;color:#f97316;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🚧 ${p.blocker}</div>`:''}
+      ${!isExpanded&&blocker?`<div style="margin-top:6px;font-size:11px;color:#f97316;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🚧 ${escapeHtml(blocker)}</div>`:''}
       ${isExpanded?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        ${desc?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Description:</strong> ${desc}</div>`:''}
-        ${p.blocker?`<div style="font-size:12px;color:#fb923c;margin-bottom:8px;padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border-left:3px solid #ef4444;line-height:1.5">🚧 <strong>Blocker:</strong> ${p.blocker}</div>`:''}
-        ${p.notes?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Notes:</strong> ${p.notes}</div>`:''}
+        ${desc?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Description:</strong> ${escapeHtml(desc)}</div>`:''}
+        ${blocker?`<div style="font-size:12px;color:#fb923c;margin-bottom:8px;padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border-left:3px solid #ef4444;line-height:1.5">🚧 <strong>Blocker:</strong> ${escapeHtml(blocker)}</div>`:''}
+        ${p.notes?`<div style="font-size:12px;color:#d4c4f0;line-height:1.6;margin-bottom:8px"><strong style="color:#998eb5">Notes:</strong> ${escapeHtml(p.notes)}</div>`:''}
         <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
-          ${p.repo?`<a href="https://github.com/${p.repo}" target="_blank" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🐙 github.com/${p.repo}</a>`:''}
-          ${p.url?`<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="color:#22d3ee;text-decoration:none">🔗 ${p.url}</a>`:''}
+          ${repo?`<a href="https://github.com/${escapeHtml(repo)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:#e879f9;text-decoration:none">🐙 github.com/${escapeHtml(repo)}</a>`:''}
+          ${url?`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:#22d3ee;text-decoration:none">🔗 ${escapeHtml(url)}</a>`:''}
         </div>
-        <div style="font-size:11px;color:#665c78">Created: ${new Date(p.created_at).toLocaleDateString()}${p.updated_at?' · Updated: '+new Date(p.updated_at).toLocaleDateString():''}</div>
+        <div style="font-size:11px;color:#665c78">Created: ${escapeHtml(created)}${updated?' · Updated: '+escapeHtml(updated):''}</div>
       </div>`:''}
     </div>`;
   }).join('');

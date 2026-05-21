@@ -234,6 +234,7 @@ const sections=[
   {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'},
   {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'},
   {id:'deepgram',icon:'🎙️',label:'STT Investigation',dot:'#06b6d4'},
+  {id:'salesforce',icon:'☁️',label:'Salesforce Adapter',dot:'#3b82f6'},
   {id:'homehealth',icon:'🏥',label:'Home Health',dot:'#22c55e'},
   {id:'bracket',icon:'🏀',label:'March Madness',dot:'#f59e0b'}
 ];
@@ -874,6 +875,108 @@ deepgram:`<h2 class="panel-title">🎙️ Deepgram STT Degradation Investigation
 <div class="kanban-item"><span style="color:#22c55e">③</span> A/B test Nova-2 vs Nova-3 vs Flux on the same audio sample</div>
 <div class="kanban-item"><span style="color:#22c55e">④</span> Verify encoding params match actual audio format (mulaw 8kHz for phone)</div>
 <div class="kanban-item"><span style="color:#22c55e">⑤</span> Audit VAPI's audio pipeline for any resampling or 200ms clipping</div>
+</div>`,
+salesforce:`<h2 class="panel-title">☁️ Salesforce Health Cloud Adapter</h2>
+<div class="panel-sub">Hiro-owned connector • external voice agent app • Health Cloud read/write • future AppExchange path</div>
+
+<div class="stats" style="margin-bottom:20px">
+${stat('Status','API Proof ✅','OAuth + REST query worked')}
+${stat('Org','kouper3','Health Cloud trial')}
+${stat('App','KouperHealth','External Client App')}
+${stat('Next Build','Hiro connector','Not AppExchange first')}
+</div>
+
+<div class="card" style="margin-bottom:20px;border-left:3px solid #22c55e">
+<h3 style="margin-bottom:10px;color:#22c55e">✅ What we proved tonight</h3>
+<ul style="line-height:1.8;margin-left:18px">
+<li>Health Cloud trial org is accessible at <code>kouper3</code>.</li>
+<li>Salesforce UI / Developer Console can query Account data.</li>
+<li>Salesforce UI / Developer Console can create a test Case.</li>
+<li>Created External Client App / OAuth app: <code>KouperHealth</code>.</li>
+<li>External OAuth flow succeeded after browser approval.</li>
+<li>External REST API query worked: <code>SELECT Id, Name FROM Account LIMIT 10</code>.</li>
+<li>Returned demo Account rows including Charles Green, Ben Green, John Doe, William Brown, Mike Johnson.</li>
+</ul>
+</div>
+
+<div class="card" style="margin-bottom:20px;border-left:3px solid #3b82f6">
+<h3 style="margin-bottom:10px;color:#93c5fd">🧠 Mental model</h3>
+<pre style="white-space:pre-wrap;line-height:1.6">Hospital's Salesforce Health Cloud org
+        ↕ OAuth / Salesforce REST API
+Hiro Salesforce adapter — our code
+        ↕ Hiro tool endpoints
+Our voice agent / care workflows
+
+Later, separate path:
+Hospital Epic / EHR ↔ Hiro Epic/FHIR adapter ↔ same Hiro workflow layer</pre>
+<p style="margin-top:10px;color:#d4c4f0;font-size:13px;line-height:1.7">This is our app connecting to someone else's Salesforce instance, similar in spirit to how a vendor app connects to a hospital Epic tenant. The voice agent should not talk directly to Salesforce; it calls Hiro, and Hiro handles Salesforce auth/data mapping.</p>
+</div>
+
+<div class="grid2" style="margin-bottom:20px">
+<div class="card">
+<h3 style="margin-bottom:10px;color:#e8e0f0">🛠️ Hiro MVP steps</h3>
+<ol style="line-height:1.8;margin-left:18px;color:#d4c4f0;font-size:13px">
+<li>Add a <strong>Salesforce Health Cloud</strong> integration page in Hiro.</li>
+<li>Add button: <code>Connect Salesforce Health Cloud</code>.</li>
+<li>Create OAuth start endpoint that redirects to Salesforce.</li>
+<li>Create OAuth callback endpoint that exchanges code for tokens.</li>
+<li>Store <code>instance_url</code> + refresh token encrypted.</li>
+<li>Add token-refresh helper to mint short-lived access tokens.</li>
+<li>Add read methods: Account / Person Account search, patient context.</li>
+<li>Add write methods: create Case, Task, call summary, later Assessment/Care Plan updates.</li>
+<li>Wire existing voice-agent tool calls to Hiro endpoints.</li>
+</ol>
+</div>
+
+<div class="card">
+<h3 style="margin-bottom:10px;color:#e8e0f0">🏥 Customer flow</h3>
+<ol style="line-height:1.8;margin-left:18px;color:#d4c4f0;font-size:13px">
+<li>Hospital admin logs into Hiro.</li>
+<li>Admin clicks <code>Connect Salesforce Health Cloud</code>.</li>
+<li>Salesforce approval screen opens.</li>
+<li>Admin approves access for their Salesforce org.</li>
+<li>Hiro stores refresh token securely.</li>
+<li>Hiro can read/write their allowed Health Cloud data until token is revoked or expires by policy.</li>
+</ol>
+<div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(245,158,11,0.1);color:#fbbf24;font-size:12px;line-height:1.6">Security note: rotate the current Salesforce Consumer Secret before anything real because it was pasted in chat during testing.</div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:20px;border-left:3px solid #a855f7">
+<h3 style="margin-bottom:10px;color:#c084fc">🛒 How this becomes AppExchange</h3>
+<ol style="line-height:1.8;margin-left:18px;color:#d4c4f0;font-size:13px">
+<li><strong>Do not start with AppExchange.</strong> First build the working Hiro connector.</li>
+<li>Decide product shape:
+  <ul style="margin-left:18px;line-height:1.7">
+    <li><strong>API Solution</strong> if Hiro is mostly external OAuth/API integration.</li>
+    <li><strong>Managed Package + API</strong> only if we need Salesforce UI components, custom objects, buttons, or flows installed into their org.</li>
+  </ul>
+</li>
+<li>In Salesforce Partner Console, create/connect the Technology/Solution.</li>
+<li>Submit security review with test credentials, data-flow docs, auth docs, PHI/PII posture, and scan reports.</li>
+<li>Create AppExchange Listing after the technology exists.</li>
+<li>Listing becomes the trust/discovery/install wrapper; OAuth is still how each hospital grants access to its own org.</li>
+</ol>
+</div>
+
+<div class="grid2" style="margin-bottom:20px">
+<div class="card">
+<h3 style="margin-bottom:10px;color:#e8e0f0">🔗 References</h3>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+<a href="https://appexchange.salesforce.com/appxListingDetail?listingId=a0N4V00000FN8eRUAT&tab=d" target="_blank" style="color:#e879f9;text-decoration:none">Ellipsis Health — Sage Voice AI Care Management ↗</a>
+<a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_oauth_and_connected_apps.htm" target="_blank" style="color:#e879f9;text-decoration:none">Salesforce OAuth / Connected Apps docs ↗</a>
+<a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/quickstart_oauth.htm" target="_blank" style="color:#e879f9;text-decoration:none">Salesforce REST API auth quickstart ↗</a>
+</div>
+</div>
+<div class="card">
+<h3 style="margin-bottom:10px;color:#e8e0f0">📌 Open questions</h3>
+<ul style="line-height:1.8;margin-left:18px;color:#d4c4f0;font-size:13px">
+<li>Which Health Cloud objects should be first-class for writeback: Case, Task, Assessment, Care Plan, or custom object?</li>
+<li>Does Hiro need a Salesforce managed package, or is API-only enough for pilots?</li>
+<li>What should write back to Salesforce vs Epic?</li>
+<li>What customer permission set/scopes are required for least-privilege access?</li>
+</ul>
+</div>
 </div>`,
 homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <div class="panel-sub">Patient data architecture • FHIR API ingestion • data point tables</div>
@@ -2641,17 +2744,30 @@ let expandedProject=null;
 const fallbackProjects=[
   {
     id:901,
-    name:'Salesforce Health Cloud + Epic voice-agent integration',
-    description:'Prototype a hospital-facing app where the existing voice agent can read/write Salesforce Health Cloud data and coordinate with Epic/EHR data. Market reference: Ellipsis Health Sage Voice AI Care Management on AppExchange; workflow reference: Hyro AI assistants inside Salesforce. Current proof: Health Cloud trial can query Account data and create a test Case; External Client App KouperHealth created for OAuth/API testing.',
+    name:'Hiro Salesforce Health Cloud EHR adapter',
+    description:'Build this inside Hiro as our own code and voice-agent integration. Pattern: similar to Nexon as an EHR adapter layer, but probably without using an external EHR service for Salesforce. A health org connects its own Salesforce Health Cloud instance to Hiro via OAuth; Hiro stores tokens securely; Hiro voice workflows read/write Health Cloud through Salesforce APIs. This is our app connecting to their Salesforce instance, similar in spirit to how a vendor app connects to a hospital Epic tenant.',
     category:'Health Cloud',
     status:'active',
     priority:5,
-    progress:25,
+    progress:35,
     url:'https://appexchange.salesforce.com/appxListingDetail?listingId=a0N4V00000FN8eRUAT&tab=d',
     blocker:'Supabase project is still inactive, so this card is hardcoded until projects table sync is restored.',
-    notes:'Next: finish OAuth/API curl or Postman test, then create a minimal backend adapter with two paths: get patient/care context from Health Cloud and write call results back as Case/Task/Note/Assessment. Epic path should be scoped separately through FHIR/SMART sandbox or vendor middleware. Decide later whether AppExchange technology is API solution, managed package, or both.',
-    created_at:'2026-05-20T14:15:00-04:00',
-    updated_at:'2026-05-20T14:15:00-04:00'
+    notes:'Proof completed tonight: Health Cloud trial org kouper3 can query Account data, create a test Case in Salesforce UI/Developer Console, and external OAuth/API access works. Curl/OAuth query returned Account rows from kouper3. Product shape: add a Salesforce connector in Hiro: Connect Salesforce Health Cloud button, OAuth callback endpoint, encrypted token storage, refresh-token based access-token renewal, and service methods like getPatientContext, createCase, createTask, writeCallSummary, and later writeAssessment or care-plan updates. Voice agent should call Hiro tool endpoints, not Salesforce directly. Customer flow: hospital admin approves our Salesforce app once, then Hiro can make backend API calls until token is revoked or policy expires it. How this becomes AppExchange: 1) build working Hiro Salesforce connector, 2) decide if install is API-only Connected App or managed package + API, 3) create/connect Technology in Salesforce Partner Console, likely API Solution first, 4) submit security review with test credentials/data-flow docs, 5) create AppExchange Listing that points customers to install/authorize the Hiro connector. AppExchange is the distribution/trust/install wrapper, not the first prototype. Security note: rotate the current Salesforce Consumer Secret because it was pasted in chat. Epic is a separate connector path later via FHIR/SMART or hospital/vendor middleware; first build Salesforce Health Cloud adapter.',
+    created_at:'2026-05-20T23:03:00-04:00',
+    updated_at:'2026-05-20T23:03:00-04:00'
+  },
+  {
+    id:903,
+    name:'Hiro integration checklist: Salesforce Health Cloud',
+    description:'Implementation checklist for turning the OAuth proof into a usable Hiro integration that a health org can connect themselves.',
+    category:'Hiro',
+    status:'active',
+    priority:5,
+    progress:15,
+    blocker:'Need implement in Hiro codebase; Supabase outage only affects Mission Control visibility, not the integration design.',
+    notes:'Step 1: create Salesforce integration config model: org id, instance_url, connected_app client id/secret source, encrypted refresh_token, scopes, status, created_by. Step 2: add Connect Salesforce button and OAuth start endpoint. Step 3: add OAuth callback that exchanges code for access_token/refresh_token and stores refresh_token encrypted. Step 4: add token refresh helper. Step 5: add read endpoint for Account/Person Account search. Step 6: add write endpoint that creates Case or Task linked to an Account. Step 7: wire voice-agent tools to Hiro endpoints. Step 8: add audit logs, PHI controls, permission checks, and token revocation path. Step 9: AppExchange path: register the working Hiro connector as Partner Console Technology/API Solution, optionally add a managed package only if Salesforce UI components/custom objects are needed, complete security review, then create Listing. The listing is how hospitals discover/install/trust the connector; OAuth is how their actual org grants access.',
+    created_at:'2026-05-20T23:03:00-04:00',
+    updated_at:'2026-05-20T23:03:00-04:00'
   },
   {
     id:902,

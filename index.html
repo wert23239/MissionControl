@@ -1586,6 +1586,7 @@ const sbHeaders={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type'
 const htmlEscapes={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>htmlEscapes[ch]);}
 function inlineJsString(value){return JSON.stringify(String(value??'')).replace(/"/g,'&quot;');}
+function inlineActionArg(value){return "decodeURIComponent('"+encodeURIComponent(String(value??''))+"')";}
 function safeTagClass(value){return String(value||'human').replace(/[^a-z0-9_-]/gi,'').toLowerCase()||'human';}
 function safeExternalUrl(value){
   try{
@@ -1955,7 +1956,7 @@ function renderTasks(){
   const overdue=tasksCache.filter(t=>t.due_date&&t.due_date<today&&t.status!=='done');
   const overdueStr=overdue.length?' · <span style="color:#ef4444">'+overdue.length+' overdue</span>':'';
   if(statsEl)statsEl.innerHTML=stat('Todo',todo.length,'queued'+overdueStr)+stat('In Progress',prog.length,'active')+stat('Done',done.length,'completed ✅');
-  function taskActionArg(id){return "decodeURIComponent('"+encodeURIComponent(String(id))+"')";}
+  function taskActionArg(id){return inlineActionArg(id);}
   // Daily Todo
   const daily=tasksCache.filter(t=>t.due_date===today&&t.status!=='done');
   const dailyEl=document.getElementById('taskDailyTodo');
@@ -2146,17 +2147,19 @@ async function addDJ(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='djInput')djSearch()});
 async function toggleDJ(id){
-  const item=djCache.find(d=>d.id===id);if(!item)return;
+  const key=String(id);
+  const item=djCache.find(d=>String(d.id)===key);if(!item)return;
   item.done=!item.done;
   renderDJ();
-  try{await fetch(SB_URL+'/rest/v1/dj?id=eq.'+id,{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=minimal'},body:JSON.stringify({done:item.done})});}catch(e){console.log('toggleDJ error',e)}
+  try{await fetch(SB_URL+'/rest/v1/dj?id=eq.'+encodeURIComponent(key),{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=minimal'},body:JSON.stringify({done:item.done})});}catch(e){console.log('toggleDJ error',e)}
 }
 async function deleteDJ(id){
-  const item=djCache.find(d=>d.id===id);
-  if(item&&!confirm('Delete "'+item.song+'"?'))return;
-  djCache=djCache.filter(d=>d.id!==id);
+  const key=String(id);
+  const item=djCache.find(d=>String(d.id)===key);
+  if(item&&!confirm('Delete "'+String(item.song||'Untitled')+'"?'))return;
+  djCache=djCache.filter(d=>String(d.id)!==key);
   renderDJ();
-  try{await fetch(SB_URL+'/rest/v1/dj?id=eq.'+id,{method:'DELETE',headers:sbHeaders});}catch(e){console.log('deleteDJ error',e)}
+  try{await fetch(SB_URL+'/rest/v1/dj?id=eq.'+encodeURIComponent(key),{method:'DELETE',headers:sbHeaders});}catch(e){console.log('deleteDJ error',e)}
 }
 
 let djCollectionSort='recent';
@@ -2424,21 +2427,27 @@ function renderDJ(){
 
   // Helper to render a song row
   function renderRow(d,showStatus){
-    const byTag=djShowAll&&d.added_by?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(232,121,249,0.12);color:#e879f9;margin-left:4px;">${d.added_by}</span>`:'';
-    const songEsc=d.song.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const playBtn=`<button onclick="window.open('https://www.youtube.com/results?search_query='+encodeURIComponent('${songEsc}'))" style="background:none;border:none;color:#7c3aed;cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;" title="Search YouTube">▶</button>`;
-    const bpmKey=d.done&&(d.bpm||d.key)?`<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(124,58,237,0.15);color:#a78bfa;font-weight:600;white-space:nowrap;">${d.bpm?parseFloat(d.bpm).toFixed(1)+' BPM':''}${d.bpm&&d.key?' · ':''}${d.key||''}</span>`:'';
+    const byTag=djShowAll&&d.added_by?`<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(232,121,249,0.12);color:#e879f9;margin-left:4px;">${escapeHtml(d.added_by)}</span>`:'';
+    const songText=String(d.song||'Untitled');
+    const songQuery=inlineJsString(songText);
+    const actionArg=inlineActionArg(d.id);
+    const artUrl=safeExternalUrl(d.art);
+    const playBtn=`<button onclick="window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(${songQuery}))" style="background:none;border:none;color:#7c3aed;cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;" title="Search YouTube">▶</button>`;
+    const bpm=Number.parseFloat(d.bpm);
+    const bpmText=Number.isFinite(bpm)?bpm.toFixed(1)+' BPM':'';
+    const keyText=escapeHtml(d.key||'');
+    const bpmKey=d.done&&(bpmText||keyText)?`<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(124,58,237,0.15);color:#a78bfa;font-weight:600;white-space:nowrap;">${bpmText}${bpmText&&keyText?' · ':''}${keyText}</span>`:'';
     const statusBadge=showStatus==='queued'?'<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;">queued</span>':
       showStatus==='failed'?'<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;">failed</span>':'';
     return `<div class="dj-queue-item" style="${d.done?'border-color:rgba(34,197,94,0.15);':d.source==='failed'?'border-color:rgba(239,68,68,0.15);':''}">
-      ${d.art?`<img src="${d.art}" style="width:32px;height:32px;border-radius:6px;">`:``}
+      ${artUrl?`<img src="${escapeHtml(artUrl)}" style="width:32px;height:32px;border-radius:6px;" alt="">`:``}
       ${playBtn}
-      <div class="q-song">${d.song}${byTag}</div>
+      <div class="q-song">${escapeHtml(songText)}${byTag}</div>
       ${bpmKey}
-      <div class="q-quality">${d.quality||d.genre||''}</div>
+      <div class="q-quality">${escapeHtml(d.quality||d.genre||'')}</div>
       ${statusBadge}
-      ${d.source&&d.done?`<span style="font-size:10px;color:#665c78;">${d.source}</span>`:''}
-      <button onclick="deleteDJ(${d.id})" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;font-family:Courier New,monospace;padding:0 4px;transition:color .15s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='#555'">×</button>
+      ${d.source&&d.done?`<span style="font-size:10px;color:#665c78;">${escapeHtml(d.source)}</span>`:''}
+      <button onclick="deleteDJ(${actionArg})" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;font-family:Courier New,monospace;padding:0 4px;transition:color .15s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='#555'">×</button>
     </div>`;
   }
 

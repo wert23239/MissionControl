@@ -886,6 +886,12 @@ ${stat('App','KouperHealth','External Client App')}
 ${stat('Next Build','Hiro connector','Not AppExchange first')}
 </div>
 
+<div class="card" style="margin-bottom:20px;border-left:3px solid #06b6d4">
+<h3 style="margin-bottom:10px;color:#67e8f9">📄 Engineering design doc</h3>
+<p style="color:#d4c4f0;font-size:13px;line-height:1.7;margin-bottom:10px">Full design for the external managed app / Technology Listing path, including exact Salesforce REST APIs, required Health Cloud data, and the Epic appointment → Salesforce Case update workflow.</p>
+<a href="docs/salesforce-health-cloud-external-managed-app-design.md" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:#06b6d4;text-decoration:none;font-weight:700;border-bottom:1px solid rgba(6,182,212,0.35)">Open Salesforce engineering design ↗</a>
+</div>
+
 <div class="card" style="margin-bottom:20px;border-left:3px solid #22c55e">
 <h3 style="margin-bottom:10px;color:#22c55e">✅ What we proved tonight</h3>
 <ul style="line-height:1.8;margin-left:18px">
@@ -944,12 +950,13 @@ Hospital Epic / EHR ↔ Hiro Epic/FHIR adapter ↔ same Hiro workflow layer</pre
 
 <div class="card" style="margin-bottom:20px;border-left:3px solid #a855f7">
 <h3 style="margin-bottom:10px;color:#c084fc">🛒 How this becomes AppExchange</h3>
+<p style="color:#d4c4f0;font-size:13px;line-height:1.7;margin-bottom:10px"><strong>Technology Listing mental model:</strong> Salesforce is asking, “Tell us what actual technical thing you’re connecting to customer Salesforce orgs, so we can review/approve it.” The Technology is the reviewed Hiro connector/API/package. The Listing is the public AppExchange storefront page that points to that reviewed Technology.</p>
 <ol style="line-height:1.8;margin-left:18px;color:#d4c4f0;font-size:13px">
 <li><strong>Do not start with AppExchange.</strong> First build the working Hiro connector.</li>
 <li>Decide product shape:
   <ul style="margin-left:18px;line-height:1.7">
     <li><strong>API Solution</strong> if Hiro is mostly external OAuth/API integration.</li>
-    <li><strong>Managed Package + API</strong> only if we need Salesforce UI components, custom objects, buttons, or flows installed into their org.</li>
+    <li><strong>Managed Package + API</strong> only if we need Salesforce UI components, custom objects, buttons, flows, permission sets, or packaged setup screens installed into their org.</li>
   </ul>
 </li>
 <li>In Salesforce Partner Console, create/connect the Technology/Solution.</li>
@@ -959,6 +966,20 @@ Hospital Epic / EHR ↔ Hiro Epic/FHIR adapter ↔ same Hiro workflow layer</pre
 </ol>
 </div>
 
+<div class="card" style="margin-bottom:20px;border-left:3px solid #22c55e">
+<h3 style="margin-bottom:10px;color:#86efac">🔌 Exact API/data shape</h3>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;color:#d4c4f0">
+<tr style="color:#fff;background:rgba(255,255,255,0.04)"><th style="text-align:left;padding:8px;border:1px solid rgba(255,255,255,0.08)">Need</th><th style="text-align:left;padding:8px;border:1px solid rgba(255,255,255,0.08)">Salesforce API</th><th style="text-align:left;padding:8px;border:1px solid rgba(255,255,255,0.08)">Objects/data</th></tr>
+<tr><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">OAuth connection</td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)"><code>/services/oauth2/authorize</code> + <code>/services/oauth2/token</code></td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">instance_url, org id, refresh token, scopes</td></tr>
+<tr><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Patient lookup</td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)"><code>GET /services/data/vXX.X/query/?q=...</code></td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)"><code>Account</code> / Person Account, optional Contact/Individual, Epic MRN/FHIR Patient ID mapping</td></tr>
+<tr><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">After Epic books appointment</td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)"><code>POST/PATCH /sobjects/Case</code></td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Create/update Case linked to Account with appointment status + Epic appointment ID</td></tr>
+<tr><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Staff follow-up</td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)"><code>POST /sobjects/Task</code></td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Task linked to Case/Account for care coordinator</td></tr>
+<tr><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Optional appointment visibility</td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)"><code>POST /sobjects/Event</code></td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Event if Salesforce calendar visibility is wanted; Epic remains scheduling source of truth</td></tr>
+<tr><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Multiple writes safely</td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)"><code>POST /services/data/vXX.X/composite</code></td><td style="padding:8px;border:1px solid rgba(255,255,255,0.08)">Case + Task + note/call summary in one transaction</td></tr>
+</table></div>
+<p style="margin-top:10px;color:#d4c4f0;font-size:13px;line-height:1.7">MVP stance: use Salesforce for patient/care-management workflow state and Epic for actual appointment scheduling. After Epic succeeds, write status back to Salesforce.</p>
+</div>
+
 <div class="grid2" style="margin-bottom:20px">
 <div class="card">
 <h3 style="margin-bottom:10px;color:#e8e0f0">🔗 References</h3>
@@ -966,6 +987,7 @@ Hospital Epic / EHR ↔ Hiro Epic/FHIR adapter ↔ same Hiro workflow layer</pre
 <a href="https://appexchange.salesforce.com/appxListingDetail?listingId=a0N4V00000FN8eRUAT&tab=d" target="_blank" style="color:#e879f9;text-decoration:none">Ellipsis Health — Sage Voice AI Care Management ↗</a>
 <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_oauth_and_connected_apps.htm" target="_blank" style="color:#e879f9;text-decoration:none">Salesforce OAuth / Connected Apps docs ↗</a>
 <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/quickstart_oauth.htm" target="_blank" style="color:#e879f9;text-decoration:none">Salesforce REST API auth quickstart ↗</a>
+<a href="docs/salesforce-health-cloud-external-managed-app-design.md" target="_blank" style="color:#06b6d4;text-decoration:none">Hiro Salesforce engineering design doc ↗</a>
 </div>
 </div>
 <div class="card">

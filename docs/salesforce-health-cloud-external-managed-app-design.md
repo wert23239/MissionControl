@@ -1,493 +1,420 @@
-# Kouper x Salesforce — Code-Based Integration Plan
+# Kouper x Salesforce — Prototype Scope
 
-## Goal
+## Prototype goal
 
-Build the Salesforce Health Cloud integration as a **Kouper/Hiro backend code integration**, not as a Salesforce-native app first.
+For this prototype, we only care about two things:
 
-The runtime workflow should be:
+1. **Salesforce login button in Hiro**
+2. **Patient match against Salesforce after login**
 
-```text
-Patient call
-  → Voice agent
-  → Kouper backend
-  → Epic / scheduling APIs
-  → Kouper backend
-  → Salesforce Health Cloud update
-```
+Everything else is explicitly out of scope for now:
 
-Epic remains the scheduling source of truth. Salesforce is the operational and care-management workflow layer where Kouper can create or update records such as:
+- no Case writeback
+- no Task writeback
+- no Event creation
+- no call-summary writeback
+- no AppExchange packaging
+- no managed package
+- no native Salesforce UI
+- no Epic scheduling writeback
 
-- `Case`
-- `Task`
-- `Event`
-- care-management workflow records
-- call summaries / operational notes
-
-The AI workflow, orchestration, auth handling, retries, field mapping, and audit logging live in Kouper code — not inside Salesforce.
-
----
-
-## Current architecture decision
-
-### Primary MVP shape
-
-Use a **Salesforce External Client App / Connected App + Salesforce REST API integration**.
-
-This means the first real build is code in Hiro/Kouper:
-
-1. Hiro admin page: **Connect Salesforce Health Cloud**.
-2. Backend OAuth start endpoint redirects customer admin to Salesforce.
-3. Backend OAuth callback exchanges authorization code for tokens.
-4. Backend stores customer org connection securely.
-5. Voice-agent workflows call Hiro backend tools.
-6. Hiro backend reads/writes Salesforce objects through Salesforce REST APIs.
-
-### Do not start with
-
-- a large managed package
-- deep native Salesforce UI
-- Apex-heavy logic
-- complex AppExchange packaging
-
-Those may matter later, but they are not required to prove the core integration.
-
----
-
-## Salesforce concept map
-
-### External Client App / Connected App
-
-This is the most important Salesforce component for the MVP.
-
-It is the OAuth/authentication layer that lets Kouper access a customer Salesforce org through Salesforce APIs.
-
-Conceptually similar to:
-
-- Sign in with Google
-- Slack OAuth apps
-- GitHub OAuth apps
-
-Kouper owns:
-
-- Salesforce app registration
-- client ID
-- client secret / key material
-- OAuth callback configuration
-- backend token exchange and refresh logic
-
-The customer Salesforce admin authorizes Kouper to access their Salesforce org. After authorization, Kouper receives:
-
-- access token
-- refresh token
-- org information
-- customer-specific `instance_url`
-
-Kouper can then call Salesforce REST APIs on behalf of that customer org.
-
-Without this, there is no safe Salesforce API access and no ability to create/update Cases, Tasks, Events, or Health Cloud records.
-
-### Customer Salesforce org
-
-Each customer already maintains their own Salesforce environment containing:
-
-- Health Cloud data
-- patient / account records
-- operational workflows
-- Cases
-- Tasks
-- campaigns
-- care-management processes
-
-Kouper does **not** host or replace the customer Salesforce org. Kouper connects to the customer's existing org through OAuth-authorized REST APIs.
-
-### AppExchange / Technology Listing
-
-AppExchange is not the runtime API. It is the trust, review, discovery, and install/procurement wrapper.
-
-For this architecture:
-
-- **Technology / Solution** = the actual Kouper API integration / External Client App / possible future package that Salesforce reviews.
-- **AppExchange Listing** = the public marketplace page that points to the reviewed technology.
-
-AppExchange may help later with enterprise trust and procurement, especially in healthcare. But the actual runtime integration still happens through:
+The product proof is simply:
 
 ```text
-Kouper Backend → Salesforce REST APIs
+Hiro admin clicks “Connect Salesforce”
+  → Salesforce OAuth login/approval
+  → Hiro stores Salesforce org connection
+  → Hiro searches Salesforce Account / Person Account records
+  → Hiro shows possible Salesforce patient matches for a Hiro patient
+```
+
+This should be built as **direct Hiro code in the existing Hiro repo**, not as a separate demo app.
+
+Repo/folder:
+
+```text
+/Users/clawman/.openclaw/workspace/hiro
 ```
 
 ---
 
-## Code-based MVP workstream
+## Mental model
 
-### 1. Salesforce OAuth flow
-
-Implement backend-owned OAuth.
-
-```ts
-// routes
-GET  /integrations/salesforce/oauth/start
-GET  /integrations/salesforce/oauth/callback
-POST /integrations/salesforce/disconnect
-GET  /integrations/salesforce/status
+```text
+Hiro frontend login button
+        ↓
+Hiro backend OAuth endpoints
+        ↓
+Salesforce External Client App / Connected App
+        ↓
+Customer Salesforce org
+        ↓
+Salesforce Account / Person Account query
+        ↓
+Hiro patient match result
 ```
 
-OAuth requirements:
+The Salesforce integration belongs inside Hiro because Hiro already owns:
 
-- Authorization Code + PKCE where applicable.
-- Scopes: `api`, `refresh_token` / `offline_access`.
-- Store one connection per customer org.
-- Encrypt refresh tokens at rest.
-- Never persist long-lived raw access tokens unnecessarily.
-- Refresh access tokens server-side before Salesforce API calls.
+- user auth
+- facility/practice context
+- patient records
+- backend API patterns
+- frontend admin pages
+- database migrations/entities
 
-Suggested connection model:
+---
+
+## Direct Hiro code locations
+
+### Frontend
+
+Add the prototype UI under the existing Hiro frontend:
+
+```text
+hiro/frontend/src/pages/AdminPanel/SalesforceIntegration.jsx
+hiro/frontend/src/pages/AdminPanel/style.scss
+hiro/frontend/src/App.jsx
+hiro/frontend/src/pages/AdminPanel/AdminNav.jsx
+hiro/frontend/src/HiroApi.js
+```
+
+Recommended UI location:
+
+```text
+/admin/salesforce
+```
+
+Add a simple admin page with:
+
+- connection status
+- **Connect Salesforce** button
+- **Disconnect** button if already connected
+- patient search/match form
+- match results table
+
+The login button should redirect to the Hiro backend, not directly hand-roll Salesforce auth in the browser:
+
+```js
+window.location.href = api.url(`/facility/${facilityId}/salesforce/oauth/start`);
+```
+
+### Backend
+
+Add a dedicated Salesforce integration module under the existing Hiro backend:
+
+```text
+hiro/backend/src/salesforce/salesforce.module.ts
+hiro/backend/src/salesforce/salesforce.controller.ts
+hiro/backend/src/salesforce/salesforce.service.ts
+hiro/backend/src/salesforce/salesforce.client.ts
+hiro/backend/src/salesforce/dto/patient-match.dto.ts
+hiro/backend/src/salesforce/entity/salesforce-connection.entity.ts
+hiro/backend/src/salesforce/entity/salesforce-patient-match.entity.ts
+```
+
+Wire it into:
+
+```text
+hiro/backend/src/routes.ts
+hiro/backend/src/app.module.ts or module registration file used by the repo
+```
+
+Existing relevant code to reuse/reference:
+
+```text
+hiro/backend/src/patient/entity/patient.entity.ts
+hiro/backend/src/practice/entity/practice.entity.ts
+hiro/backend/src/settings/*
+hiro/backend/src/common/entity/base.entity.ts
+hiro/backend/src/migrations/*
+```
+
+---
+
+## Prototype backend endpoints
+
+Only build the endpoints needed for login + patient match.
+
+```http
+GET  /facility/:facilityId/salesforce/oauth/start
+GET  /facility/:facilityId/salesforce/oauth/callback
+GET  /facility/:facilityId/salesforce/status
+POST /facility/:facilityId/salesforce/disconnect
+POST /facility/:facilityId/salesforce/patient-match
+```
+
+### Endpoint behavior
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /oauth/start` | Build Salesforce authorization URL and redirect admin to Salesforce |
+| `GET /oauth/callback` | Exchange code for tokens, store connection, redirect back to Hiro admin page |
+| `GET /status` | Return connected/disconnected + org info |
+| `POST /disconnect` | Revoke/disable local connection |
+| `POST /patient-match` | Search Salesforce for matching patient/account records |
+
+---
+
+## Database schema for prototype
+
+### `salesforce_connection`
+
+Store one Salesforce org connection per Hiro facility/practice/customer context.
 
 ```ts
-type SalesforceConnection = {
-  id: string;
-  customerId: string;
+@Entity({ name: 'salesforce_connection' })
+@Unique('UQ_salesforce_connection_facility', ['facilityId'])
+export class SalesforceConnection extends BaseEntity {
+  @Column({ name: 'facility_id', length: 5 })
+  facilityId: string;
+
+  @Column({ name: 'salesforce_org_id' })
   salesforceOrgId: string;
+
+  @Column({ name: 'instance_url' })
   instanceUrl: string;
+
+  @Column({ name: 'refresh_token_ciphertext', type: 'text' })
   refreshTokenCiphertext: string;
+
+  @Column({ type: 'text', array: true, default: '{}' })
   scopes: string[];
+
+  @Column({ default: 'connected' })
   status: 'connected' | 'revoked' | 'error';
-  connectedByUserId: string;
-  lastTokenRefreshAt?: string;
-  lastSuccessfulApiAt?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-```
 
-### 2. Core Salesforce API client
+  @Column({ name: 'connected_by_user_id', nullable: true })
+  connectedByUserId?: string;
 
-Create a backend adapter that owns auth, token refresh, retries, limits, and request logging.
+  @Column({ name: 'last_token_refresh_at', type: 'timestamptz', nullable: true })
+  lastTokenRefreshAt?: Date;
 
-```ts
-class SalesforceClient {
-  constructor(private connection: SalesforceConnection) {}
-
-  async query<T>(soql: string): Promise<T[]> {}
-  async createObject<T>(objectApiName: string, body: Record<string, unknown>): Promise<T> {}
-  async updateObject(objectApiName: string, id: string, body: Record<string, unknown>): Promise<void> {}
-  async describeObject(objectApiName: string): Promise<SalesforceObjectDescribe> {}
-  async composite(requests: SalesforceCompositeRequest[]): Promise<SalesforceCompositeResponse> {}
+  @Column({ name: 'last_successful_api_at', type: 'timestamptz', nullable: true })
+  lastSuccessfulApiAt?: Date;
 }
 ```
 
-Base URL pattern:
+### `salesforce_patient_match`
 
-```text
-{instance_url}/services/data/vXX.X/...
+Optional but useful for debugging/demo: store match attempts and selected matches.
+
+```ts
+@Entity({ name: 'salesforce_patient_match' })
+export class SalesforcePatientMatch extends BaseEntity {
+  @Column({ name: 'facility_id', length: 5 })
+  facilityId: string;
+
+  @Column({ name: 'hiro_patient_id', nullable: true })
+  hiroPatientId?: string;
+
+  @Column({ name: 'salesforce_account_id' })
+  salesforceAccountId: string;
+
+  @Column({ name: 'salesforce_contact_id', nullable: true })
+  salesforceContactId?: string;
+
+  @Column({ type: 'float', default: 0 })
+  score: number;
+
+  @Column({ type: 'jsonb', default: {} })
+  criteria: Record<string, unknown>;
+
+  @Column({ type: 'jsonb', default: {} })
+  rawSalesforceRecord: Record<string, unknown>;
+}
 ```
 
-Core endpoints:
+Migration file location:
 
-| Need | Salesforce endpoint |
-|---|---|
-| OAuth authorize | `GET /services/oauth2/authorize` |
-| Token exchange / refresh | `POST /services/oauth2/token` |
-| Query | `GET /services/data/vXX.X/query/?q={SOQL}` |
-| Create object | `POST /services/data/vXX.X/sobjects/{ObjectApiName}` |
-| Update object | `PATCH /services/data/vXX.X/sobjects/{ObjectApiName}/{Id}` |
-| Schema discovery | `GET /services/data/vXX.X/sobjects/{ObjectApiName}/describe` |
-| Composite write | `POST /services/data/vXX.X/composite` |
-| Limits | `GET /services/data/vXX.X/limits` |
+```text
+hiro/backend/src/migrations/<timestamp>-salesforce-login-and-patient-match.ts
+```
 
-### 3. Patient / Account search
+---
 
-Use Salesforce query APIs to identify the correct patient and retrieve workflow context before or after a call.
+## Patient match API contract
 
-Primary object:
+### Request
 
-- `Account`
+```http
+POST /facility/:facilityId/salesforce/patient-match
+Content-Type: application/json
+```
 
-Health Cloud often represents patients as Person Accounts, so lookup usually starts with `Account`.
+```json
+{
+  "hiroPatientId": "optional-existing-hiro-patient-id",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "dob": "1980-04-12",
+  "phone": "+15555550123",
+  "email": "jane@example.com",
+  "externalId": "optional-mrn-or-fhir-id"
+}
+```
 
-Example SOQL:
+### Response
+
+```json
+{
+  "matches": [
+    {
+      "score": 0.94,
+      "salesforceAccountId": "001...",
+      "salesforceContactId": "003...",
+      "name": "Jane Smith",
+      "dob": "1980-04-12",
+      "phone": "+15555550123",
+      "email": "jane@example.com",
+      "matchedOn": ["name", "dob", "phone"]
+    }
+  ]
+}
+```
+
+---
+
+## Salesforce query for prototype
+
+Start with `Account` / Person Account because Health Cloud commonly represents patients as Person Accounts.
 
 ```sql
-SELECT Id, Name, PersonEmail, PersonMobilePhone, PersonBirthdate
+SELECT Id, Name, FirstName, LastName, PersonBirthdate, PersonMobilePhone, PersonEmail
 FROM Account
-WHERE Name LIKE 'Jane%'
+WHERE LastName LIKE 'Smith%'
 LIMIT 10
 ```
 
-Possible lookup fields:
+If the org does not expose Person Account fields, fallback to basic `Account` fields:
 
-- name
+```sql
+SELECT Id, Name, Phone
+FROM Account
+WHERE Name LIKE 'Jane Smith%'
+LIMIT 10
+```
+
+Matching rules for prototype:
+
+1. exact/near last name
+2. exact/near first name
+3. exact DOB if available
+4. normalized phone match if available
+5. email match if available
+6. external ID/MRN if customer field exists later
+
+No need to solve every Health Cloud schema variation in the prototype. The demo only needs to show that Hiro can log in to Salesforce and find likely patient matches.
+
+---
+
+## Salesforce client methods
+
+```ts
+class SalesforceClient {
+  async refreshAccessToken(connection: SalesforceConnection): Promise<string> {}
+
+  async query<T>(connection: SalesforceConnection, soql: string): Promise<T[]> {}
+
+  async searchPatientAccounts(
+    connection: SalesforceConnection,
+    input: SalesforcePatientMatchRequest,
+  ): Promise<SalesforcePatientCandidate[]> {}
+}
+```
+
+Salesforce REST endpoints used:
+
+```text
+GET  /services/oauth2/authorize
+POST /services/oauth2/token
+GET  /services/data/vXX.X/query/?q={SOQL}
+```
+
+That is enough for the prototype.
+
+---
+
+## Frontend prototype behavior
+
+Page:
+
+```text
+/admin/salesforce
+```
+
+States:
+
+### Disconnected
+
+Show:
+
+```text
+Salesforce Health Cloud is not connected.
+[Connect Salesforce]
+```
+
+Clicking the button redirects to:
+
+```text
+/facility/:facilityId/salesforce/oauth/start
+```
+
+### Connected
+
+Show:
+
+```text
+Connected to Salesforce org: <org id / instance url>
+[Disconnect]
+```
+
+Then show patient match form:
+
+- first name
+- last name
 - DOB
-- phone number
-- MRN
-- external ID
-- FHIR Patient ID
-- custom customer mapping fields
+- phone
+- email
+- optional Hiro patient selector / ID
 
-Suggested Hiro service method:
-
-```ts
-async function searchSalesforcePatients(input: {
-  customerId: string;
-  name?: string;
-  dateOfBirth?: string;
-  phone?: string;
-  externalId?: string;
-}): Promise<SalesforcePatientMatch[]> {}
-```
-
-### 4. Case writeback
-
-Use `Case` as the first operational writeback target. It maps naturally to care-management tickets, escalations, scheduling outcomes, and support workflows.
-
-Create Case:
-
-```http
-POST /services/data/vXX.X/sobjects/Case
-Content-Type: application/json
-
-{
-  "Subject": "Appointment booked by voice agent",
-  "Description": "Patient requested cardiology follow-up. Epic appointment booked for 2026-06-02 10:30 ET.",
-  "Status": "Closed",
-  "Priority": "Medium",
-  "Origin": "Voice Agent",
-  "AccountId": "001..."
-}
-```
-
-Update Case:
-
-```http
-PATCH /services/data/vXX.X/sobjects/Case/500...
-Content-Type: application/json
-
-{
-  "Status": "Closed",
-  "Description": "Epic booking completed. Appointment ID: abc123."
-}
-```
-
-Suggested Hiro tool endpoint:
-
-```ts
-POST /tools/salesforce/cases
-```
-
-### 5. Follow-up Tasks
-
-Create `Task` records when staff action is required.
-
-```http
-POST /services/data/vXX.X/sobjects/Task
-Content-Type: application/json
-
-{
-  "Subject": "Call patient back about insurance verification",
-  "Status": "Not Started",
-  "Priority": "High",
-  "WhatId": "500...",
-  "WhoId": "003..."
-}
-```
-
-Example uses:
-
-- staff callback required
-- insurance verification needed
-- scheduling conflict needs review
-- care coordinator follow-up required
-
-### 6. Optional Events
-
-Create `Event` records only if the customer wants Salesforce calendar visibility.
-
-```http
-POST /services/data/vXX.X/sobjects/Event
-```
-
-Important: Epic remains the source of truth for actual scheduling. Salesforce Event is only mirrored visibility/workflow metadata.
-
-### 7. Call summaries / operational notes
-
-Store summarized voice-agent workflow outcomes through one of:
-
-- `CaseComment`
-- `FeedItem`
-- customer-specific notes object
-- future custom object if needed
-
-Example uses:
-
-- voice-agent call summary
-- scheduling outcome summary
-- escalation explanation
-- follow-up instructions
-- audit trail references
-
-### 8. Composite API
-
-Use Composite API to bundle multi-write workflows.
-
-```http
-POST /services/data/vXX.X/composite
-```
-
-Example:
+Submit calls:
 
 ```text
-Create Case
-  + Create Task
-  + Attach call summary
+POST /facility/:facilityId/salesforce/patient-match
 ```
 
-This reduces round trips and helps avoid partial-failure scenarios.
-
-### 9. Schema discovery and field mapping
-
-Use object describe APIs to support customer-specific Salesforce configurations.
-
-```http
-GET /services/data/vXX.X/sobjects/{Object}/describe
-```
-
-Use for:
-
-- detecting available fields
-- validating customer mappings
-- supporting custom Health Cloud variations
-- hiding unsupported UI fields
-- configuring integration per customer org
+Render candidate matches with score and matched fields.
 
 ---
 
-## Suggested product surface in Hiro
+## What success looks like
 
-### Admin UI
+A successful prototype demo is:
 
-Add a Salesforce integration page:
+1. Open Hiro.
+2. Go to `/admin/salesforce`.
+3. Click **Connect Salesforce**.
+4. Approve Salesforce OAuth.
+5. Return to Hiro and see connected state.
+6. Enter patient search fields.
+7. Hiro queries Salesforce and shows possible Account / Person Account matches.
 
-```text
-Settings / Integrations / Salesforce Health Cloud
-```
-
-Minimum UI:
-
-- connection status
-- connected org name / org ID
-- connected by
-- last successful sync/API call
-- **Connect Salesforce Health Cloud** button
-- **Disconnect** button
-- test query button
-- field mapping configuration later
-
-### Backend service methods
-
-Initial service methods:
-
-```ts
-getSalesforceConnection(customerId)
-startSalesforceOAuth(customerId, userId)
-handleSalesforceOAuthCallback(code, state)
-refreshSalesforceAccessToken(connection)
-searchPatientAccounts(customerId, criteria)
-getPatientWorkflowContext(customerId, patientId)
-createSalesforceCase(customerId, payload)
-updateSalesforceCase(customerId, caseId, payload)
-createSalesforceTask(customerId, payload)
-writeSalesforceCallSummary(customerId, payload)
-runSalesforceComposite(customerId, requests)
-```
-
-### Voice-agent tool contract
-
-The voice agent should call Kouper/Hiro tools, not Salesforce directly.
-
-Example internal tools:
-
-```ts
-salesforce.searchPatientContext
-salesforce.createSchedulingCase
-salesforce.markSchedulingCaseResolved
-salesforce.createFollowUpTask
-salesforce.writeCallSummary
-```
+That is it. Patient match is the product proof.
 
 ---
 
-## End-to-end MVP workflow
+## Explicitly later / not now
 
-```text
-1. Customer Salesforce admin authorizes Kouper through OAuth.
-2. Kouper stores the org connection securely.
-3. Patient calls the voice agent.
-4. Voice-agent workflow identifies patient intent.
-5. Kouper searches Salesforce for patient/account context.
-6. Kouper books/checks appointment through Epic integration.
-7. Kouper writes operational result back to Salesforce.
-8. Salesforce becomes the visibility/workflow layer for operations teams.
-```
+After the prototype works, later phases can add:
 
-Example after successful Epic booking:
+- Case writeback
+- Task creation
+- Event mirroring
+- call-summary writeback
+- schema discovery UI
+- customer-specific field mapping
+- AppExchange Technology / Listing
+- managed package only if required
 
-```text
-Epic appointment booked
-  → update/create Salesforce Case
-  → optionally create Task for coordinator
-  → optionally create Event for calendar visibility
-  → write call summary
-  → record audit log with Salesforce IDs + Epic appointment ID
-```
-
----
-
-## Security and compliance posture
-
-Implementation rules:
-
-- customer org authorization through OAuth only
-- no customer Salesforce passwords
-- encrypted refresh tokens
-- least-privilege scopes where possible
-- server-side API calls only
-- audit logs for every external write
-- structured error handling and retries
-- no unnecessary PHI retention outside operational need
-- token revocation / disconnect path
-- rotate any development secret that was pasted into chat before real use
-
----
-
-## AppExchange later
-
-Once the code-based connector works, AppExchange work becomes packaging/trust work:
-
-1. Register/connect the Technology/Solution in Salesforce Partner Console.
-2. Likely choose **Salesforce Platform API Solution** first.
-3. Add managed package only if customers need Salesforce-installed UI/components/permission sets/custom objects.
-4. Prepare security-review docs: data flow, auth model, test credentials, scan reports, PHI/PII posture.
-5. Create the public AppExchange Listing after the underlying technology exists.
-
-The listing should say, effectively:
-
-> Kouper is an officially reviewed Salesforce Health Cloud integration that connects your org to Kouper voice-agent workflows.
-
-But the actual working product is still backend code + OAuth + REST APIs.
-
----
-
-## Immediate next engineering tasks
-
-1. Add Salesforce connection persistence model.
-2. Add OAuth start/callback/disconnect/status endpoints.
-3. Add encrypted refresh-token storage.
-4. Add token refresh helper.
-5. Add Salesforce REST client wrapper.
-6. Add Account / Person Account search.
-7. Add Case create/update.
-8. Add Task create.
-9. Add call-summary writeback.
-10. Add Composite API helper.
-11. Add admin integration page in Hiro.
-12. Wire voice-agent workflows to Hiro Salesforce tool endpoints.
-13. Add audit logging and customer-specific field mapping.
+But none of those should distract from the prototype.

@@ -289,13 +289,13 @@
 
     <div class="pill">📸 Elizabeth + Alex</div>
     <h1><span class="gradient">Photo</span> Streak</h1>
-    <p class="subtitle">Two photos deep and counting. Tap the button whenever the streak gets stronger.</p>
+    <p class="subtitle">Two days in a row where Elizabeth and Alex both sent a photo. Keep the daily streak alive.</p>
 
     <section class="counter-wrap" aria-live="polite" aria-label="Current photo streak">
       <div class="counter">
         <div>
           <span id="count">2</span>
-          <div class="label">photos</div>
+          <div class="label">days</div>
         </div>
       </div>
     </section>
@@ -337,7 +337,7 @@
 
     buttons.increment.addEventListener("click", () => {
       count += 1;
-      render(count === 3 ? "Three is officially a streak ✨" : "Streak updated ✨");
+      render(count === 3 ? "Three days in a row ✨" : "Daily streak updated ✨");
     });
 
     buttons.decrement.addEventListener("click", () => {

@@ -199,6 +199,13 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .flames {
+      min-height: 1.6em;
+      margin-bottom: 4px;
+      font-size: clamp(1.45rem, 5vw, 2.25rem);
+      filter: drop-shadow(0 8px 14px rgba(255, 95, 0, 0.25));
+    }
+
     .label {
       margin-top: 15px;
       color: var(--muted);
@@ -294,6 +301,7 @@
     <section class="counter-wrap" aria-live="polite" aria-label="Current photo streak">
       <div class="counter">
         <div>
+          <div class="flames" id="flames" aria-hidden="true"></div>
           <span id="count">2</span>
           <div class="label">days</div>
         </div>
@@ -311,7 +319,10 @@
   <script>
     const STORAGE_KEY = "elizabeth-alex-photo-streak";
     const STARTING_STREAK = 2;
+    const START_DATE = "2026-06-01";
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
     const countEl = document.querySelector("#count");
+    const flamesEl = document.querySelector("#flames");
     const counterEl = document.querySelector(".counter");
     const mainEl = document.querySelector("main");
     const noteEl = document.querySelector("#note");
@@ -321,11 +332,35 @@
       reset: document.querySelector("#reset"),
     };
 
+    function parseLocalDate(dateString) {
+      const [year, month, day] = dateString.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function startOfToday() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    function maxStreakForToday() {
+      const elapsedDays = Math.max(0, Math.floor((startOfToday() - parseLocalDate(START_DATE)) / MS_PER_DAY));
+      return STARTING_STREAK + elapsedDays;
+    }
+
     let count = Number.parseInt(localStorage.getItem(STORAGE_KEY) || String(STARTING_STREAK), 10);
     if (!Number.isFinite(count) || count < STARTING_STREAK) count = STARTING_STREAK;
+    count = Math.min(count, maxStreakForToday());
+
+    function fireText() {
+      if (count < 5) return "";
+      return "🔥".repeat(Math.min(5, count - 4));
+    }
 
     function render(message = "") {
+      const maxToday = maxStreakForToday();
+      count = Math.min(Math.max(STARTING_STREAK, count), maxToday);
       countEl.textContent = count.toLocaleString();
+      flamesEl.textContent = fireText();
       noteEl.textContent = message;
       localStorage.setItem(STORAGE_KEY, String(count));
       counterEl.classList.remove("pop");
@@ -336,8 +371,13 @@
     }
 
     buttons.increment.addEventListener("click", () => {
+      const maxToday = maxStreakForToday();
+      if (count >= maxToday) {
+        render(`Max for today is ${maxToday} day${maxToday === 1 ? "" : "s"} — come back tomorrow ✨`);
+        return;
+      }
       count += 1;
-      render(count === 3 ? "Three days of photos ✨" : "Photo streak updated ✨");
+      render(count >= 5 ? "Streak is on fire 🔥" : count === 3 ? "Three days of photos ✨" : "Photo streak updated ✨");
     });
 
     buttons.decrement.addEventListener("click", () => {

@@ -230,6 +230,7 @@ const sections=[
   {id:'money',icon:'💰',label:'Money',dot:'#22c55e'},
   {id:'spending',icon:'🏦',label:'Spending',dot:'#998eb5'},
   {id:'calendar',icon:'📅',label:'Calendar',dot:'#f59e0b'},
+  {id:'packing',icon:'🧳',label:'Packing',dot:'#38bdf8'},
   {id:'bingo',icon:'🎯',label:'Bingo',dot:'#e879f9'},
   {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'},
   {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'},
@@ -580,6 +581,38 @@ calendar:`<h2 class="panel-title">📅 Calendar</h2>
 <button onclick="addCal()" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
 </div>
 <div id="calList" class="card" style="max-height:60vh;overflow-y:auto;"></div>`,
+
+packing:`<h2 class="panel-title">🧳 Packing List</h2>
+<div class="panel-sub">Tell me where + when — I’ll pack around weather and Alex’s coat rules</div>
+<div class="grid2" style="margin-bottom:16px">
+  <div class="card">
+    <h3 style="margin-bottom:12px">Trip</h3>
+    <div class="notes-input" style="margin-bottom:10px">
+      <input id="packPlace" type="text" placeholder="Place — e.g. Chamonix, Miami, Brooklyn" autocomplete="off">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <input id="packStart" type="date" style="flex:1;min-width:140px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+      <input id="packEnd" type="date" style="flex:1;min-width:140px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+    </div>
+    <textarea id="packNotes" placeholder="Activities / vibe — wedding, hiking, beach, work dinner, skiing..." style="width:100%;min-height:86px;resize:vertical;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;margin-bottom:10px"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="generatePackingList()" style="background:linear-gradient(135deg,#38bdf8,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-family:inherit;font-weight:700;cursor:pointer;font-size:13px;">Generate list</button>
+      <button onclick="clearPackingList()" style="background:rgba(255,255,255,0.05);color:#998eb5;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Clear</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:12px">Alex rules baked in</h3>
+    <div style="font-size:13px;line-height:1.8;color:#d4c4f0">
+      <div>🧥 <strong>Jackets:</strong> sweater → pea coat → Canada Goose</div>
+      <div>🥶 <strong>Goose:</strong> below ~29°F actual or ~19°F feels-like</div>
+      <div>🧥 <strong>Pea coat:</strong> cold but not Goose territory</div>
+      <div>🩳 <strong>Shorts:</strong> never suggest them</div>
+      <div>🌦️ <strong>Weather:</strong> uses live forecast when available</div>
+    </div>
+  </div>
+</div>
+<div id="packingWeather" class="card" style="margin-bottom:16px;display:none"></div>
+<div id="packingOutput" class="grid3"></div>`,
 
 dj:`<h2 class="panel-title">🎵 Auto Music 🎵</h2>
 <div class="panel-sub">Search, download, and manage DJ tracks</div>
@@ -1787,12 +1820,82 @@ function switchPanel(id){
   // Update URL bar
   const urlBar=document.querySelector('.url-bar');
   if(urlBar)urlBar.innerHTML='🔒 missioncontrol.app/'+id;
+  if(id==='packing')initPackingTab();
   if(id==='notebook'){loadTasks();renderNotes();renderJournal();}
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();
   if(id==='crons')renderCrons();
   if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
 }
+
+
+// Packing list
+const PACKING_STORAGE_KEY='mc-packing-state';
+const ALEX_COAT_RULES={gooseFeels:19,gooseActual:29,peaFeels:45,sweaterFeels:60};
+function todayISO(){return new Date().toISOString().slice(0,10)}
+function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
+function initPackingTab(){
+  const saved=JSON.parse(localStorage.getItem(PACKING_STORAGE_KEY)||'{}');
+  const place=document.getElementById('packPlace');
+  const start=document.getElementById('packStart');
+  const end=document.getElementById('packEnd');
+  const notes=document.getElementById('packNotes');
+  if(place&&!place.value)place.value=saved.place||'';
+  if(start&&!start.value)start.value=saved.start||todayISO();
+  if(end&&!end.value)end.value=saved.end||addDaysISO(3);
+  if(notes&&!notes.value)notes.value=saved.notes||'';
+  if(saved.output)renderPackingResult(saved.output,saved.weatherHtml||'');
+}
+function savePackingState(extra={}){
+  const state={place:document.getElementById('packPlace')?.value.trim()||'',start:document.getElementById('packStart')?.value||'',end:document.getElementById('packEnd')?.value||'',notes:document.getElementById('packNotes')?.value.trim()||'',...extra};
+  localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(state));
+}
+function tripDays(start,end){const s=new Date(start),e=new Date(end||start);if(!Number.isFinite(+s)||!Number.isFinite(+e))return 3;return Math.max(1,Math.min(30,Math.round((e-s)/(24*60*60*1000))+1));}
+function activityFlags(notes){const t=(notes||'').toLowerCase();return {formal:/wedding|formal|black tie|cocktail|party|dinner/.test(t),hike:/hike|hiking|mountain|trail|walk/.test(t),beach:/beach|pool|swim|boat|lake|ocean/.test(t),ski:/ski|snowboard|snow|mountain/.test(t),work:/work|office|conference|meeting/.test(t),gym:/gym|run|workout|exercise/.test(t),international:/passport|international|abroad|europe|france|italy|japan|uk|chamonix/.test(t)}}
+async function fetchPackingWeather(place,start,end){
+  const geoUrl='https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name='+encodeURIComponent(place);
+  const geo=await fetch(geoUrl).then(r=>r.json());
+  const loc=geo.results&&geo.results[0];
+  if(!loc)throw new Error('Place not found');
+  const params=new URLSearchParams({latitude:loc.latitude,longitude:loc.longitude,daily:'temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max',temperature_unit:'fahrenheit',timezone:'auto',start_date:start,end_date:end});
+  const weather=await fetch('https://api.open-meteo.com/v1/forecast?'+params).then(r=>r.json());
+  return {loc,weather};
+}
+function summarizeWeather(data){const d=data?.weather?.daily;if(!d||!d.time?.length)return null;return {max:Math.round(Math.max(...d.temperature_2m_max)),min:Math.round(Math.min(...d.temperature_2m_min)),feelsMin:Math.round(Math.min(...d.apparent_temperature_min)),feelsMax:Math.round(Math.max(...d.apparent_temperature_max)),rain:Math.max(...(d.precipitation_probability_max||[0])),days:d.time.length};}
+function coatRecommendation(w){if(!w)return {item:'Layerable jacket / sweater',why:'Weather unavailable — safe flexible layer'};if(w.feelsMin<ALEX_COAT_RULES.gooseFeels||w.min<ALEX_COAT_RULES.gooseActual)return {item:'Canada Goose',why:`Lowest ${w.min}°F, feels like ${w.feelsMin}°F`};if(w.feelsMin<ALEX_COAT_RULES.peaFeels||w.min<50)return {item:'Pea coat',why:`Coldest feels like ${w.feelsMin}°F`};if(w.feelsMin<ALEX_COAT_RULES.sweaterFeels)return {item:'Sweater / light layer',why:`Mild but layer-worthy, feels like ${w.feelsMin}°F at coolest`};return {item:'No jacket',why:`Warm forecast, low feels like ${w.feelsMin}°F`};}
+function buildPackingList({place,start,end,notes,weatherSummary}){
+  const days=tripDays(start,end), flags=activityFlags(notes), coat=coatRecommendation(weatherSummary);
+  const socks=Math.min(days+2,14), underwear=Math.min(days+2,14), shirts=Math.min(days+1,12);
+  const bring=[`${underwear} underwear`,`${socks} socks`,`${shirts} shirts / tees`,`${Math.ceil(days/2)} pants`,'sleep clothes','toiletries kit','toothbrush + toothpaste','deodorant','chargers','phone wallet keys','sunglasses'];
+  const maybe=[]; const skip=['Shorts — never'];
+  if(coat.item!=='No jacket')bring.unshift(coat.item); else skip.push('Jacket');
+  if(coat.item==='Canada Goose')bring.push('gloves','warm hat','scarf');
+  if(weatherSummary?.rain>=35)bring.push('umbrella or rain shell'); else maybe.push('small umbrella');
+  if(flags.formal)bring.push('wedding/formal outfit','dress shoes','belt','steamer or wrinkle-release spray');
+  if(flags.hike)bring.push('hiking shoes','trail socks','daypack','water bottle');
+  if(flags.beach)bring.push('swimwear','sunscreen','sandals');
+  if(flags.ski)bring.push('base layers','warm socks','ski goggles / snow gear');
+  if(flags.work)bring.push('work outfit','laptop + charger');
+  if(flags.gym)bring.push('workout clothes','gym shoes');
+  if(flags.international)bring.push('passport','travel adapter','printed/phone copies of reservation');
+  if(days>=5)maybe.push('laundry bag','extra pants','backup shoes');
+  maybe.push('Advil / meds','chapstick','backup battery','AirPods');
+  return {days,coat,bring:[...new Set(bring)],maybe:[...new Set(maybe)],skip:[...new Set(skip)]};
+}
+function renderChecklist(title,items,color){return `<div class="card"><h3 style="margin-bottom:12px;color:${color}">${title}</h3>${items.map(item=>`<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`).join('')}</div>`;}
+function renderPackingResult(result,weatherHtml=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml;}if(out)out.innerHTML=renderChecklist('Bring',result.bring,'#22c55e')+renderChecklist('Maybe',result.maybe,'#f59e0b')+renderChecklist('Skip',result.skip,'#ef4444');}
+async function generatePackingList(){
+  const place=document.getElementById('packPlace')?.value.trim(); const start=document.getElementById('packStart')?.value||todayISO(); const end=document.getElementById('packEnd')?.value||start; const notes=document.getElementById('packNotes')?.value.trim()||''; const out=document.getElementById('packingOutput');
+  if(!place){if(out)out.innerHTML='<div class="card"><div class="empty-state">Add a place first 🧳</div></div>';return;}
+  if(out)out.innerHTML='<div class="card"><div class="empty-state">Checking weather + building list...</div></div>';
+  let weatherSummary=null,weatherHtml='';
+  try{const data=await fetchPackingWeather(place,start,end);weatherSummary=summarizeWeather(data);if(weatherSummary){const loc=data.loc;weatherHtml=`<h3 style="margin-bottom:8px">🌦️ ${escapeHtml(loc.name)}${loc.country?', '+escapeHtml(loc.country):''}</h3><div style="font-size:13px;color:#d4c4f0;line-height:1.8">${weatherSummary.days} forecast day${weatherSummary.days===1?'':'s'} · ${weatherSummary.min}–${weatherSummary.max}°F · feels ${weatherSummary.feelsMin}–${weatherSummary.feelsMax}°F · rain risk ${weatherSummary.rain}%</div>`;}}
+  catch(e){weatherHtml='<h3 style="margin-bottom:8px">🌦️ Weather unavailable</h3><div style="font-size:13px;color:#998eb5;line-height:1.8">Could not fetch live weather, so this list uses safe defaults and your coat rules.</div>';}
+  const result=buildPackingList({place,start,end,notes,weatherSummary});
+  if(result.coat)weatherHtml+=`<div style="font-size:13px;color:#d4c4f0;margin-top:10px">🧥 <strong>${escapeHtml(result.coat.item)}</strong> — ${escapeHtml(result.coat.why)}</div>`;
+  renderPackingResult(result,weatherHtml); savePackingState({output:result,weatherHtml});
+}
+function clearPackingList(){localStorage.removeItem(PACKING_STORAGE_KEY);['packPlace','packStart','packEnd','packNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const w=document.getElementById('packingWeather');if(w){w.style.display='none';w.innerHTML='';}const out=document.getElementById('packingOutput');if(out)out.innerHTML='';initPackingTab();}
 
 // ── Keyboard shortcuts: 1-9,0 switch tabs, Esc blurs ──
 document.addEventListener('keydown',e=>{
@@ -2705,7 +2808,6 @@ function renderCal(){
   });
   el.innerHTML=html;
 }
-  renderCalGrid();
 
 // Month Grid Calendar
 let calGridMonth=new Date().getMonth();
@@ -2761,6 +2863,7 @@ function calGridClickDay(iso){
     }
   });
 }
+renderCalGrid();
 
 // Initialize
 const origSwitch=switchPanel;
@@ -2771,6 +2874,7 @@ switchPanel=function(id){
   localStorage.setItem('mc-active-tab',id);
   const urlBar=document.querySelector('.url-bar');
   if(urlBar)urlBar.innerHTML='🔒 missioncontrol.app/'+id;
+  if(id==='packing')initPackingTab();
   if(id==='notebook'){loadTasks();renderNotes();renderJournal();}
   if(id==='book')renderBook();
   if(id==='bingo')renderBingo();

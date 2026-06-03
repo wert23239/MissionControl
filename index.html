@@ -1057,7 +1057,9 @@ LIMIT 10</pre>
 <h3 style="margin-bottom:12px;color:#f59e0b">Copy/paste this to Claude at work</h3>
 <pre style="white-space:pre-wrap;line-height:1.45;font-size:12px;background:#14101f;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;overflow:auto;color:#d4c4f0"><code>We are converting the Nexon scheduling integration from Practice Fusion to eClinicalWorks (eCW). This is an experimental branch, so it is okay to overwrite/remove Practice Fusion-specific code.
 
-Goal: keep the app-level API the same if possible, but replace the underlying EHR adapter with eCW.
+IMPORTANT ARCHITECTURE: use Nexon as the integration layer. Do NOT build the app as a direct browser robot against eCW unless Nexon does not expose the needed capability. eCW is the downstream EHR target; Nexon should be the adapter/API/session layer we call from Hiro/backend code. Playwright is only an optional fallback/debug harness for mapping the eCW UI, not the primary integration path.
+
+Goal: keep the app-level API the same if possible, but replace the underlying Practice Fusion/Nexon adapter with a Nexon-backed eCW adapter.
 
 Sandbox:
 - Login URL: https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp
@@ -1085,9 +1087,12 @@ If there is a file like:
 - nexonPracticeFusionAdapter.ts
 
 Create equivalent:
-- ecwClient.ts
-- ecwService.ts
+- nexonClient.ts
+- nexonEcwClient.ts
+- nexonEcwService.ts
 - nexonEcwAdapter.ts
+
+Do NOT make a generic direct eCW robot the primary client. The primary client should call Nexon endpoints / Nexon SDK / Nexon-hosted workflow for eCW.
 
 Keep exported interface stable:
 
@@ -1142,12 +1147,62 @@ Call this before:
 - creating new patient
 - any write action
 
-4. Implement eCW Playwright login helper.
+4. Implement Nexon client first. Playwright/eCW login is fallback only.
 
-import { chromium, Page } from "playwright";
-import { ecwConfig } from "./ecwConfig";
+export class NexonEcwClient {
+  constructor(private readonly config = ecwConfig) {}
 
-export async function loginToEcw(page: Page) {
+  async findPatient(input: { id?: string; firstName?: string; lastName?: string }) {
+    const patientId = input.id ?? this.config.debugPatientId;
+    assertEcwSandboxPatientAllowed({ id: patientId, firstName: input.firstName, lastName: input.lastName });
+
+    // TODO: replace path/body with actual Nexon eCW endpoint contract.
+    // The point is: Hiro/backend calls Nexon, Nexon handles eCW.
+    return this.request(`/ecw/patients/${encodeURIComponent(patientId)}`, { method: "GET" });
+  }
+
+  async getAppointment(id = this.config.debugAppointmentId) {
+    return this.request(`/ecw/appointments/${encodeURIComponent(id)}`, { method: "GET" });
+  }
+
+  async bookAppointment(input: BookAppointmentInput) {
+    const patientId = input.patientId || this.config.debugPatientId;
+    assertEcwSandboxPatientAllowed({ id: patientId, lastName: "SAMPLE" });
+
+    return this.request(`/ecw/appointments`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...input,
+        patientId,
+        providerId: input.providerId || this.config.debugProviderId,
+        facilityId: input.facilityId || this.config.defaultFacilityId,
+        dryRun: process.env.ECW_ALLOW_SAVE !== "true",
+      }),
+    });
+  }
+
+  private async request(path: string, init: RequestInit = {}) {
+    const baseUrl = process.env.NEXON_BASE_URL;
+    if (!baseUrl) throw new Error("NEXON_BASE_URL is required for Nexon eCW integration");
+
+    const r = await fetch(`${baseUrl}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.NEXON_API_KEY ?? ""}`,
+        ...(init.headers || {}),
+      },
+    });
+
+    if (!r.ok) throw new Error(`Nexon eCW request failed: ${r.status} ${await r.text()}`);
+    return r.json();
+  }
+}
+
+// Fallback/debug only if Nexon cannot provide endpoint yet:
+// import { chromium, Page } from "playwright";
+// import { ecwConfig } from "./ecwConfig";
+// export async function loginToEcwForDebugOnly(page: Page) {
   await page.goto(ecwConfig.loginUrl, { waitUntil: "domcontentloaded" });
 
   await page.getByLabel(/username/i).fill(ecwConfig.username);
@@ -1173,14 +1228,14 @@ await page.locator('input[name="username"], input#username').fill(ecwConfig.user
 await page.locator('input[type="password"]').fill(ecwConfig.password);
 await page.locator('button:has-text("Login"), input[type="submit"]').click();
 
-5. Replace Practice Fusion patient search with eCW patient search.
+5. Replace Practice Fusion patient search with Nexon-backed eCW patient search.
 
 Expected behavior:
 - For debug mode, always load JOHN SAMPLE / 10187.
 - Search by exact ID first.
 - Only fallback to name search if needed.
 
-export async function findEcwPatient(page: Page, input: { id?: string; firstName?: string; lastName?: string }) {
+export async function findEcwPatient(input: { id?: string; firstName?: string; lastName?: string }) {
   const patientId = input.id ?? ecwConfig.debugPatientId;
 
   assertEcwSandboxPatientAllowed({
@@ -1189,36 +1244,15 @@ export async function findEcwPatient(page: Page, input: { id?: string; firstName
     lastName: input.lastName,
   });
 
-  // TODO selectors need DOM verification in eCW.
-  await page.getByRole("textbox", { name: /patient search|search/i }).fill(patientId);
-  await page.keyboard.press("Enter");
-
-  await page.getByText(/john sample/i).waitFor({ timeout: 15000 });
-
-  return {
-    id: patientId,
-    firstName: "JOHN",
-    lastName: "SAMPLE",
-    ehr: "ecw",
-  };
+  const client = new NexonEcwClient();
+  return client.findPatient({ id: patientId, firstName: input.firstName, lastName: input.lastName });
 }
 
-6. Replace Practice Fusion appointment debug lookup with eCW appointment lookup.
+6. Replace Practice Fusion appointment debug lookup with Nexon-backed eCW appointment lookup.
 
-export async function getEcwAppointment(page: Page, appointmentId = ecwConfig.debugAppointmentId) {
-  // Navigate to schedule / appointment screen.
-  // TODO: verify actual eCW selectors.
-  await page.getByText(/schedule/i).click();
-
-  // Search or open appointment by ID if eCW UI supports it.
-  // Otherwise use debug appointment ID as fixture metadata for tests.
-  return {
-    id: appointmentId,
-    patientId: ecwConfig.debugPatientId,
-    providerId: ecwConfig.debugProviderId,
-    facilityId: ecwConfig.defaultFacilityId,
-    ehr: "ecw",
-  };
+export async function getEcwAppointment(appointmentId = ecwConfig.debugAppointmentId) {
+  const client = new NexonEcwClient();
+  return client.getAppointment(appointmentId);
 }
 
 7. Replace booking function but keep external DTO.
@@ -1233,61 +1267,21 @@ export type BookAppointmentInput = {
   appointmentType?: string;
 };
 
-export async function bookEcwAppointment(page: Page, input: BookAppointmentInput) {
+export async function bookEcwAppointment(input: BookAppointmentInput) {
   const patientId = input.patientId || ecwConfig.debugPatientId;
   const providerId = input.providerId || ecwConfig.debugProviderId;
   const facilityId = input.facilityId || ecwConfig.defaultFacilityId;
 
   assertEcwSandboxPatientAllowed({ id: patientId, lastName: "SAMPLE" });
 
-  await loginToEcw(page);
-
-  const patient = await findEcwPatient(page, {
-    id: patientId,
-    firstName: "JOHN",
-    lastName: "SAMPLE",
-  });
-
-  // TODO verify eCW schedule navigation selectors.
-  await page.getByText(/schedule/i).click();
-
-  // TODO open new appointment modal.
-  await page.getByRole("button", { name: /new appointment|add appointment|add/i }).click();
-
-  // TODO fill fields; selectors must be verified in eCW DOM.
-  await page.getByLabel(/patient/i).fill("JOHN SAMPLE");
-  await page.getByLabel(/provider/i).fill(providerId);
-  await page.getByLabel(/facility/i).fill(facilityId);
-  await page.getByLabel(/date|time/i).fill(input.startTime);
-  await page.getByLabel(/reason|visit reason|chief complaint/i).fill(
-    input.reason ?? "Nexon eCW sandbox appointment booking test"
-  );
-
-  // In first pass, DO NOT SAVE automatically unless explicitly confirmed.
-  // Prefer dry run / staged appointment for safety.
-  if (process.env.ECW_ALLOW_SAVE !== "true") {
-    return {
-      id: "DRY_RUN",
-      patientId,
-      providerId,
-      facilityId,
-      startTime: input.startTime,
-      status: "staged_not_saved",
-      ehr: "ecw",
-    };
-  }
-
-  await page.getByRole("button", { name: /^save$/i }).click();
-
-  return {
-    id: "TODO_CAPTURE_ECW_APPOINTMENT_ID",
+  const client = new NexonEcwClient();
+  return client.bookAppointment({
+    ...input,
     patientId,
     providerId,
     facilityId,
-    startTime: input.startTime,
-    status: "booked",
-    ehr: "ecw",
-  };
+    reason: input.reason ?? "Nexon eCW sandbox appointment booking test",
+  });
 }
 
 8. Add adapter selection.
@@ -1311,7 +1305,7 @@ export function getSchedulingAdapter(ehr: string): EhrSchedulingAdapter {
 
 export class EcwSchedulingAdapter implements EhrSchedulingAdapter {
   async findPatient(input: FindPatientInput) {
-    return withEcwPage(async (page) =&gt; findEcwPatient(page, input));
+    return findEcwPatient(input);
   }
 
   async findProvider(input: FindProviderInput) {
@@ -1325,15 +1319,15 @@ export class EcwSchedulingAdapter implements EhrSchedulingAdapter {
   }
 
   async getAppointment(id: string) {
-    return withEcwPage(async (page) =&gt; getEcwAppointment(page, id));
+    return getEcwAppointment(id);
   }
 
   async bookAppointment(input: BookAppointmentInput) {
-    return withEcwPage(async (page) =&gt; bookEcwAppointment(page, input));
+    return bookEcwAppointment(input);
   }
 }
 
-10. Add Playwright page/session helper.
+10. Do NOT add Playwright as the primary helper. Add Nexon request/session helper.
 
 export async function withEcwPage&lt;T&gt;(fn: (page: Page) =&gt; Promise&lt;T&gt;): Promise&lt;T&gt; {
   const browser = await chromium.launch({
@@ -1468,10 +1462,11 @@ Search and replace:
 
 17. Keep these abstractions.
 
-Do NOT hardcode eCW UI selectors all over app code. Keep selectors inside:
-- ecwSelectors.ts
-- ecwClient.ts
-- ecwRpa.ts
+Do NOT hardcode eCW UI selectors all over app code. Prefer Nexon API/session calls. If UI selectors are needed for temporary debugging, isolate them under debug-only files:
+- nexonEcwClient.ts primary
+- nexonEcwAdapter.ts primary
+- ecwDebugSelectors.ts fallback only
+- ecwDebugRpa.ts fallback only
 
 export const ecwSelectors = {
   usernameInput: 'input[name="username"], input#username',
@@ -1485,15 +1480,14 @@ export const ecwSelectors = {
 
 18. Most important implementation instruction.
 
-First pass should be:
-- login
-- handle popup correctly
-- find JOHN SAMPLE
-- navigate to schedule
-- stage appointment form
+First pass should be through Nexon:
+- configure Nexon base URL / API key / session auth
+- call Nexon to find JOHN SAMPLE
+- call Nexon to fetch debug appointment 26572
+- call Nexon to stage/create appointment in dry-run mode
 - DO NOT SAVE unless ECW_ALLOW_SAVE=true
 
-Use screenshot/log artifacts for each step so selectors can be adjusted quickly.</code></pre>
+Only use Playwright/eCW direct login if Nexon has no endpoint yet and you need to discover/mirror the workflow temporarily. The production shape should be Hiro/backend -&gt; Nexon -&gt; eCW, not Hiro/backend -&gt; Playwright -&gt; eCW.</code></pre>
 </div>`,
 homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <div class="panel-sub">Patient data architecture • FHIR API ingestion • data point tables</div>

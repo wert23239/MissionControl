@@ -236,6 +236,7 @@ const sections=[
   {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'},
   {id:'deepgram',icon:'🎙️',label:'STT Investigation',dot:'#06b6d4'},
   {id:'salesforce',icon:'☁️',label:'Salesforce Adapter',dot:'#3b82f6'},
+  {id:'nexon-ecw',icon:'🧪',label:'Nexon eCW',dot:'#38bdf8'},
   {id:'homehealth',icon:'🏥',label:'Home Health',dot:'#22c55e'},
   {id:'bracket',icon:'🏀',label:'March Madness',dot:'#f59e0b'}
 ];
@@ -280,7 +281,7 @@ ${stat('Test Coverage','<span id="covPct">—</span>','<span id="covSub">loading
 <div class="grid2" style="margin-bottom:28px">
 <a class="quick-link" href="https://github.com/wert23239/HyperReality" target="_blank">🐙 GitHub — wert23239/HyperReality</a>
 <a class="quick-link" href="http://localhost:3000" target="_blank">🌐 Local Site — localhost:3000</a>
-<a class="quick-link" href="vscode://file/Users/clawman/.openclaw/workspace/hiro/inbound/docs/NEXON_ECW_EXPERIMENT.md" target="_blank">🧪 Nexon eCW Experiment Doc</a>
+<a class="quick-link" href="#" onclick="switchPanel('nexon-ecw');return false">🧪 Nexon eCW Experiment Doc</a>
 <a class="quick-link" href="#" onclick="return false">💬 Discord — openclawboy #9415</a>
 <a class="quick-link" href="https://clawhub.com" target="_blank">🔌 ClawHub — 700+ skills</a>
 </div>
@@ -1039,6 +1040,39 @@ LIMIT 10</pre>
 <li>No native Salesforce UI.</li>
 <li>No Epic scheduling writeback.</li>
 </ul>
+</div>`,
+'nexon-ecw':`<h2 class="panel-title">🧪 Nexon eCW Experiment</h2>
+<div class="panel-sub">Practice Fusion → eClinicalWorks sandbox conversion notes</div>
+<div class="card" style="margin-bottom:16px;border-left:3px solid #38bdf8">
+<h3 style="margin-bottom:12px;color:#38bdf8">Goal</h3>
+<p style="color:#d4c4f0;font-size:13px;line-height:1.7">Replace the prior Practice Fusion booking experiment with an eClinicalWorks sandbox flow. This is experimental-branch work; it is okay to overwrite/refactor Practice Fusion-specific implementation while converting to eCW.</p>
+</div>
+<div class="grid2" style="margin-bottom:16px">
+<div class="card">
+<h3 style="margin-bottom:12px;color:#38bdf8">eClinicalWorks Sandbox</h3>
+<div style="font-size:13px;line-height:1.9;color:#d4c4f0">
+<div><strong>Login:</strong> <a href="https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp" target="_blank" style="color:#38bdf8">eCW sandbox login</a></div>
+<div><strong>Username:</strong> <code>shashwat.kishore</code></div>
+<div><strong>Password:</strong> <code>Paceway2!</code></div>
+<div><strong>DEFAULT_FACILITY_ID:</strong> <code>tsnserh1fnupu7flvhapp</code></div>
+<div><strong>DEBUG_PATIENT_ID:</strong> <code>10187</code></div>
+<div><strong>DEBUG_APPOINTMENT_ID:</strong> <code>26572</code></div>
+<div><strong>DEBUG_PROVIDER_ID:</strong> <code>10176</code></div>
+</div>
+</div>
+<div class="card">
+<h3 style="margin-bottom:12px;color:#f59e0b">Critical Rules</h3>
+<ul style="line-height:1.9;margin-left:18px;color:#d4c4f0;font-size:13px">
+<li>Only use test patient <strong>JOHN SAMPLE</strong>, ID <code>10187</code>.</li>
+<li>If creating new test patients, only use last name <strong>SAMPLE</strong>.</li>
+<li>On login popup, click <strong>Ignore and Continue</strong> only.</li>
+<li>Do <strong>not</strong> click “Remember for future” or any other popup option.</li>
+</ul>
+</div>
+</div>
+<div class="card" style="margin-bottom:16px">
+<h3 style="margin-bottom:12px;color:#a855f7">Implementation Note</h3>
+<p style="color:#d4c4f0;font-size:13px;line-height:1.7">Treat eCW as the new Nexon appointment automation target. Keep the interface small and swappable: <code>bookAppointment</code>, <code>findPatient</code>, <code>findProvider</code>, and <code>getAppointment/debugAppointment</code> map to eCW RPA/API details underneath.</p>
 </div>`,
 homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <div class="panel-sub">Patient data architecture • FHIR API ingestion • data point tables</div>

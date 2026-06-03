@@ -317,10 +317,10 @@
   </main>
 
   <script>
+    const SUPABASE_URL = "https://aihworyfcgstwbpzkzoy.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE";
     const STORAGE_KEY = "elizabeth-alex-photo-streak";
     const STARTING_STREAK = 2;
-    const START_DATE = "2026-06-01";
-    const MS_PER_DAY = 24 * 60 * 60 * 1000;
     const countEl = document.querySelector("#count");
     const flamesEl = document.querySelector("#flames");
     const counterEl = document.querySelector(".counter");
@@ -332,33 +332,23 @@
       reset: document.querySelector("#reset"),
     };
 
-    function parseLocalDate(dateString) {
-      const [year, month, day] = dateString.split("-").map(Number);
-      return new Date(year, month - 1, day);
-    }
-
-    function startOfToday() {
-      const now = new Date();
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    }
-
-    function maxStreakForToday() {
-      const elapsedDays = Math.max(0, Math.floor((startOfToday() - parseLocalDate(START_DATE)) / MS_PER_DAY));
-      return STARTING_STREAK + elapsedDays;
-    }
-
     let count = Number.parseInt(localStorage.getItem(STORAGE_KEY) || String(STARTING_STREAK), 10);
+    let maxToday = count;
     if (!Number.isFinite(count) || count < STARTING_STREAK) count = STARTING_STREAK;
-    count = Math.min(count, maxStreakForToday());
 
     function fireText() {
       if (count < 5) return "";
       return "🔥".repeat(Math.min(5, count - 4));
     }
 
+    function setBusy(isBusy) {
+      Object.values(buttons).forEach((button) => {
+        button.disabled = isBusy;
+        button.style.opacity = isBusy ? "0.68" : "";
+      });
+    }
+
     function render(message = "") {
-      const maxToday = maxStreakForToday();
-      count = Math.min(Math.max(STARTING_STREAK, count), maxToday);
       countEl.textContent = count.toLocaleString();
       flamesEl.textContent = fireText();
       noteEl.textContent = message;
@@ -370,29 +360,79 @@
       mainEl.classList.add("celebrate");
     }
 
-    buttons.increment.addEventListener("click", () => {
-      const maxToday = maxStreakForToday();
-      if (count >= maxToday) {
-        render(`Max for today is ${maxToday} day${maxToday === 1 ? "" : "s"} — come back tomorrow ✨`);
-        return;
+    async function rpc(functionName) {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      });
+
+      if (!response.ok) {
+        const details = await response.text();
+        throw new Error(`${functionName} failed: ${response.status} ${details}`);
       }
-      count += 1;
-      render(count >= 5 ? "Streak is on fire 🔥" : count === 3 ? "Three days of photos ✨" : "Photo streak updated ✨");
+
+      const rows = await response.json();
+      return Array.isArray(rows) ? rows[0] : rows;
+    }
+
+    function applyState(row) {
+      if (!row) return;
+      count = Number(row.count) || STARTING_STREAK;
+      maxToday = Number(row.max_today) || count;
+    }
+
+    async function loadSharedStreak() {
+      try {
+        setBusy(true);
+        applyState(await rpc("photo_streak_get"));
+        render("Synced streak ✨");
+      } catch (error) {
+        console.error(error);
+        render("Offline mode — showing this browser's saved streak");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function updateSharedStreak(functionName, successMessage) {
+      try {
+        setBusy(true);
+        const row = await rpc(functionName);
+        applyState(row);
+        if (functionName === "photo_streak_increment" && row && row.changed === false) {
+          render(`Max for today is ${maxToday} day${maxToday === 1 ? "" : "s"} — come back tomorrow ✨`);
+        } else {
+          render(successMessage());
+        }
+      } catch (error) {
+        console.error(error);
+        render("Couldn't sync — try again in a sec");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    buttons.increment.addEventListener("click", () => {
+      updateSharedStreak("photo_streak_increment", () => count >= 5 ? "Streak is on fire 🔥" : count === 3 ? "Three days of photos ✨" : "Photo streak updated ✨");
     });
 
     buttons.decrement.addEventListener("click", () => {
-      count = Math.max(STARTING_STREAK, count - 1);
-      render(count === STARTING_STREAK ? "Back to 2 days of photos" : "Undone");
+      updateSharedStreak("photo_streak_decrement", () => count === STARTING_STREAK ? "Back to 2 days of photos" : "Undone");
     });
 
     buttons.reset.addEventListener("click", () => {
-      if (count === STARTING_STREAK || confirm("Reset the photo streak to 2?")) {
-        count = STARTING_STREAK;
-        render("Reset to 2");
+      if (count === STARTING_STREAK || confirm("Reset the shared photo streak to 2?")) {
+        updateSharedStreak("photo_streak_reset", () => "Reset to 2");
       }
     });
 
-    render();
+    render("Loading shared streak…");
+    loadSharedStreak();
   </script>
 </body>
 </html>

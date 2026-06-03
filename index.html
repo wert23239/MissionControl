@@ -1042,37 +1042,458 @@ LIMIT 10</pre>
 </ul>
 </div>`,
 'nexon-ecw':`<h2 class="panel-title">🧪 Nexon eCW Experiment</h2>
-<div class="panel-sub">Practice Fusion → eClinicalWorks sandbox conversion notes</div>
+<div class="panel-sub">Big copy/paste implementation block for converting Practice Fusion → eClinicalWorks</div>
 <div class="card" style="margin-bottom:16px;border-left:3px solid #38bdf8">
-<h3 style="margin-bottom:12px;color:#38bdf8">Goal</h3>
-<p style="color:#d4c4f0;font-size:13px;line-height:1.7">Replace the prior Practice Fusion booking experiment with an eClinicalWorks sandbox flow. This is experimental-branch work; it is okay to overwrite/refactor Practice Fusion-specific implementation while converting to eCW.</p>
-</div>
-<div class="grid2" style="margin-bottom:16px">
-<div class="card">
-<h3 style="margin-bottom:12px;color:#38bdf8">eClinicalWorks Sandbox</h3>
+<h3 style="margin-bottom:12px;color:#38bdf8">eCW Sandbox</h3>
 <div style="font-size:13px;line-height:1.9;color:#d4c4f0">
-<div><strong>Login:</strong> <a href="https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp" target="_blank" style="color:#38bdf8">eCW sandbox login</a></div>
+<div><strong>Login:</strong> <a href="https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp" target="_blank" style="color:#38bdf8">https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp</a></div>
 <div><strong>Username:</strong> <code>shashwat.kishore</code></div>
 <div><strong>Password:</strong> <code>Paceway2!</code></div>
-<div><strong>DEFAULT_FACILITY_ID:</strong> <code>tsnserh1fnupu7flvhapp</code></div>
-<div><strong>DEBUG_PATIENT_ID:</strong> <code>10187</code></div>
-<div><strong>DEBUG_APPOINTMENT_ID:</strong> <code>26572</code></div>
-<div><strong>DEBUG_PROVIDER_ID:</strong> <code>10176</code></div>
-</div>
-</div>
-<div class="card">
-<h3 style="margin-bottom:12px;color:#f59e0b">Critical Rules</h3>
-<ul style="line-height:1.9;margin-left:18px;color:#d4c4f0;font-size:13px">
-<li>Only use test patient <strong>JOHN SAMPLE</strong>, ID <code>10187</code>.</li>
-<li>If creating new test patients, only use last name <strong>SAMPLE</strong>.</li>
-<li>On login popup, click <strong>Ignore and Continue</strong> only.</li>
-<li>Do <strong>not</strong> click “Remember for future” or any other popup option.</li>
-</ul>
+<div><strong>Popup:</strong> click <strong>Ignore and Continue</strong> only. Do not click remember/future.</div>
+<div><strong>Test patient:</strong> only <strong>JOHN SAMPLE</strong>, ID <code>10187</code>. New test patients must use last name <strong>SAMPLE</strong>.</div>
 </div>
 </div>
 <div class="card" style="margin-bottom:16px">
-<h3 style="margin-bottom:12px;color:#a855f7">Implementation Note</h3>
-<p style="color:#d4c4f0;font-size:13px;line-height:1.7">Treat eCW as the new Nexon appointment automation target. Keep the interface small and swappable: <code>bookAppointment</code>, <code>findPatient</code>, <code>findProvider</code>, and <code>getAppointment/debugAppointment</code> map to eCW RPA/API details underneath.</p>
+<h3 style="margin-bottom:12px;color:#f59e0b">Copy/paste this to Claude at work</h3>
+<pre style="white-space:pre-wrap;line-height:1.45;font-size:12px;background:#14101f;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;overflow:auto;color:#d4c4f0"><code>We are converting the Nexon scheduling integration from Practice Fusion to eClinicalWorks (eCW). This is an experimental branch, so it is okay to overwrite/remove Practice Fusion-specific code.
+
+Goal: keep the app-level API the same if possible, but replace the underlying EHR adapter with eCW.
+
+Sandbox:
+- Login URL: https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp
+- Username: shashwat.kishore
+- Password: Paceway2!
+- DEFAULT_FACILITY_ID="tsnserh1fnupu7flvhapp"
+- DEBUG_PATIENT_ID="10187"
+- DEBUG_APPOINTMENT_ID="26572"
+- DEBUG_PROVIDER_ID="10176"
+
+Critical rules:
+- Only use test patient JOHN SAMPLE, ID 10187.
+- If creating new test patients, only use last name SAMPLE.
+- On login popup, click “Ignore and Continue” only.
+- Do NOT click “Remember for future” or anything besides “Ignore and Continue”.
+
+Requested code changes:
+
+1. Rename / replace Practice Fusion adapter with eCW adapter.
+
+If there is a file like:
+- practiceFusionClient.ts
+- practiceFusionService.ts
+- practice-fusion.ts
+- nexonPracticeFusionAdapter.ts
+
+Create equivalent:
+- ecwClient.ts
+- ecwService.ts
+- nexonEcwAdapter.ts
+
+Keep exported interface stable:
+
+export interface EhrSchedulingAdapter {
+  findPatient(input: FindPatientInput): Promise&lt;EhrPatient[]&gt;;
+  findProvider(input: FindProviderInput): Promise&lt;EhrProvider[]&gt;;
+  getAppointment(id: string): Promise&lt;EhrAppointment | null&gt;;
+  bookAppointment(input: BookAppointmentInput): Promise&lt;EhrAppointment&gt;;
+}
+
+2. Add eCW config.
+
+export const ecwConfig = {
+  loginUrl:
+    process.env.ECW_LOGIN_URL ??
+    "https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp",
+
+  username: process.env.ECW_USERNAME ?? "shashwat.kishore",
+  password: process.env.ECW_PASSWORD ?? "Paceway2!",
+
+  defaultFacilityId:
+    process.env.DEFAULT_FACILITY_ID ?? "tsnserh1fnupu7flvhapp",
+
+  debugPatientId: process.env.DEBUG_PATIENT_ID ?? "10187",
+  debugAppointmentId: process.env.DEBUG_APPOINTMENT_ID ?? "26572",
+  debugProviderId: process.env.DEBUG_PROVIDER_ID ?? "10176",
+};
+
+3. Add safety guard so sandbox only touches SAMPLE patients.
+
+export function assertEcwSandboxPatientAllowed(patient: {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+}) {
+  const id = String(patient.id ?? "");
+  const lastName = String(patient.lastName ?? "").toUpperCase();
+
+  if (id === "10187") return;
+
+  if (lastName !== "SAMPLE") {
+    throw new Error(
+      "eCW sandbox safety violation: only JOHN SAMPLE / ID 10187 or patients with last name SAMPLE may be used."
+    );
+  }
+}
+
+Call this before:
+- opening patient chart
+- booking appointment
+- editing appointment
+- creating new patient
+- any write action
+
+4. Implement eCW Playwright login helper.
+
+import { chromium, Page } from "playwright";
+import { ecwConfig } from "./ecwConfig";
+
+export async function loginToEcw(page: Page) {
+  await page.goto(ecwConfig.loginUrl, { waitUntil: "domcontentloaded" });
+
+  await page.getByLabel(/username/i).fill(ecwConfig.username);
+  await page.getByLabel(/password/i).fill(ecwConfig.password);
+
+  await Promise.all([
+    page.waitForLoadState("networkidle").catch(() =&gt; {}),
+    page.getByRole("button", { name: /login|log in|sign in/i }).click(),
+  ]);
+
+  // Important: if popup appears, ONLY click Ignore and Continue.
+  const ignore = page.getByText(/ignore and continue/i);
+  if (await ignore.isVisible().catch(() =&gt; false)) {
+    await ignore.click();
+  }
+
+  // DO NOT click Remember for future.
+}
+
+If labels do not work, replace with selectors after inspecting DOM:
+
+await page.locator('input[name="username"], input#username').fill(ecwConfig.username);
+await page.locator('input[type="password"]').fill(ecwConfig.password);
+await page.locator('button:has-text("Login"), input[type="submit"]').click();
+
+5. Replace Practice Fusion patient search with eCW patient search.
+
+Expected behavior:
+- For debug mode, always load JOHN SAMPLE / 10187.
+- Search by exact ID first.
+- Only fallback to name search if needed.
+
+export async function findEcwPatient(page: Page, input: { id?: string; firstName?: string; lastName?: string }) {
+  const patientId = input.id ?? ecwConfig.debugPatientId;
+
+  assertEcwSandboxPatientAllowed({
+    id: patientId,
+    firstName: input.firstName,
+    lastName: input.lastName,
+  });
+
+  // TODO selectors need DOM verification in eCW.
+  await page.getByRole("textbox", { name: /patient search|search/i }).fill(patientId);
+  await page.keyboard.press("Enter");
+
+  await page.getByText(/john sample/i).waitFor({ timeout: 15000 });
+
+  return {
+    id: patientId,
+    firstName: "JOHN",
+    lastName: "SAMPLE",
+    ehr: "ecw",
+  };
+}
+
+6. Replace Practice Fusion appointment debug lookup with eCW appointment lookup.
+
+export async function getEcwAppointment(page: Page, appointmentId = ecwConfig.debugAppointmentId) {
+  // Navigate to schedule / appointment screen.
+  // TODO: verify actual eCW selectors.
+  await page.getByText(/schedule/i).click();
+
+  // Search or open appointment by ID if eCW UI supports it.
+  // Otherwise use debug appointment ID as fixture metadata for tests.
+  return {
+    id: appointmentId,
+    patientId: ecwConfig.debugPatientId,
+    providerId: ecwConfig.debugProviderId,
+    facilityId: ecwConfig.defaultFacilityId,
+    ehr: "ecw",
+  };
+}
+
+7. Replace booking function but keep external DTO.
+
+export type BookAppointmentInput = {
+  patientId: string;
+  providerId: string;
+  facilityId?: string;
+  startTime: string;
+  durationMinutes?: number;
+  reason?: string;
+  appointmentType?: string;
+};
+
+export async function bookEcwAppointment(page: Page, input: BookAppointmentInput) {
+  const patientId = input.patientId || ecwConfig.debugPatientId;
+  const providerId = input.providerId || ecwConfig.debugProviderId;
+  const facilityId = input.facilityId || ecwConfig.defaultFacilityId;
+
+  assertEcwSandboxPatientAllowed({ id: patientId, lastName: "SAMPLE" });
+
+  await loginToEcw(page);
+
+  const patient = await findEcwPatient(page, {
+    id: patientId,
+    firstName: "JOHN",
+    lastName: "SAMPLE",
+  });
+
+  // TODO verify eCW schedule navigation selectors.
+  await page.getByText(/schedule/i).click();
+
+  // TODO open new appointment modal.
+  await page.getByRole("button", { name: /new appointment|add appointment|add/i }).click();
+
+  // TODO fill fields; selectors must be verified in eCW DOM.
+  await page.getByLabel(/patient/i).fill("JOHN SAMPLE");
+  await page.getByLabel(/provider/i).fill(providerId);
+  await page.getByLabel(/facility/i).fill(facilityId);
+  await page.getByLabel(/date|time/i).fill(input.startTime);
+  await page.getByLabel(/reason|visit reason|chief complaint/i).fill(
+    input.reason ?? "Nexon eCW sandbox appointment booking test"
+  );
+
+  // In first pass, DO NOT SAVE automatically unless explicitly confirmed.
+  // Prefer dry run / staged appointment for safety.
+  if (process.env.ECW_ALLOW_SAVE !== "true") {
+    return {
+      id: "DRY_RUN",
+      patientId,
+      providerId,
+      facilityId,
+      startTime: input.startTime,
+      status: "staged_not_saved",
+      ehr: "ecw",
+    };
+  }
+
+  await page.getByRole("button", { name: /^save$/i }).click();
+
+  return {
+    id: "TODO_CAPTURE_ECW_APPOINTMENT_ID",
+    patientId,
+    providerId,
+    facilityId,
+    startTime: input.startTime,
+    status: "booked",
+    ehr: "ecw",
+  };
+}
+
+8. Add adapter selection.
+
+export function getSchedulingAdapter(ehr: string): EhrSchedulingAdapter {
+  switch (ehr) {
+    case "ecw":
+    case "eclinicalworks":
+    case "nexon":
+      return new EcwSchedulingAdapter();
+
+    case "practice-fusion":
+      throw new Error("Practice Fusion adapter deprecated for Nexon experiment. Use eCW.");
+
+    default:
+      throw new Error(`Unsupported EHR: ${ehr}`);
+  }
+}
+
+9. Implement class wrapper.
+
+export class EcwSchedulingAdapter implements EhrSchedulingAdapter {
+  async findPatient(input: FindPatientInput) {
+    return withEcwPage(async (page) =&gt; findEcwPatient(page, input));
+  }
+
+  async findProvider(input: FindProviderInput) {
+    return [
+      {
+        id: ecwConfig.debugProviderId,
+        name: "DEBUG_PROVIDER",
+        ehr: "ecw",
+      },
+    ];
+  }
+
+  async getAppointment(id: string) {
+    return withEcwPage(async (page) =&gt; getEcwAppointment(page, id));
+  }
+
+  async bookAppointment(input: BookAppointmentInput) {
+    return withEcwPage(async (page) =&gt; bookEcwAppointment(page, input));
+  }
+}
+
+10. Add Playwright page/session helper.
+
+export async function withEcwPage&lt;T&gt;(fn: (page: Page) =&gt; Promise&lt;T&gt;): Promise&lt;T&gt; {
+  const browser = await chromium.launch({
+    headless: process.env.ECW_HEADLESS !== "false",
+  });
+
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+  });
+
+  const page = await context.newPage();
+
+  try {
+    await loginToEcw(page);
+    return await fn(page);
+  } finally {
+    if (process.env.ECW_KEEP_BROWSER_OPEN !== "true") {
+      await browser.close();
+    }
+  }
+}
+
+Note: if bookEcwAppointment calls loginToEcw, avoid double-login by either removing login from book function or making withEcwPage responsible for login globally.
+
+11. API route should remain stable.
+
+If current endpoint is:
+POST /practice-fusion/appointments
+
+Either keep it for compatibility but internally call eCW, or add:
+POST /ecw/appointments
+POST /nexon/ecw/appointments
+
+router.post("/nexon/ecw/appointments", async (req, res, next) =&gt; {
+  try {
+    const adapter = new EcwSchedulingAdapter();
+
+    const input = {
+      patientId: req.body.patientId ?? ecwConfig.debugPatientId,
+      providerId: req.body.providerId ?? ecwConfig.debugProviderId,
+      facilityId: req.body.facilityId ?? ecwConfig.defaultFacilityId,
+      startTime: req.body.startTime,
+      durationMinutes: req.body.durationMinutes ?? 30,
+      reason: req.body.reason ?? "Nexon eCW sandbox appointment booking test",
+      appointmentType: req.body.appointmentType,
+    };
+
+    assertEcwSandboxPatientAllowed({
+      id: input.patientId,
+      lastName: req.body.lastName ?? "SAMPLE",
+    });
+
+    const result = await adapter.bookAppointment(input);
+    res.json({ ok: true, ehr: "ecw", result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+12. Add debug endpoint.
+
+router.get("/nexon/ecw/debug", async (_req, res, next) =&gt; {
+  try {
+    res.json({
+      ehr: "ecw",
+      facilityId: ecwConfig.defaultFacilityId,
+      patientId: ecwConfig.debugPatientId,
+      appointmentId: ecwConfig.debugAppointmentId,
+      providerId: ecwConfig.debugProviderId,
+      safety: "Only JOHN SAMPLE / ID 10187 or last name SAMPLE",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+13. Add env example.
+
+ECW_LOGIN_URL=https://tsnserh1fnupu7flvhapp.ecwcloud.com/mobiledoc/jsp/webemr/login/newLogin.jsp
+ECW_USERNAME=shashwat.kishore
+ECW_PASSWORD=***
+DEFAULT_FACILITY_ID=tsnserh1fnupu7flvhapp
+DEBUG_PATIENT_ID=10187
+DEBUG_APPOINTMENT_ID=26572
+DEBUG_PROVIDER_ID=10176
+ECW_HEADLESS=false
+ECW_ALLOW_SAVE=false
+ECW_KEEP_BROWSER_OPEN=true
+
+14. Tests to add/update.
+
+describe("eCW sandbox safety", () =&gt; {
+  it("allows JOHN SAMPLE debug patient", () =&gt; {
+    expect(() =&gt;
+      assertEcwSandboxPatientAllowed({ id: "10187", firstName: "JOHN", lastName: "SAMPLE" })
+    ).not.toThrow();
+  });
+
+  it("allows new SAMPLE test patients", () =&gt; {
+    expect(() =&gt;
+      assertEcwSandboxPatientAllowed({ firstName: "TEST", lastName: "SAMPLE" })
+    ).not.toThrow();
+  });
+
+  it("blocks non-SAMPLE patients", () =&gt; {
+    expect(() =&gt;
+      assertEcwSandboxPatientAllowed({ firstName: "REAL", lastName: "PERSON" })
+    ).toThrow(/sandbox safety/i);
+  });
+});
+
+15. Manual validation flow.
+
+- Open eCW login URL.
+- Login with sandbox creds.
+- If popup appears, click ONLY “Ignore and Continue”.
+- Confirm JOHN SAMPLE / ID 10187 can be found.
+- Confirm provider ID 10176 exists / is usable.
+- Confirm appointment ID 26572 can be found if UI supports appointment lookup.
+- Run booking flow in dry-run mode first (ECW_ALLOW_SAVE=false).
+- Only save if explicitly approved and still using SAMPLE patient data.
+
+16. Remove / quarantine Practice Fusion names.
+
+Search and replace:
+- PracticeFusion -&gt; Ecw
+- practiceFusion -&gt; ecw
+- practice-fusion -&gt; ecw
+- PF-specific URLs/selectors -&gt; eCW selectors
+- Patient Fusion references -&gt; remove
+- FollowMyHealth references -&gt; remove unless in historical docs
+
+17. Keep these abstractions.
+
+Do NOT hardcode eCW UI selectors all over app code. Keep selectors inside:
+- ecwSelectors.ts
+- ecwClient.ts
+- ecwRpa.ts
+
+export const ecwSelectors = {
+  usernameInput: 'input[name="username"], input#username',
+  passwordInput: 'input[type="password"]',
+  loginButton: 'button:has-text("Login"), input[type="submit"]',
+  ignoreAndContinueText: /ignore and continue/i,
+  patientSearchInput: 'input[placeholder*="Patient"], input[aria-label*="Patient"]',
+  scheduleText: /schedule/i,
+  addAppointmentButton: /new appointment|add appointment|add/i,
+};
+
+18. Most important implementation instruction.
+
+First pass should be:
+- login
+- handle popup correctly
+- find JOHN SAMPLE
+- navigate to schedule
+- stage appointment form
+- DO NOT SAVE unless ECW_ALLOW_SAVE=true
+
+Use screenshot/log artifacts for each step so selectors can be adjusted quickly.</code></pre>
 </div>`,
 homehealth:`<h2 class="panel-title">🏥 Home Health — Schema Design</h2>
 <div class="panel-sub">Patient data architecture • FHIR API ingestion • data point tables</div>

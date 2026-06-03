@@ -388,12 +388,12 @@
     <label class="photo-bubble bubble-one" title="Add first floating photo">
       <input class="bubble-input" data-bubble="0" type="file" accept="image/*" aria-label="Add first floating photo" />
       <img alt="First floating photo" />
-      <span class="bubble-label">Add photo</span>
+      <span class="bubble-label">Change photo</span>
     </label>
     <label class="photo-bubble bubble-two" title="Add second floating photo">
       <input class="bubble-input" data-bubble="1" type="file" accept="image/*" aria-label="Add second floating photo" />
       <img alt="Second floating photo" />
-      <span class="bubble-label">Add photo</span>
+      <span class="bubble-label">Change photo</span>
     </label>
   </div>
   <main>
@@ -429,6 +429,10 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE";
     const STORAGE_KEY = "elizabeth-alex-photo-streak";
     const BUBBLE_STORAGE_PREFIX = "elizabeth-alex-photo-bubble-";
+    const DEFAULT_BUBBLE_IMAGES = [
+      "assets/bubble-1-default.png",
+      "assets/instagram-default.svg",
+    ];
     const STARTING_STREAK = 2;
     const countEl = document.querySelector("#count");
     const flamesEl = document.querySelector("#flames");
@@ -462,7 +466,8 @@
 
     function loadBubbleImages() {
       bubbleInputs.forEach((input, index) => {
-        setBubbleImage(index, localStorage.getItem(`${BUBBLE_STORAGE_PREFIX}${index}`));
+        const savedImage = localStorage.getItem(`${BUBBLE_STORAGE_PREFIX}${index}`);
+        setBubbleImage(index, savedImage || DEFAULT_BUBBLE_IMAGES[index]);
       });
     }
 

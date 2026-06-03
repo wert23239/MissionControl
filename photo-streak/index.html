@@ -82,7 +82,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 0;
+      z-index: 4;
     }
 
     .photo-bubble {
@@ -157,6 +157,7 @@
 
     main {
       position: relative;
+      z-index: 2;
       width: min(94vw, 680px);
       padding: clamp(28px, 6vw, 54px);
       border-radius: 44px;
@@ -431,7 +432,7 @@
     const BUBBLE_STORAGE_PREFIX = "elizabeth-alex-photo-bubble-";
     const DEFAULT_BUBBLE_IMAGES = [
       "assets/bubble-1-default.png",
-      "assets/instagram-default.svg",
+      "assets/default-profile.png",
     ];
     const STARTING_STREAK = 2;
     const countEl = document.querySelector("#count");

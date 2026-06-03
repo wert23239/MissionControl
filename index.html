@@ -612,6 +612,7 @@ packing:`<h2 class="panel-title">🧳 Packing List</h2>
     </div>
   </div>
 </div>
+<div id="packingSync" style="font-size:12px;color:#665c78;margin:-6px 0 12px">Syncing packing list...</div>
 <div id="packingWeather" class="card" style="margin-bottom:16px;display:none"></div>
 <div id="packingOutput" class="grid3"></div>`,
 
@@ -1832,6 +1833,7 @@ function switchPanel(id){
 
 // Packing list
 const PACKING_STORAGE_KEY='mc-packing-state';
+const PACKING_SYNC_KEY='current';
 const ALEX_COAT_RULES={gooseFeels:19,gooseActual:29,peaFeels:45,sweaterFeels:60};
 const PACKING_ALWAYS_BRING=[
   'Adderall','drink pills','hair pills','condoms','razor','razor cord','contacts','brush/paste','eye mask','turtle pillow','melatonin','sunglasses','swimsuit','flash drive','lock key','sunscreen','water bottle','book','phone charger','laptop charger','Switch charger','Nintendo Switch','laptop'
@@ -1858,25 +1860,62 @@ function normalizePackingResult(result){
 }
 function todayISO(){return new Date().toISOString().slice(0,10)}
 function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
-function initPackingTab(){
-  const saved=JSON.parse(localStorage.getItem(PACKING_STORAGE_KEY)||'{}');
+function readPackingLocal(){try{return JSON.parse(localStorage.getItem(PACKING_STORAGE_KEY)||'{}')||{};}catch(e){return {};}}
+function setPackingSyncStatus(text){const el=document.getElementById('packingSync');if(el)el.textContent=text||'';}
+function applyPackingState(saved={}){
   const place=document.getElementById('packPlace');
   const start=document.getElementById('packStart');
   const end=document.getElementById('packEnd');
   const notes=document.getElementById('packNotes');
-  if(place&&!place.value)place.value=saved.place||'';
-  if(start&&!start.value)start.value=saved.start||todayISO();
-  if(end&&!end.value)end.value=saved.end||addDaysISO(3);
-  if(notes&&!notes.value)notes.value=saved.notes||'';
-  if(saved.output){
-    const output=normalizePackingResult(saved.output);
-    renderPackingResult(output,saved.weatherHtml||'');
-    if(JSON.stringify(output)!==JSON.stringify(saved.output))savePackingState({output,weatherHtml:saved.weatherHtml||''});
+  if(place)place.value=saved.place||'';
+  if(start)start.value=saved.start||todayISO();
+  if(end)end.value=saved.end||addDaysISO(3);
+  if(notes)notes.value=saved.notes||'';
+  if(saved.output)renderPackingResult(normalizePackingResult(saved.output),saved.weatherHtml||'');
+}
+function normalizePackingState(saved={}){
+  const output=normalizePackingResult(saved.output);
+  return {...saved,output,updatedAt:saved.updatedAt||new Date(0).toISOString()};
+}
+async function fetchPackingRemote(){
+  const r=await fetch(`${SB_URL}/rest/v1/packing_state?key=eq.${encodeURIComponent(PACKING_SYNC_KEY)}&select=state,updated_at&limit=1`,{headers:sbHeaders});
+  if(!r.ok)throw new Error('packing fetch failed');
+  const rows=await r.json();
+  if(!rows.length)return {};
+  return normalizePackingState({...rows[0].state,updatedAt:rows[0].updated_at});
+}
+async function syncPackingRemote(state){
+  const synced={...state,updatedAt:state.updatedAt||new Date().toISOString()};
+  await fetch(`${SB_URL}/rest/v1/packing_state?key=eq.${encodeURIComponent(PACKING_SYNC_KEY)}`,{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=minimal'},body:JSON.stringify({state:synced,updated_at:synced.updatedAt})});
+  await fetch(`${SB_URL}/rest/v1/packing_state`,{method:'POST',headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key:PACKING_SYNC_KEY,state:synced,updated_at:synced.updatedAt})});
+}
+async function initPackingTab(){
+  let local=normalizePackingState(readPackingLocal());
+  if(!local.start)local={...local,start:todayISO(),end:addDaysISO(3)};
+  applyPackingState(local);
+  try{
+    const remote=await fetchPackingRemote();
+    const localTime=Date.parse(local.updatedAt||0)||0;
+    const remoteTime=Date.parse(remote.updatedAt||0)||0;
+    if(remote.output&&remoteTime>localTime){
+      localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(remote));
+      applyPackingState(remote);
+      setPackingSyncStatus('Synced from Supabase');
+    }else if(local.output||local.place){
+      const toSync={...local,updatedAt:local.updatedAt&&local.updatedAt!==new Date(0).toISOString()?local.updatedAt:new Date().toISOString()};
+      localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(toSync));
+      await syncPackingRemote(toSync);
+      setPackingSyncStatus('Synced to Supabase');
+    }else setPackingSyncStatus('Ready — shared through Supabase');
+  }catch(e){
+    console.warn('Packing Supabase sync failed',e);
+    setPackingSyncStatus('Offline/local only until Supabase responds');
   }
 }
 function savePackingState(extra={}){
-  const state={place:document.getElementById('packPlace')?.value.trim()||'',start:document.getElementById('packStart')?.value||'',end:document.getElementById('packEnd')?.value||'',notes:document.getElementById('packNotes')?.value.trim()||'',...extra};
+  const state={place:document.getElementById('packPlace')?.value.trim()||'',start:document.getElementById('packStart')?.value||'',end:document.getElementById('packEnd')?.value||'',notes:document.getElementById('packNotes')?.value.trim()||'',...extra,updatedAt:new Date().toISOString()};
   localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(state));
+  syncPackingRemote(state).then(()=>setPackingSyncStatus('Synced to Supabase')).catch(e=>{console.warn('Packing Supabase save failed',e);setPackingSyncStatus('Saved locally — Supabase sync failed');});
 }
 function tripDays(start,end){const s=new Date(start),e=new Date(end||start);if(!Number.isFinite(+s)||!Number.isFinite(+e))return 3;return Math.max(1,Math.min(30,Math.round((e-s)/(24*60*60*1000))+1));}
 function activityFlags(notes){const t=(notes||'').toLowerCase();return {formal:/wedding|formal|black tie|cocktail|party|dinner/.test(t),hike:/hike|hiking|mountain|trail|walk/.test(t),beach:/beach|pool|swim|boat|lake|ocean/.test(t),ski:/ski|snowboard|snow|mountain/.test(t),work:/work|office|conference|meeting/.test(t),gym:/gym|run|workout|exercise/.test(t),international:/passport|international|abroad|europe|france|italy|japan|uk|chamonix/.test(t)}}
@@ -1923,7 +1962,7 @@ async function generatePackingList(){
   if(result.coat)weatherHtml+=`<div style="font-size:13px;color:#d4c4f0;margin-top:10px">🧥 <strong>${escapeHtml(result.coat.item)}</strong> — ${escapeHtml(result.coat.why)}</div>`;
   renderPackingResult(result,weatherHtml); savePackingState({output:result,weatherHtml});
 }
-function newPackingTrip(){localStorage.removeItem(PACKING_STORAGE_KEY);['packPlace','packStart','packEnd','packNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const w=document.getElementById('packingWeather');if(w){w.style.display='none';w.innerHTML='';}const out=document.getElementById('packingOutput');if(out)out.innerHTML='';initPackingTab();}
+function newPackingTrip(){const blank={place:'',start:todayISO(),end:addDaysISO(3),notes:'',updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(blank));['packPlace','packStart','packEnd','packNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const w=document.getElementById('packingWeather');if(w){w.style.display='none';w.innerHTML='';}const out=document.getElementById('packingOutput');if(out)out.innerHTML='';syncPackingRemote(blank).then(()=>setPackingSyncStatus('New trip synced to Supabase')).catch(()=>setPackingSyncStatus('New trip saved locally'));initPackingTab();}
 function clearPackingList(){newPackingTrip()}
 
 // ── Keyboard shortcuts: 1-9,0 switch tabs, Esc blurs ──

@@ -597,7 +597,7 @@ packing:`<h2 class="panel-title">🧳 Packing List</h2>
     <textarea id="packNotes" placeholder="Activities / vibe — wedding, hiking, beach, work dinner, skiing..." style="width:100%;min-height:86px;resize:vertical;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;margin-bottom:10px"></textarea>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="generatePackingList()" style="background:linear-gradient(135deg,#38bdf8,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-family:inherit;font-weight:700;cursor:pointer;font-size:13px;">Generate list</button>
-      <button onclick="clearPackingList()" style="background:rgba(255,255,255,0.05);color:#998eb5;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Clear</button>
+      <button onclick="newPackingTrip()" style="background:rgba(255,255,255,0.05);color:#998eb5;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">New trip</button>
     </div>
   </div>
   <div class="card">
@@ -608,6 +608,7 @@ packing:`<h2 class="panel-title">🧳 Packing List</h2>
       <div>🧥 <strong>Pea coat:</strong> cold but not Goose territory</div>
       <div>🩳 <strong>Shorts:</strong> never suggest them</div>
       <div>🌦️ <strong>Weather:</strong> uses live forecast when available</div>
+      <div>✅ <strong>Always Bring:</strong> abbreviated essentials auto-added</div>
     </div>
   </div>
 </div>
@@ -1832,6 +1833,29 @@ function switchPanel(id){
 // Packing list
 const PACKING_STORAGE_KEY='mc-packing-state';
 const ALEX_COAT_RULES={gooseFeels:19,gooseActual:29,peaFeels:45,sweaterFeels:60};
+const PACKING_ALWAYS_BRING=[
+  'Adderall','drink pills','hair pills','condoms','razor','razor cord','contacts','brush/paste','eye mask','turtle pillow','melatonin','sunglasses','swimsuit','flash drive','lock key','sunscreen','water bottle','book','phone charger','laptop charger','Switch charger','Nintendo Switch','laptop'
+];
+const PACKING_REPLACEMENTS={
+  'Addy':'Adderall',
+  'protection':'condoms',
+  'chargers':'phone charger',
+  'laptop + charger':'laptop',
+  'toothbrush + toothpaste':'brush/paste'
+};
+function normalizePackingItems(items=[]){
+  const normalized=[];
+  [...PACKING_ALWAYS_BRING,...items].forEach(item=>{
+    let value=PACKING_REPLACEMENTS[item]||item;
+    if(value==='phone charger')normalized.push('phone charger','laptop charger');
+    else normalized.push(value);
+  });
+  return [...new Set(normalized)].filter(Boolean);
+}
+function normalizePackingResult(result){
+  if(!result||!Array.isArray(result.bring))return result;
+  return {...result,bring:normalizePackingItems(result.bring)};
+}
 function todayISO(){return new Date().toISOString().slice(0,10)}
 function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
 function initPackingTab(){
@@ -1844,7 +1868,11 @@ function initPackingTab(){
   if(start&&!start.value)start.value=saved.start||todayISO();
   if(end&&!end.value)end.value=saved.end||addDaysISO(3);
   if(notes&&!notes.value)notes.value=saved.notes||'';
-  if(saved.output)renderPackingResult(saved.output,saved.weatherHtml||'');
+  if(saved.output){
+    const output=normalizePackingResult(saved.output);
+    renderPackingResult(output,saved.weatherHtml||'');
+    if(JSON.stringify(output)!==JSON.stringify(saved.output))savePackingState({output,weatherHtml:saved.weatherHtml||''});
+  }
 }
 function savePackingState(extra={}){
   const state={place:document.getElementById('packPlace')?.value.trim()||'',start:document.getElementById('packStart')?.value||'',end:document.getElementById('packEnd')?.value||'',notes:document.getElementById('packNotes')?.value.trim()||'',...extra};
@@ -1866,7 +1894,7 @@ function coatRecommendation(w){if(!w)return {item:'Layerable jacket / sweater',w
 function buildPackingList({place,start,end,notes,weatherSummary}){
   const days=tripDays(start,end), flags=activityFlags(notes), coat=coatRecommendation(weatherSummary);
   const socks=Math.min(days+2,14), underwear=Math.min(days+2,14), shirts=Math.min(days+1,12);
-  const bring=[`${underwear} underwear`,`${socks} socks`,`${shirts} shirts / tees`,`${Math.ceil(days/2)} pants`,'sleep clothes','toiletries kit','toothbrush + toothpaste','deodorant','chargers','phone wallet keys','sunglasses'];
+  const bring=[...PACKING_ALWAYS_BRING,`${underwear} underwear`,`${socks} socks`,`${shirts} shirts / tees`,`${Math.ceil(days/2)} pants`,'sleep clothes','toiletries kit','deodorant','phone wallet keys'];
   const maybe=[]; const skip=['Shorts — never'];
   if(coat.item!=='No jacket')bring.unshift(coat.item); else skip.push('Jacket');
   if(coat.item==='Canada Goose')bring.push('gloves','warm hat','scarf');
@@ -1875,12 +1903,12 @@ function buildPackingList({place,start,end,notes,weatherSummary}){
   if(flags.hike)bring.push('hiking shoes','trail socks','daypack','water bottle');
   if(flags.beach)bring.push('swimwear','sunscreen','sandals');
   if(flags.ski)bring.push('base layers','warm socks','ski goggles / snow gear');
-  if(flags.work)bring.push('work outfit','laptop + charger');
+  if(flags.work)bring.push('work outfit','laptop');
   if(flags.gym)bring.push('workout clothes','gym shoes');
   if(flags.international)bring.push('passport','travel adapter','printed/phone copies of reservation');
   if(days>=5)maybe.push('laundry bag','extra pants','backup shoes');
   maybe.push('Advil / meds','chapstick','backup battery','AirPods');
-  return {days,coat,bring:[...new Set(bring)],maybe:[...new Set(maybe)],skip:[...new Set(skip)]};
+  return {days,coat,bring:normalizePackingItems(bring),maybe:[...new Set(maybe)],skip:[...new Set(skip)]};
 }
 function renderChecklist(title,items,color){return `<div class="card"><h3 style="margin-bottom:12px;color:${color}">${title}</h3>${items.map(item=>`<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`).join('')}</div>`;}
 function renderPackingResult(result,weatherHtml=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml;}if(out)out.innerHTML=renderChecklist('Bring',result.bring,'#22c55e')+renderChecklist('Maybe',result.maybe,'#f59e0b')+renderChecklist('Skip',result.skip,'#ef4444');}
@@ -1895,7 +1923,8 @@ async function generatePackingList(){
   if(result.coat)weatherHtml+=`<div style="font-size:13px;color:#d4c4f0;margin-top:10px">🧥 <strong>${escapeHtml(result.coat.item)}</strong> — ${escapeHtml(result.coat.why)}</div>`;
   renderPackingResult(result,weatherHtml); savePackingState({output:result,weatherHtml});
 }
-function clearPackingList(){localStorage.removeItem(PACKING_STORAGE_KEY);['packPlace','packStart','packEnd','packNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const w=document.getElementById('packingWeather');if(w){w.style.display='none';w.innerHTML='';}const out=document.getElementById('packingOutput');if(out)out.innerHTML='';initPackingTab();}
+function newPackingTrip(){localStorage.removeItem(PACKING_STORAGE_KEY);['packPlace','packStart','packEnd','packNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const w=document.getElementById('packingWeather');if(w){w.style.display='none';w.innerHTML='';}const out=document.getElementById('packingOutput');if(out)out.innerHTML='';initPackingTab();}
+function clearPackingList(){newPackingTrip()}
 
 // ── Keyboard shortcuts: 1-9,0 switch tabs, Esc blurs ──
 document.addEventListener('keydown',e=>{

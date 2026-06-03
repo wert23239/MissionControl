@@ -613,6 +613,7 @@ packing:`<h2 class="panel-title">🧳 Packing List</h2>
   </div>
 </div>
 <div id="packingSync" style="font-size:12px;color:#665c78;margin:-6px 0 12px">Syncing packing list...</div>
+<div id="packingSavedTrips" style="margin-bottom:16px"></div>
 <div id="packingWeather" class="card" style="margin-bottom:16px;display:none"></div>
 <div id="packingOutput" class="grid3"></div>`,
 
@@ -1862,6 +1863,9 @@ function todayISO(){return new Date().toISOString().slice(0,10)}
 function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
 function readPackingLocal(){try{return JSON.parse(localStorage.getItem(PACKING_STORAGE_KEY)||'{}')||{};}catch(e){return {};}}
 function setPackingSyncStatus(text){const el=document.getElementById('packingSync');if(el)el.textContent=text||'';}
+function packingTripId(){return `trip-${Date.now()}-${Math.random().toString(16).slice(2,8)}`;}
+function packingTripTitle(trip={}){return `${trip.place||'Untitled trip'}${trip.start?` · ${trip.start}`:''}${trip.end&&trip.end!==trip.start?`–${trip.end}`:''}`;}
+function currentPackingFields(){return {place:document.getElementById('packPlace')?.value.trim()||'',start:document.getElementById('packStart')?.value||'',end:document.getElementById('packEnd')?.value||'',notes:document.getElementById('packNotes')?.value.trim()||''};}
 function applyPackingState(saved={}){
   const place=document.getElementById('packPlace');
   const start=document.getElementById('packStart');
@@ -1872,10 +1876,19 @@ function applyPackingState(saved={}){
   if(end)end.value=saved.end||addDaysISO(3);
   if(notes)notes.value=saved.notes||'';
   if(saved.output)renderPackingResult(normalizePackingResult(saved.output),saved.weatherHtml||'');
+  else renderPackingResult(null,'');
+  renderSavedPackingTrips(saved);
 }
+function normalizePackingTrip(trip={}){return {...trip,id:trip.id||packingTripId(),output:normalizePackingResult(trip.output),updatedAt:trip.updatedAt||new Date(0).toISOString(),createdAt:trip.createdAt||trip.updatedAt||new Date().toISOString()};}
 function normalizePackingState(saved={}){
   const output=normalizePackingResult(saved.output);
-  return {...saved,output,updatedAt:saved.updatedAt||new Date(0).toISOString()};
+  let trips=Array.isArray(saved.trips)?saved.trips.map(normalizePackingTrip):[];
+  let activeTripId=saved.activeTripId||'';
+  if((output||saved.place)&&!trips.length){
+    const migrated=normalizePackingTrip({id:activeTripId||packingTripId(),place:saved.place,start:saved.start,end:saved.end,notes:saved.notes,output,weatherHtml:saved.weatherHtml,updatedAt:saved.updatedAt,createdAt:saved.updatedAt});
+    trips=[migrated]; activeTripId=migrated.id;
+  }
+  return {...saved,output,trips,activeTripId,updatedAt:saved.updatedAt||new Date(0).toISOString()};
 }
 async function fetchPackingRemote(){
   const r=await fetch(`${SB_URL}/rest/v1/packing_state?key=eq.${encodeURIComponent(PACKING_SYNC_KEY)}&select=state,updated_at&limit=1`,{headers:sbHeaders});
@@ -1897,11 +1910,11 @@ async function initPackingTab(){
     const remote=await fetchPackingRemote();
     const localTime=Date.parse(local.updatedAt||0)||0;
     const remoteTime=Date.parse(remote.updatedAt||0)||0;
-    if(remote.output&&remoteTime>localTime){
+    if((remote.output||remote.trips?.length)&&remoteTime>localTime){
       localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(remote));
       applyPackingState(remote);
       setPackingSyncStatus('Synced from Supabase');
-    }else if(local.output||local.place){
+    }else if(local.output||local.place||local.trips?.length){
       const toSync={...local,updatedAt:local.updatedAt&&local.updatedAt!==new Date(0).toISOString()?local.updatedAt:new Date().toISOString()};
       localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(toSync));
       await syncPackingRemote(toSync);
@@ -1913,8 +1926,15 @@ async function initPackingTab(){
   }
 }
 function savePackingState(extra={}){
-  const state={place:document.getElementById('packPlace')?.value.trim()||'',start:document.getElementById('packStart')?.value||'',end:document.getElementById('packEnd')?.value||'',notes:document.getElementById('packNotes')?.value.trim()||'',...extra,updatedAt:new Date().toISOString()};
+  const existing=normalizePackingState(readPackingLocal());
+  const now=new Date().toISOString();
+  const fields=currentPackingFields();
+  const activeTripId=existing.activeTripId||packingTripId();
+  const trip=normalizePackingTrip({...(existing.trips||[]).find(t=>t.id===activeTripId),id:activeTripId,...fields,...extra,updatedAt:now});
+  const trips=[trip,...(existing.trips||[]).filter(t=>t.id!==activeTripId)];
+  const state={...existing,...fields,...extra,activeTripId,trips,updatedAt:now};
   localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(state));
+  renderSavedPackingTrips(state);
   syncPackingRemote(state).then(()=>setPackingSyncStatus('Synced to Supabase')).catch(e=>{console.warn('Packing Supabase save failed',e);setPackingSyncStatus('Saved locally — Supabase sync failed');});
 }
 function tripDays(start,end){const s=new Date(start),e=new Date(end||start);if(!Number.isFinite(+s)||!Number.isFinite(+e))return 3;return Math.max(1,Math.min(30,Math.round((e-s)/(24*60*60*1000))+1));}
@@ -1949,8 +1969,15 @@ function buildPackingList({place,start,end,notes,weatherSummary}){
   maybe.push('Advil / meds','chapstick','backup battery','AirPods');
   return {days,coat,bring:normalizePackingItems(bring),maybe:[...new Set(maybe)],skip:[...new Set(skip)]};
 }
-function renderChecklist(title,items,color){return `<div class="card"><h3 style="margin-bottom:12px;color:${color}">${title}</h3>${items.map(item=>`<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`).join('')}</div>`;}
-function renderPackingResult(result,weatherHtml=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml;}if(out)out.innerHTML=renderChecklist('Bring',result.bring,'#22c55e')+renderChecklist('Maybe',result.maybe,'#f59e0b')+renderChecklist('Skip',result.skip,'#ef4444');}
+function renderChecklist(title,items,color){return `<div class="card"><h3 style="margin-bottom:12px;color:${color}">${title}</h3>${(items||[]).map(item=>`<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`).join('')}</div>`;}
+function renderPackingResult(result,weatherHtml=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml||'';}if(out)out.innerHTML=result?renderChecklist('Bring',result.bring,'#22c55e')+renderChecklist('Maybe',result.maybe,'#f59e0b')+renderChecklist('Skip',result.skip,'#ef4444'):'';}
+function renderSavedPackingTrips(state=readPackingLocal()){
+  const el=document.getElementById('packingSavedTrips'); if(!el)return;
+  const saved=normalizePackingState(state); const trips=saved.trips||[];
+  if(!trips.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="card"><h3 style="margin-bottom:12px;color:#38bdf8">Saved trips</h3>${trips.map(trip=>`<details ${trip.id===saved.activeTripId?'open':''} style="border-top:1px solid rgba(255,255,255,0.06);padding:10px 0"><summary style="cursor:pointer;color:#d4c4f0;font-weight:700">${escapeHtml(packingTripTitle(trip))}</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button onclick="loadPackingTrip('${escapeHtml(trip.id)}')" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Load/edit</button></div>${trip.weatherHtml?`<div style="margin:8px 0">${trip.weatherHtml}</div>`:''}<div class="grid3">${trip.output?renderChecklist('Bring',trip.output.bring,'#22c55e')+renderChecklist('Maybe',trip.output.maybe,'#f59e0b')+renderChecklist('Skip',trip.output.skip,'#ef4444'):''}</div></details>`).join('')}</div>`;
+}
+function loadPackingTrip(id){const state=normalizePackingState(readPackingLocal());const trip=(state.trips||[]).find(t=>t.id===id);if(!trip)return;const next={...state,...trip,activeTripId:id,updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(next));applyPackingState(next);syncPackingRemote(next).then(()=>setPackingSyncStatus('Loaded trip synced')).catch(()=>setPackingSyncStatus('Loaded locally'));}
 async function generatePackingList(){
   const place=document.getElementById('packPlace')?.value.trim(); const start=document.getElementById('packStart')?.value||todayISO(); const end=document.getElementById('packEnd')?.value||start; const notes=document.getElementById('packNotes')?.value.trim()||''; const out=document.getElementById('packingOutput');
   if(!place){if(out)out.innerHTML='<div class="card"><div class="empty-state">Add a place first 🧳</div></div>';return;}
@@ -1962,7 +1989,7 @@ async function generatePackingList(){
   if(result.coat)weatherHtml+=`<div style="font-size:13px;color:#d4c4f0;margin-top:10px">🧥 <strong>${escapeHtml(result.coat.item)}</strong> — ${escapeHtml(result.coat.why)}</div>`;
   renderPackingResult(result,weatherHtml); savePackingState({output:result,weatherHtml});
 }
-function newPackingTrip(){const blank={place:'',start:todayISO(),end:addDaysISO(3),notes:'',updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(blank));['packPlace','packStart','packEnd','packNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const w=document.getElementById('packingWeather');if(w){w.style.display='none';w.innerHTML='';}const out=document.getElementById('packingOutput');if(out)out.innerHTML='';syncPackingRemote(blank).then(()=>setPackingSyncStatus('New trip synced to Supabase')).catch(()=>setPackingSyncStatus('New trip saved locally'));initPackingTab();}
+function newPackingTrip(){const existing=normalizePackingState(readPackingLocal());const blank={...existing,activeTripId:packingTripId(),place:'',start:todayISO(),end:addDaysISO(3),notes:'',output:null,weatherHtml:'',updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(blank));applyPackingState(blank);syncPackingRemote(blank).then(()=>setPackingSyncStatus('New blank trip synced — old trips kept')).catch(()=>setPackingSyncStatus('New trip saved locally'));}
 function clearPackingList(){newPackingTrip()}
 
 // ── Keyboard shortcuts: 1-9,0 switch tabs, Esc blurs ──

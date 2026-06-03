@@ -78,6 +78,83 @@
       opacity: 0.62;
     }
 
+    .bubble-field {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .photo-bubble {
+      --size: clamp(96px, 18vw, 156px);
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: var(--size);
+      height: var(--size);
+      border: 7px solid rgba(255, 255, 255, 0.82);
+      border-radius: 999px;
+      overflow: hidden;
+      color: #9a476b;
+      background:
+        radial-gradient(circle at 35% 24%, rgba(255, 255, 255, 0.95), transparent 24%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(255, 122, 138, 0.28));
+      box-shadow: 0 24px 58px rgba(190, 82, 114, 0.28), inset 0 2px 8px rgba(255, 255, 255, 0.7);
+      pointer-events: auto;
+      cursor: pointer;
+      isolation: isolate;
+    }
+
+    .photo-bubble::after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.52);
+      pointer-events: none;
+    }
+
+    .photo-bubble img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .photo-bubble.has-image img { display: block; }
+    .photo-bubble.has-image .bubble-label { display: none; }
+
+    .bubble-label {
+      padding: 16px;
+      font-size: 0.82rem;
+      font-weight: 950;
+      line-height: 1.18;
+      letter-spacing: 0.08em;
+      text-align: center;
+      text-transform: uppercase;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .bubble-one {
+      left: clamp(10px, 5vw, 58px);
+      top: clamp(34px, 12vh, 110px);
+      animation: bubbleDriftOne 9s ease-in-out infinite alternate;
+    }
+
+    .bubble-two {
+      right: clamp(12px, 5vw, 64px);
+      bottom: clamp(28px, 11vh, 116px);
+      animation: bubbleDriftTwo 10.5s ease-in-out infinite alternate;
+    }
+
+    .bubble-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
     main {
       position: relative;
       width: min(94vw, 680px);
@@ -278,6 +355,25 @@
       to { transform: translateY(30px) rotate(12deg); }
     }
 
+    @keyframes bubbleDriftOne {
+      0% { transform: translate3d(0, 0, 0) rotate(-5deg); }
+      45% { transform: translate3d(20px, 34px, 0) rotate(4deg); }
+      100% { transform: translate3d(58px, -10px, 0) rotate(9deg); }
+    }
+
+    @keyframes bubbleDriftTwo {
+      0% { transform: translate3d(0, 0, 0) rotate(6deg); }
+      50% { transform: translate3d(-34px, -28px, 0) rotate(-5deg); }
+      100% { transform: translate3d(-72px, 20px, 0) rotate(-10deg); }
+    }
+
+    @media (max-width: 760px) {
+      .photo-bubble { --size: clamp(74px, 23vw, 104px); border-width: 5px; }
+      .bubble-one { left: 8px; top: 16px; }
+      .bubble-two { right: 8px; bottom: 18px; }
+      .bubble-label { font-size: 0.66rem; padding: 10px; }
+    }
+
     @media (max-width: 470px) {
       main { border-radius: 34px; }
       .buttons { flex-direction: column; }
@@ -288,6 +384,18 @@
 </head>
 <body>
   <div class="confetti" aria-hidden="true"></div>
+  <div class="bubble-field" aria-label="Floating photo bubbles">
+    <label class="photo-bubble bubble-one" title="Add first floating photo">
+      <input class="bubble-input" data-bubble="0" type="file" accept="image/*" aria-label="Add first floating photo" />
+      <img alt="First floating photo" />
+      <span class="bubble-label">Add photo</span>
+    </label>
+    <label class="photo-bubble bubble-two" title="Add second floating photo">
+      <input class="bubble-input" data-bubble="1" type="file" accept="image/*" aria-label="Add second floating photo" />
+      <img alt="Second floating photo" />
+      <span class="bubble-label">Add photo</span>
+    </label>
+  </div>
   <main>
     <div class="photo-stack" aria-hidden="true">
       <div class="photo"></div>
@@ -320,6 +428,7 @@
     const SUPABASE_URL = "https://aihworyfcgstwbpzkzoy.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE";
     const STORAGE_KEY = "elizabeth-alex-photo-streak";
+    const BUBBLE_STORAGE_PREFIX = "elizabeth-alex-photo-bubble-";
     const STARTING_STREAK = 2;
     const countEl = document.querySelector("#count");
     const flamesEl = document.querySelector("#flames");
@@ -331,6 +440,7 @@
       decrement: document.querySelector("#decrement"),
       reset: document.querySelector("#reset"),
     };
+    const bubbleInputs = [...document.querySelectorAll(".bubble-input")];
 
     let count = Number.parseInt(localStorage.getItem(STORAGE_KEY) || String(STARTING_STREAK), 10);
     let maxToday = count;
@@ -339,6 +449,34 @@
     function fireText() {
       if (count < 5) return "";
       return "🔥".repeat(Math.min(5, count - 4));
+    }
+
+    function setBubbleImage(index, src) {
+      const input = bubbleInputs[index];
+      if (!input || !src) return;
+      const bubble = input.closest(".photo-bubble");
+      const image = bubble.querySelector("img");
+      image.src = src;
+      bubble.classList.add("has-image");
+    }
+
+    function loadBubbleImages() {
+      bubbleInputs.forEach((input, index) => {
+        setBubbleImage(index, localStorage.getItem(`${BUBBLE_STORAGE_PREFIX}${index}`));
+      });
+    }
+
+    function handleBubbleUpload(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const index = Number(input.dataset.bubble || 0);
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        const src = String(reader.result || "");
+        try { localStorage.setItem(`${BUBBLE_STORAGE_PREFIX}${index}`, src); } catch (error) { console.warn("Couldn't save bubble image", error); }
+        setBubbleImage(index, src);
+      });
+      reader.readAsDataURL(file);
     }
 
     function setBusy(isBusy) {
@@ -431,6 +569,11 @@
       }
     });
 
+    bubbleInputs.forEach((input) => {
+      input.addEventListener("change", () => handleBubbleUpload(input));
+    });
+
+    loadBubbleImages();
     render("Loading shared streak…");
     loadSharedStreak();
   </script>

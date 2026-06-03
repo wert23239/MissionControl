@@ -1875,11 +1875,11 @@ function applyPackingState(saved={}){
   if(start)start.value=saved.start||todayISO();
   if(end)end.value=saved.end||addDaysISO(3);
   if(notes)notes.value=saved.notes||'';
-  if(saved.output)renderPackingResult(normalizePackingResult(saved.output),saved.weatherHtml||'');
+  if(saved.output)renderPackingResult(normalizePackingResult(saved.output),saved.weatherHtml||'',saved.checked||{},saved.activeTripId||saved.id||'');
   else renderPackingResult(null,'');
   renderSavedPackingTrips(saved);
 }
-function normalizePackingTrip(trip={}){return {...trip,id:trip.id||packingTripId(),output:normalizePackingResult(trip.output),updatedAt:trip.updatedAt||new Date(0).toISOString(),createdAt:trip.createdAt||trip.updatedAt||new Date().toISOString()};}
+function normalizePackingTrip(trip={}){return {...trip,id:trip.id||packingTripId(),checked:trip.checked||{},output:normalizePackingResult(trip.output),updatedAt:trip.updatedAt||new Date(0).toISOString(),createdAt:trip.createdAt||trip.updatedAt||new Date().toISOString()};}
 function normalizePackingState(saved={}){
   const output=normalizePackingResult(saved.output);
   let trips=Array.isArray(saved.trips)?saved.trips.map(normalizePackingTrip):[];
@@ -1888,7 +1888,8 @@ function normalizePackingState(saved={}){
     const migrated=normalizePackingTrip({id:activeTripId||packingTripId(),place:saved.place,start:saved.start,end:saved.end,notes:saved.notes,output,weatherHtml:saved.weatherHtml,updatedAt:saved.updatedAt,createdAt:saved.updatedAt});
     trips=[migrated]; activeTripId=migrated.id;
   }
-  return {...saved,output,trips,activeTripId,updatedAt:saved.updatedAt||new Date(0).toISOString()};
+  const activeTrip=trips.find(t=>t.id===activeTripId);
+  return {...saved,output,trips,activeTripId,checked:saved.checked||activeTrip?.checked||{},updatedAt:saved.updatedAt||new Date(0).toISOString()};
 }
 async function fetchPackingRemote(){
   const r=await fetch(`${SB_URL}/rest/v1/packing_state?key=eq.${encodeURIComponent(PACKING_SYNC_KEY)}&select=state,updated_at&limit=1`,{headers:sbHeaders});
@@ -1930,7 +1931,8 @@ function savePackingState(extra={}){
   const now=new Date().toISOString();
   const fields=currentPackingFields();
   const activeTripId=existing.activeTripId||packingTripId();
-  const trip=normalizePackingTrip({...(existing.trips||[]).find(t=>t.id===activeTripId),id:activeTripId,...fields,...extra,updatedAt:now});
+  const priorTrip=(existing.trips||[]).find(t=>t.id===activeTripId)||{};
+  const trip=normalizePackingTrip({...priorTrip,id:activeTripId,...fields,...extra,checked:extra.checked||existing.checked||priorTrip.checked||{},updatedAt:now});
   const trips=[trip,...(existing.trips||[]).filter(t=>t.id!==activeTripId)];
   const state={...existing,...fields,...extra,activeTripId,trips,updatedAt:now};
   localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(state));
@@ -1969,15 +1971,27 @@ function buildPackingList({place,start,end,notes,weatherSummary}){
   maybe.push('Advil / meds','chapstick','backup battery','AirPods');
   return {days,coat,bring:normalizePackingItems(bring),maybe:[...new Set(maybe)],skip:[...new Set(skip)]};
 }
-function renderChecklist(title,items,color){return `<div class="card"><h3 style="margin-bottom:12px;color:${color}">${title}</h3>${(items||[]).map(item=>`<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`).join('')}</div>`;}
-function renderPackingResult(result,weatherHtml=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml||'';}if(out)out.innerHTML=result?renderChecklist('Bring',result.bring,'#22c55e')+renderChecklist('Maybe',result.maybe,'#f59e0b')+renderChecklist('Skip',result.skip,'#ef4444'):'';}
+function packingItemKey(title,item){return `${title}:${item}`;}
+function renderChecklist(title,items,color,checked={},tripId=''){return `<div class="card"><h3 style="margin-bottom:12px;color:${color}">${title}</h3>${(items||[]).map(item=>{const key=packingItemKey(title,item);return `<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" ${checked[key]?'checked':''} onchange="togglePackingItem(${inlineActionArg(key)},this.checked,${inlineActionArg(tripId)})" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`}).join('')}</div>`;}
+function renderPackingResult(result,weatherHtml='',checked={},tripId=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml||'';}if(out)out.innerHTML=result?renderChecklist('Bring',result.bring,'#22c55e',checked,tripId)+renderChecklist('Maybe',result.maybe,'#f59e0b',checked,tripId)+renderChecklist('Skip',result.skip,'#ef4444',checked,tripId):'';}
 function renderSavedPackingTrips(state=readPackingLocal()){
   const el=document.getElementById('packingSavedTrips'); if(!el)return;
   const saved=normalizePackingState(state); const trips=saved.trips||[];
   if(!trips.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="card"><h3 style="margin-bottom:12px;color:#38bdf8">Saved trips</h3>${trips.map(trip=>`<details ${trip.id===saved.activeTripId?'open':''} style="border-top:1px solid rgba(255,255,255,0.06);padding:10px 0"><summary style="cursor:pointer;color:#d4c4f0;font-weight:700">${escapeHtml(packingTripTitle(trip))}</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button onclick="loadPackingTrip('${escapeHtml(trip.id)}')" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Load/edit</button></div>${trip.weatherHtml?`<div style="margin:8px 0">${trip.weatherHtml}</div>`:''}<div class="grid3">${trip.output?renderChecklist('Bring',trip.output.bring,'#22c55e')+renderChecklist('Maybe',trip.output.maybe,'#f59e0b')+renderChecklist('Skip',trip.output.skip,'#ef4444'):''}</div></details>`).join('')}</div>`;
+  el.innerHTML=`<div class="card"><h3 style="margin-bottom:12px;color:#38bdf8">Saved trips</h3>${trips.map(trip=>`<details ${trip.id===saved.activeTripId?'open':''} style="border-top:1px solid rgba(255,255,255,0.06);padding:10px 0"><summary style="cursor:pointer;color:#d4c4f0;font-weight:700">${escapeHtml(packingTripTitle(trip))}</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button onclick="loadPackingTrip('${escapeHtml(trip.id)}')" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Load/edit</button></div>${trip.weatherHtml?`<div style="margin:8px 0">${trip.weatherHtml}</div>`:''}<div class="grid3">${trip.output?renderChecklist('Bring',trip.output.bring,'#22c55e',trip.checked,trip.id)+renderChecklist('Maybe',trip.output.maybe,'#f59e0b',trip.checked,trip.id)+renderChecklist('Skip',trip.output.skip,'#ef4444',trip.checked,trip.id):''}</div></details>`).join('')}</div>`;
 }
 function loadPackingTrip(id){const state=normalizePackingState(readPackingLocal());const trip=(state.trips||[]).find(t=>t.id===id);if(!trip)return;const next={...state,...trip,activeTripId:id,updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(next));applyPackingState(next);syncPackingRemote(next).then(()=>setPackingSyncStatus('Loaded trip synced')).catch(()=>setPackingSyncStatus('Loaded locally'));}
+function togglePackingItem(key,isChecked,tripId=''){
+  const state=normalizePackingState(readPackingLocal());
+  const targetId=tripId||state.activeTripId;
+  const now=new Date().toISOString();
+  const trips=(state.trips||[]).map(trip=>trip.id===targetId?{...trip,checked:{...(trip.checked||{}),[key]:isChecked},updatedAt:now}:trip);
+  const activeTrip=trips.find(t=>t.id===state.activeTripId);
+  const next={...state,trips,checked:activeTrip?.checked||state.checked||{},updatedAt:now};
+  localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(next));
+  renderSavedPackingTrips(next);
+  syncPackingRemote(next).then(()=>setPackingSyncStatus('Checkbox synced')).catch(()=>setPackingSyncStatus('Checkbox saved locally — sync failed'));
+}
 async function generatePackingList(){
   const place=document.getElementById('packPlace')?.value.trim(); const start=document.getElementById('packStart')?.value||todayISO(); const end=document.getElementById('packEnd')?.value||start; const notes=document.getElementById('packNotes')?.value.trim()||''; const out=document.getElementById('packingOutput');
   if(!place){if(out)out.innerHTML='<div class="card"><div class="empty-state">Add a place first 🧳</div></div>';return;}

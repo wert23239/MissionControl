@@ -2629,11 +2629,21 @@ function renderBingo(){
   document.getElementById('bingoStatus').style.color=hasBingo?'#22c55e':'#665c78';
 }
 
-function toggleBingo(i){
+async function syncBingoCell(i, done){
+  try{
+    if(done){
+      await fetch(SB_URL+'/rest/v1/bingo?on_conflict=cell_index',{method:'POST',headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({cell_index:i,done:true})});
+    }else{
+      await fetch(SB_URL+'/rest/v1/bingo?cell_index=eq.'+encodeURIComponent(i),{method:'DELETE',headers:{...sbHeaders,'Prefer':'return=minimal'}});
+    }
+  }catch(e){console.log('Bingo sync failed',e)}
+}
+async function toggleBingo(i){
   const state=getBingo();
   state[i]=!state[i];
   saveBingo(state);
   renderBingo();
+  await syncBingoCell(i,!!state[i]);
 }
 
 // Calendar (Supabase-backed)
@@ -2785,7 +2795,7 @@ const fallbackProjects=[
     priority:5,
     progress:35,
     url:'https://appexchange.salesforce.com/appxListingDetail?listingId=a0N4V00000FN8eRUAT&tab=d',
-    blocker:'Supabase project is still inactive, so this card is hardcoded until projects table sync is restored.',
+    blocker:'Supabase is back online; continue by implementing the connector directly in Hiro and rotating the Salesforce Consumer Secret that was pasted in chat.',
     notes:'Proof completed tonight: Health Cloud trial org kouper3 can query Account data, create a test Case in Salesforce UI/Developer Console, and external OAuth/API access works. Curl/OAuth query returned Account rows from kouper3. Product shape: add a Salesforce connector in Hiro: Connect Salesforce Health Cloud button, OAuth callback endpoint, encrypted token storage, refresh-token based access-token renewal, and service methods like getPatientContext, createCase, createTask, writeCallSummary, and later writeAssessment or care-plan updates. Voice agent should call Hiro tool endpoints, not Salesforce directly. Customer flow: hospital admin approves our Salesforce app once, then Hiro can make backend API calls until token is revoked or policy expires it. How this becomes AppExchange: 1) build working Hiro Salesforce connector, 2) decide if install is API-only Connected App or managed package + API, 3) create/connect Technology in Salesforce Partner Console, likely API Solution first, 4) submit security review with test credentials/data-flow docs, 5) create AppExchange Listing that points customers to install/authorize the Hiro connector. AppExchange is the distribution/trust/install wrapper, not the first prototype. Security note: rotate the current Salesforce Consumer Secret because it was pasted in chat. Epic is a separate connector path later via FHIR/SMART or hospital/vendor middleware; first build Salesforce Health Cloud adapter.',
     created_at:'2026-05-20T23:03:00-04:00',
     updated_at:'2026-05-20T23:03:00-04:00'
@@ -2798,7 +2808,7 @@ const fallbackProjects=[
     status:'active',
     priority:5,
     progress:15,
-    blocker:'Need implement in Hiro codebase; Supabase outage only affects Mission Control visibility, not the integration design.',
+    blocker:'Need implement in Hiro codebase; Mission Control sync is restored, so this can now be tracked live in Supabase.',
     notes:'Step 1: create Salesforce integration config model: org id, instance_url, connected_app client id/secret source, encrypted refresh_token, scopes, status, created_by. Step 2: add Connect Salesforce button and OAuth start endpoint. Step 3: add OAuth callback that exchanges code for access_token/refresh_token and stores refresh_token encrypted. Step 4: add token refresh helper. Step 5: add read endpoint for Account/Person Account search. Step 6: add write endpoint that creates Case or Task linked to an Account. Step 7: wire voice-agent tools to Hiro endpoints. Step 8: add audit logs, PHI controls, permission checks, and token revocation path. Step 9: AppExchange path: register the working Hiro connector as Partner Console Technology/API Solution, optionally add a managed package only if Salesforce UI components/custom objects are needed, complete security review, then create Listing. The listing is how hospitals discover/install/trust the connector; OAuth is how their actual org grants access.',
     created_at:'2026-05-20T23:03:00-04:00',
     updated_at:'2026-05-20T23:03:00-04:00'
@@ -2806,13 +2816,13 @@ const fallbackProjects=[
   {
     id:902,
     name:'Supabase restore for Mission Control sync',
-    description:'Restore the inactive Supabase project so Mission Control tasks/calendar/projects/daily-tip can sync normally again. Current DNS failures are expected while the project is inactive.',
+    description:'Supabase project was restored/reactivated; Mission Control tasks/calendar/projects/daily-tip can sync normally again.',
     category:'Infra',
-    status:'active',
-    priority:5,
-    progress:10,
-    blocker:'Project aihworyfcgstwbpzkzoy shows INACTIVE in Supabase CLI; restore/reactivate from dashboard, then rerun DNS/API/psql checks.',
-    notes:'After restore, verify REST host and db host resolve, fetch API keys if changed, update config if needed, and confirm Mission Control/crons work.',
+    status:'done',
+    priority:2,
+    progress:100,
+    blocker:'',
+    notes:'Restored Jun 2. Verified REST host and db host resolve, psql connects, anon REST works, Mission Control tables are readable/writable, and photo streak now syncs through Supabase RPC.',
     created_at:'2026-05-19T18:45:00-04:00',
     updated_at:'2026-05-20T14:15:00-04:00'
   }

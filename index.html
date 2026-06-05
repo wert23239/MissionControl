@@ -1981,9 +1981,22 @@ function renderSavedPackingTrips(state=readPackingLocal()){
   const el=document.getElementById('packingSavedTrips'); if(!el)return;
   const saved=normalizePackingState(state); const trips=saved.trips||[];
   if(!trips.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="card"><h3 style="margin-bottom:12px;color:#38bdf8">Saved trips</h3>${trips.map(trip=>`<details ${trip.id===saved.activeTripId?'open':''} style="border-top:1px solid rgba(255,255,255,0.06);padding:10px 0"><summary style="cursor:pointer;color:#d4c4f0;font-weight:700">${escapeHtml(packingTripTitle(trip))}</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button onclick="loadPackingTrip('${escapeHtml(trip.id)}')" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Load/edit</button></div>${trip.weatherHtml?`<div style="margin:8px 0">${trip.weatherHtml}</div>`:''}<div class="grid3">${trip.output?renderChecklist('Bring',trip.output.bring,'#22c55e',trip.checked,trip.id)+renderChecklist('Maybe',trip.output.maybe,'#f59e0b',trip.checked,trip.id)+renderChecklist('Skip',trip.output.skip,'#ef4444',trip.checked,trip.id):''}</div></details>`).join('')}</div>`;
+  el.innerHTML=`<div class="card"><h3 style="margin-bottom:12px;color:#38bdf8">Saved trips</h3>${trips.map(trip=>`<details ${trip.id===saved.activeTripId?'open':''} style="border-top:1px solid rgba(255,255,255,0.06);padding:10px 0"><summary style="cursor:pointer;color:#d4c4f0;font-weight:700">${escapeHtml(packingTripTitle(trip))}</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button onclick="loadPackingTrip(${inlineActionArg(trip.id)})" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Load/edit</button><button onclick="deletePackingTrip(${inlineActionArg(trip.id)})" style="background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Delete</button></div>${trip.weatherHtml?`<div style="margin:8px 0">${trip.weatherHtml}</div>`:''}<div class="grid3">${trip.output?renderChecklist('Bring',trip.output.bring,'#22c55e',trip.checked,trip.id)+renderChecklist('Maybe',trip.output.maybe,'#f59e0b',trip.checked,trip.id)+renderChecklist('Skip',trip.output.skip,'#ef4444',trip.checked,trip.id):''}</div></details>`).join('')}</div>`;
 }
 function loadPackingTrip(id){const state=normalizePackingState(readPackingLocal());const trip=(state.trips||[]).find(t=>t.id===id);if(!trip)return;const next={...state,...trip,activeTripId:id,updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(next));applyPackingState(next);syncPackingRemote(next).then(()=>setPackingSyncStatus('Loaded trip synced')).catch(()=>setPackingSyncStatus('Loaded locally'));}
+function deletePackingTrip(id){
+  const state=normalizePackingState(readPackingLocal());
+  const trip=(state.trips||[]).find(t=>t.id===id);
+  if(!trip)return;
+  if(!confirm(`Delete saved packing trip “${packingTripTitle(trip)}”?`))return;
+  const now=new Date().toISOString();
+  const trips=(state.trips||[]).filter(t=>t.id!==id);
+  const nextActive=state.activeTripId===id?(trips[0]||null):(state.trips||[]).find(t=>t.id===state.activeTripId)||trips[0]||null;
+  const next={...state,trips,activeTripId:nextActive?.id||packingTripId(),place:nextActive?.place||'',start:nextActive?.start||todayISO(),end:nextActive?.end||addDaysISO(3),notes:nextActive?.notes||'',output:nextActive?.output||null,weatherHtml:nextActive?.weatherHtml||'',checked:nextActive?.checked||{},updatedAt:now};
+  localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(next));
+  applyPackingState(next);
+  syncPackingRemote(next).then(()=>setPackingSyncStatus('Deleted trip synced')).catch(()=>setPackingSyncStatus('Deleted locally — Supabase sync failed'));
+}
 function togglePackingItem(key,isChecked,tripId=''){
   const state=normalizePackingState(readPackingLocal());
   const targetId=tripId||state.activeTripId;

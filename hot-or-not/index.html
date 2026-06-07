@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hot or Not — Chamonix</title>
+  <style>
+    :root{
+      --ink:#f8fbff; --muted:rgba(248,251,255,.72); --glass:rgba(7,17,33,.42);
+      --line:rgba(255,255,255,.18); --hot:#ff7a45; --cold:#74c8ff; --ok:#a7f3d0;
+      --shadow:0 24px 80px rgba(0,0,0,.34); --blur:blur(20px);
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--ink); overflow-x:hidden; background:#101827;
+    }
+    .sky{position:fixed; inset:0; z-index:-4; background:linear-gradient(160deg,#0f172a,#1d4ed8 48%,#f59e0b); transition:background 900ms ease}
+    .sky.clear{background:linear-gradient(160deg,#075985 0%,#38bdf8 45%,#fbbf24 100%)}
+    .sky.cloud{background:linear-gradient(160deg,#334155 0%,#64748b 48%,#cbd5e1 100%)}
+    .sky.rain{background:linear-gradient(160deg,#020617 0%,#1e3a8a 45%,#475569 100%)}
+    .sky.snow{background:linear-gradient(160deg,#172554 0%,#93c5fd 48%,#f8fafc 100%)}
+    .sky.hot{background:linear-gradient(160deg,#7f1d1d 0%,#ea580c 48%,#facc15 100%)}
+    .orb{position:fixed; width:34vmin; height:34vmin; border-radius:999px; top:7%; right:9%; z-index:-3; background:radial-gradient(circle,#fff9c4 0 28%,#fde68a 47%,transparent 70%); filter:blur(2px); opacity:.85}
+    .clouds::before,.clouds::after{content:""; position:fixed; height:15vmin; width:42vmin; border-radius:999px; background:rgba(255,255,255,.23); filter:blur(18px); z-index:-2; animation:drift 24s linear infinite}
+    .clouds::before{top:18%; left:-18vmin}.clouds::after{top:31%; right:-24vmin; animation-duration:31s; opacity:.75}
+    @keyframes drift{to{transform:translateX(120vw)}}
+    .mountains{position:fixed; inset:auto 0 0 0; height:39vh; z-index:-1; background:
+      linear-gradient(135deg,transparent 0 38%,rgba(255,255,255,.82) 38% 42%,transparent 42%) 19% 0/35% 100% no-repeat,
+      linear-gradient(135deg,transparent 0 42%,rgba(255,255,255,.74) 42% 46%,transparent 46%) 68% 0/42% 100% no-repeat,
+      linear-gradient(145deg,transparent 0 40%,rgba(255,255,255,.68) 40% 45%,transparent 45%) 42% 0/50% 100% no-repeat,
+      linear-gradient(135deg,transparent 50%,rgba(15,23,42,.95) 50%) left bottom/52% 95% no-repeat,
+      linear-gradient(225deg,transparent 50%,rgba(30,41,59,.97) 50%) right bottom/61% 100% no-repeat;
+      opacity:.95}
+    .rainfall{position:fixed; inset:0; pointer-events:none; z-index:-1; opacity:0}.rain .rainfall{opacity:.42}.snow .rainfall{opacity:.28}
+    .drop{position:absolute; top:-12vh; width:1px; height:11vh; background:linear-gradient(transparent,rgba(255,255,255,.8)); animation:fall linear infinite}.snow .drop{width:5px;height:5px;border-radius:999px;background:white;filter:blur(1px)}
+    @keyframes fall{to{transform:translateY(112vh)}}
+    main{min-height:100%; display:grid; place-items:center; padding:28px}
+    .app{width:min(1060px,100%); display:grid; gap:18px}
+    header{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+    .kicker{font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); font-weight:800}
+    h1{font-size:clamp(46px,9vw,105px); letter-spacing:-.08em; line-height:.86; margin:8px 0 10px; text-shadow:0 8px 42px rgba(0,0,0,.28)}
+    .subtitle{font-size:clamp(16px,2.2vw,22px); color:var(--muted); max-width:670px; line-height:1.45}
+    .pill{border:1px solid var(--line); background:rgba(255,255,255,.12); backdrop-filter:var(--blur); padding:10px 14px; border-radius:999px; color:var(--muted); font-weight:750; box-shadow:var(--shadow)}
+    .hero{display:grid; grid-template-columns:1.15fr .85fr; gap:18px}.card{border:1px solid var(--line); background:var(--glass); backdrop-filter:var(--blur); border-radius:30px; padding:24px; box-shadow:var(--shadow)}
+    .verdict{display:flex; flex-direction:column; min-height:355px; justify-content:space-between}.label{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.14em; font-weight:850}.big{font-size:clamp(58px,10vw,118px); line-height:.84; font-weight:950; letter-spacing:-.08em; margin:16px 0}.big.hot{color:#fed7aa}.big.cold{color:#bae6fd}.big.ok{color:#bbf7d0}
+    .temp-row{display:flex; align-items:end; gap:18px; flex-wrap:wrap}.temp{font-size:clamp(70px,11vw,132px); line-height:.8; font-weight:950; letter-spacing:-.08em}.unit{font-size:38px; color:var(--muted); margin-left:2px}.desc{font-size:20px; color:var(--muted); font-weight:750}.delta{font-size:clamp(24px,4vw,42px); font-weight:900; margin-top:16px}.delta.hot{color:#fed7aa}.delta.cold{color:#bae6fd}.delta.ok{color:#bbf7d0}
+    .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}.mini{border:1px solid var(--line); background:rgba(255,255,255,.10); border-radius:22px; padding:17px}.mini b{display:block; font-size:24px; margin-top:7px; letter-spacing:-.04em}.mini span{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; font-weight:800}.bar{height:14px; background:rgba(255,255,255,.15); border-radius:99px; overflow:hidden; margin:22px 0 8px}.fill{height:100%; border-radius:99px; width:50%; background:linear-gradient(90deg,#60a5fa,#fbbf24,#ef4444); transition:width 800ms ease}.scale{display:flex; justify-content:space-between; color:var(--muted); font-size:12px}.list{display:grid; gap:10px; margin-top:14px}.row{display:flex; justify-content:space-between; gap:16px; border-top:1px solid rgba(255,255,255,.12); padding-top:12px; color:var(--muted)}.row strong{color:white}.loading{animation:pulse 1.3s ease infinite}@keyframes pulse{50%{opacity:.55}}
+    button{appearance:none;border:0;border-radius:999px;padding:12px 16px;font-weight:900;color:#0f172a;background:white;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.22)}button:hover{transform:translateY(-1px)}.fine{font-size:12px;color:rgba(255,255,255,.62);line-height:1.4}.error{color:#fecaca}.footer{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center}
+    @media(max-width:830px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.card{border-radius:24px;padding:20px}.verdict{min-height:0}.footer{display:block}.fine{margin-top:12px}}
+  </style>
+</head>
+<body>
+  <div id="sky" class="sky clear"></div><div class="orb" id="orb"></div><div class="clouds"></div><div class="mountains"></div><div class="rainfall" id="rainfall"></div>
+  <main><section class="app">
+    <header>
+      <div><div class="kicker">Chamonix-Mont-Blanc anomaly check</div><h1>Hot or Not?</h1><p class="subtitle">Current weather compared with same-date historical weather. Basically: is Chamonix being dramatic today?</p></div>
+      <div class="pill" id="time">Loading…</div>
+    </header>
+    <div class="hero">
+      <article class="card verdict">
+        <div><div class="label">Verdict</div><div id="verdict" class="big loading">…</div><div id="summary" class="subtitle loading">Pulling live + historical weather from Open‑Meteo.</div></div>
+        <div><div class="bar"><div id="percentileBar" class="fill"></div></div><div class="scale"><span>Coldest same-date years</span><span>Hottest</span></div></div>
+      </article>
+      <article class="card">
+        <div class="label">Right now</div><div class="temp-row"><div><span id="temp" class="temp loading">--</span><span class="unit">°F</span></div><div id="condition" class="desc">Loading</div></div>
+        <div id="delta" class="delta loading">Comparing…</div>
+        <div class="grid" style="margin-top:22px">
+          <div class="mini"><span>Feels</span><b id="feels">--°</b></div><div class="mini"><span>Wind</span><b id="wind">--</b></div><div class="mini"><span>High</span><b id="high">--°</b></div><div class="mini"><span>Low</span><b id="low">--°</b></div>
+        </div>
+      </article>
+    </div>
+    <article class="card">
+      <div class="label">Historical context for this date</div>
+      <div class="grid" style="margin-top:14px">
+        <div class="mini"><span>Historical avg high</span><b id="avgHigh">--°</b></div><div class="mini"><span>Historical avg low</span><b id="avgLow">--°</b></div><div class="mini"><span>Percentile</span><b id="percentile">--</b></div><div class="mini"><span>Years checked</span><b id="years">--</b></div>
+      </div>
+      <div class="list"><div class="row"><span>Hottest same-date high</span><strong id="recordHot">--</strong></div><div class="row"><span>Coldest same-date high</span><strong id="recordCold">--</strong></div><div class="row"><span>Normal-ish range</span><strong id="normalRange">--</strong></div></div>
+    </article>
+    <div class="footer"><button id="refresh">Refresh weather</button><div class="fine">Uses live forecast + historical archive from Open‑Meteo for Chamonix (45.9237, 6.8694). Historical comparison filters the last 35 years to today’s month/day.</div></div>
+  </section></main>
+<script>
+const LAT=45.9237, LON=6.8694;
+const $=id=>document.getElementById(id);
+const f=n=>Math.round(n);
+const cToF=c=>c*9/5+32;
+const codes={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Cloudy',45:'Fog',48:'Freezing fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',56:'Freezing drizzle',57:'Freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Rain showers',81:'Rain showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Thunderstorm + hail'};
+function historyUrl(today){ const y=today.getFullYear(); return `https://archive-api.open-meteo.com/v1/archive?latitude=${LAT}&longitude=${LON}&start_date=${y-35}-01-01&end_date=${y-1}-12-31&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum&temperature_unit=celsius&timezone=Europe%2FParis`; }
+function setWeatherScene(code, delta){ const sky=$('sky'); sky.className='sky'; if(code>=71&&code<=86) sky.classList.add('snow'); else if((code>=51&&code<=67)||(code>=80&&code<=82)||code>=95) sky.classList.add('rain'); else if(code>=2&&code<=48) sky.classList.add('cloud'); else sky.classList.add(delta>6?'hot':'clear'); $('orb').style.opacity = sky.classList.contains('rain')||sky.classList.contains('snow') ? .22 : .85; }
+function seedRain(){ const box=$('rainfall'); box.innerHTML=''; for(let i=0;i<76;i++){ const d=document.createElement('i'); d.className='drop'; d.style.left=Math.random()*100+'vw'; d.style.animationDuration=(.55+Math.random()*1.4)+'s'; d.style.animationDelay=(-Math.random()*2)+'s'; box.appendChild(d); }}
+function percentile(values, x){ const below=values.filter(v=>v<=x).length; return Math.round((below/values.length)*100); }
+function normalRange(vals){ const s=[...vals].sort((a,b)=>a-b); return [s[Math.floor(s.length*.25)], s[Math.floor(s.length*.75)]]; }
+async function load(){
+  seedRain(); ['verdict','summary','temp','delta'].forEach(id=>$(id).classList.add('loading'));
+  try{
+    const currentUrl=`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&temperature_unit=celsius&wind_speed_unit=mph&timezone=Europe%2FParis&forecast_days=1`;
+    const today=new Date(); const mmdd=`${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const [cur,hist]=await Promise.all([fetch(currentUrl).then(r=>r.json()), fetch(historyUrl(today)).then(r=>r.json())]);
+    const now=cur.current, daily=cur.daily;
+    const sameDateIdx=(hist.daily?.time||[]).map((t,i)=>t.slice(5)===mmdd?i:-1).filter(i=>i>=0);
+    const highs=sameDateIdx.map(i=>hist.daily.temperature_2m_max[i]).filter(Number.isFinite).map(cToF); const lows=sameDateIdx.map(i=>hist.daily.temperature_2m_min[i]).filter(Number.isFinite).map(cToF);
+    if(!now || highs.length<10) throw new Error('Not enough same-date weather data returned');
+    const tempF=cToF(now.temperature_2m), highF=cToF(daily.temperature_2m_max[0]), lowF=cToF(daily.temperature_2m_min[0]);
+    const avgHigh=highs.reduce((a,b)=>a+b,0)/highs.length, avgLow=lows.reduce((a,b)=>a+b,0)/lows.length, delta=highF-avgHigh, pct=percentile(highs,highF);
+    const [q1,q3]=normalRange(highs); const max=Math.max(...highs), min=Math.min(...highs);
+    let verdict='NORMAL-ISH', cls='ok', line='Chamonix is staying pretty close to its usual script.';
+    if(pct>=90 || delta>=8){verdict='HOT'; cls='hot'; line='Warmer than most same-date years — Chamonix is flexing.'}
+    else if(pct<=10 || delta<=-8){verdict='NOT'; cls='cold'; line='Cooler than most same-date years — alpine chill wins.'}
+    else if(delta>=3){verdict='KIND OF HOT'; cls='hot'; line='A little toastier than the old same-date pattern.'}
+    else if(delta<=-3){verdict='NOT REALLY'; cls='cold'; line='Running cooler than the historical same-date average.'}
+    $('verdict').textContent=verdict; $('verdict').className=`big ${cls}`;
+    $('summary').textContent=`${line} Today’s high is ${Math.abs(delta).toFixed(1)}°F ${delta>=0?'above':'below'} the historical same-date average.`;
+    $('summary').className='subtitle'; $('temp').textContent=f(tempF); $('temp').className='temp'; $('condition').textContent=codes[now.weather_code]||`Weather code ${now.weather_code}`;
+    $('delta').textContent=`${delta>=0?'+':''}${delta.toFixed(1)}°F vs old Chamonix highs`; $('delta').className=`delta ${cls}`;
+    $('feels').textContent=f(cToF(now.apparent_temperature))+'°'; $('wind').textContent=f(now.wind_speed_10m)+' mph'; $('high').textContent=f(highF)+'°'; $('low').textContent=f(lowF)+'°';
+    $('avgHigh').textContent=f(avgHigh)+'°'; $('avgLow').textContent=f(avgLow)+'°'; $('percentile').textContent=pct+'th'; $('years').textContent=highs.length;
+    $('recordHot').textContent=`${f(max)}°F`; $('recordCold').textContent=`${f(min)}°F`; $('normalRange').textContent=`${f(q1)}°F–${f(q3)}°F`;
+    $('percentileBar').style.width=Math.max(4,Math.min(100,pct))+'%'; $('time').textContent=`Updated ${new Date(now.time).toLocaleString([], {dateStyle:'medium', timeStyle:'short'})} Chamonix time`;
+    setWeatherScene(now.weather_code, delta);
+  }catch(e){ $('verdict').textContent='DATA GHOSTED'; $('verdict').className='big cold'; $('summary').innerHTML=`<span class="error">${e.message}. Try refresh in a minute.</span>`; $('time').textContent='Weather fetch failed'; }
+}
+$('refresh').addEventListener('click',load); load();
+</script>
+</body>
+</html>

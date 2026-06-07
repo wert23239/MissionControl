@@ -593,8 +593,8 @@ packing:`<h2 class="panel-title">🧳 Packing List</h2>
       <input id="packPlace" type="text" placeholder="Place — e.g. Chamonix, Miami, Brooklyn" autocomplete="off">
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <input id="packStart" type="date" style="flex:1;min-width:140px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
-      <input id="packEnd" type="date" style="flex:1;min-width:140px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+      <input id="packStart" type="date" onchange="syncPackingDateBounds()" style="flex:1;min-width:140px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
+      <input id="packEnd" type="date" onchange="syncPackingDateBounds()" style="flex:1;min-width:140px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
     </div>
     <textarea id="packNotes" placeholder="Activities / vibe — wedding, hiking, beach, work dinner, skiing..." style="width:100%;min-height:86px;resize:vertical;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;margin-bottom:10px"></textarea>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1866,6 +1866,18 @@ function todayISO(){return new Date().toISOString().slice(0,10)}
 function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
 function readPackingLocal(){try{return JSON.parse(localStorage.getItem(PACKING_STORAGE_KEY)||'{}')||{};}catch(e){return {};}}
 function setPackingSyncStatus(text){const el=document.getElementById('packingSync');if(el)el.textContent=text||'';}
+function syncPackingDateBounds(){
+  const start=document.getElementById('packStart');
+  const end=document.getElementById('packEnd');
+  if(!start||!end)return {start:'',end:'',adjusted:false};
+  if(start.value)end.min=start.value;
+  if(start.value&&end.value&&end.value<start.value){
+    end.value=start.value;
+    setPackingSyncStatus('End date moved to match the start date');
+    return {start:start.value,end:end.value,adjusted:true};
+  }
+  return {start:start.value,end:end.value,adjusted:false};
+}
 function packingTripId(){return `trip-${Date.now()}-${Math.random().toString(16).slice(2,8)}`;}
 function packingTripTitle(trip={}){return `${trip.place||'Untitled trip'}${trip.start?` · ${trip.start}`:''}${trip.end&&trip.end!==trip.start?`–${trip.end}`:''}`;}
 function currentPackingFields(){return {place:document.getElementById('packPlace')?.value.trim()||'',start:document.getElementById('packStart')?.value||'',end:document.getElementById('packEnd')?.value||'',notes:document.getElementById('packNotes')?.value.trim()||''};}
@@ -1878,6 +1890,7 @@ function applyPackingState(saved={}){
   if(start)start.value=saved.start||todayISO();
   if(end)end.value=saved.end||addDaysISO(3);
   if(notes)notes.value=saved.notes||'';
+  syncPackingDateBounds();
   if(saved.output)renderPackingResult(normalizePackingResult(saved.output),saved.weatherHtml||'',saved.checked||{},saved.activeTripId||saved.id||'');
   else renderPackingResult(null,'');
   renderSavedPackingTrips(saved);
@@ -2009,7 +2022,8 @@ function togglePackingItem(key,isChecked,tripId=''){
   syncPackingRemote(next).then(()=>setPackingSyncStatus('Checkbox synced')).catch(()=>setPackingSyncStatus('Checkbox saved locally — sync failed'));
 }
 async function generatePackingList(){
-  const place=document.getElementById('packPlace')?.value.trim(); const start=document.getElementById('packStart')?.value||todayISO(); const end=document.getElementById('packEnd')?.value||start; const notes=document.getElementById('packNotes')?.value.trim()||''; const out=document.getElementById('packingOutput');
+  const bounds=syncPackingDateBounds();
+  const place=document.getElementById('packPlace')?.value.trim(); const start=bounds.start||todayISO(); const end=bounds.end||start; const notes=document.getElementById('packNotes')?.value.trim()||''; const out=document.getElementById('packingOutput');
   if(!place){if(out)out.innerHTML='<div class="card"><div class="empty-state">Add a place first 🧳</div></div>';return;}
   if(out)out.innerHTML='<div class="card"><div class="empty-state">Checking weather + building list...</div></div>';
   let weatherSummary=null,weatherHtml='';

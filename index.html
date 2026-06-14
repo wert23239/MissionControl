@@ -1988,7 +1988,12 @@ function buildPackingList({place,start,end,notes,weatherSummary}){
   return {days,coat,bring:normalizePackingItems(bring),maybe:[...new Set(maybe)],skip:[...new Set(skip)]};
 }
 function packingItemKey(title,item){return `${title}:${item}`;}
-function renderChecklist(title,items,color,checked={},tripId=''){return `<div class="card"><h3 style="margin-bottom:12px;color:${color}">${title}</h3>${(items||[]).map(item=>{const key=packingItemKey(title,item);return `<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" ${checked[key]?'checked':''} onchange="togglePackingItem(${inlineActionArg(key)},this.checked,${inlineActionArg(tripId)})" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`}).join('')}</div>`;}
+function renderChecklist(title,items,color,checked={},tripId=''){
+  const list=items||[];
+  const checkedCount=list.filter(item=>checked[packingItemKey(title,item)]).length;
+  const progressText=list.length?`${checkedCount}/${list.length} packed`:'No items';
+  return `<div class="card"><h3 style="margin-bottom:12px;color:${color};display:flex;justify-content:space-between;gap:12px;align-items:baseline"><span>${title}</span><span style="font-family:Inter,sans-serif;font-size:11px;font-weight:600;color:#998eb5">${progressText}</span></h3>${list.map(item=>{const key=packingItemKey(title,item);return `<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" ${checked[key]?'checked':''} onchange="togglePackingItem(${inlineActionArg(key)},this.checked,${inlineActionArg(tripId)})" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`}).join('')}</div>`;
+}
 function renderPackingResult(result,weatherHtml='',checked={},tripId=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml||'';}if(out)out.innerHTML=result?renderChecklist('Bring',result.bring,'#22c55e',checked,tripId)+renderChecklist('Maybe',result.maybe,'#f59e0b',checked,tripId)+renderChecklist('Skip',result.skip,'#ef4444',checked,tripId):'';}
 function renderSavedPackingTrips(state=readPackingLocal()){
   const el=document.getElementById('packingSavedTrips'); if(!el)return;

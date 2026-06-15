@@ -1,0 +1,99 @@
+NextGen demo feasibility notes - appointment booking / slots / cancel
+Updated: 2026-06-15
+
+Short answer
+------------
+Yes, we can demo a NextGen integration in our app, but true appointment scheduling is not available through the public Patient Access FHIR API. For booking appointments, getting open slots, canceling/rescheduling, etc., we need NextGen Enterprise API sandbox access and the scheduling/appointment routes approved for our app.
+
+What we need from NextGen
+-------------------------
+1. NextGen Developer Portal access
+   - Portal: https://developer.nextgen.com/
+   - Use an organizational email, not a personal email.
+   - First person from the org becomes Org Admin.
+   - Signup requires email verification and SMS 2FA.
+
+2. App registration in the Developer Portal
+   - Org Admin goes to Applications -> Add Application.
+   - Enter app name and public description.
+   - For appointment scheduling, select Enterprise APIs, not just Patient Access/FHIR.
+   - NextGen issues client_id and client_secret.
+   - Those credentials become active for sandbox authentication.
+
+3. Onboarding / approval details
+   - Form: https://www.nextgen.com/api-on-boarding/questions
+   - We must answer that the app is NOT read-only USCDI-only, because appointments are not in USCDI v1 and booking/canceling requires write access.
+   - The form explicitly asks what non-USCDI data elements are needed and what write operations the app will create/alter.
+   - We should list: appointment availability/open slots, appointment booking/create, appointment cancel/update, appointment reschedule/update, providers/resources, locations, appointment types/reasons.
+
+Which API to use
+----------------
+Use: NextGen Enterprise APIs.
+
+Do NOT build scheduling against public FHIR Patient Access APIs.
+- NextGen's public FHIR R4 capability statement exposes read/search for resources like Patient, Practitioner, Location, Encounter, etc.
+- It does NOT advertise Appointment, Slot, or Schedule resources.
+- The public FHIR API is mainly for patient access / USCDI clinical data reads, not operational scheduling writes.
+
+Appointment features we need from Enterprise API docs
+-----------------------------------------------------
+The Enterprise API docs are behind NextGen's Developer Portal, so exact route names/paths need to be confirmed once we have sandbox access. In the docs, search for scheduling / appointments / availability / search ahead. Functionally we need routes for:
+
+1. Get available slots
+   - Search available appointment times by provider/resource, location/practice, appointment type/event, date range, duration.
+   - NextGen's UI calls this concept Appointment Search Ahead / available time slots.
+
+2. Book appointment
+   - Create a scheduled appointment for a patient into a selected slot/resource/location.
+   - Inputs likely include patient/person id, provider/resource id, practice/location id, event/appointment type, start time, duration, reason/chief complaint/notes.
+
+3. Cancel appointment
+   - Update appointment status or call a cancel endpoint.
+   - Need cancellation reason/status handling.
+
+4. Reschedule appointment
+   - Usually either update existing appointment time/resource or cancel + create replacement, depending on the Enterprise API route model.
+
+5. Supporting lookup routes
+   - Patient search / patient id lookup.
+   - Provider/resource lookup.
+   - Location/practice lookup.
+   - Appointment/event type lookup.
+   - Existing appointment lookup by patient/date/provider.
+
+Demo plan
+---------
+Phase 1: Build mocked NextGen connector now
+- Add a NextGen connector interface in our app with methods:
+  - listSlots(criteria)
+  - bookAppointment(payload)
+  - cancelAppointment(appointmentId, reason)
+  - rescheduleAppointment(appointmentId, newSlot)
+- Back it with mock sandbox-style data so the UI demo works immediately.
+
+Phase 2: Swap in real sandbox adapter
+- Once we receive client_id/client_secret and Enterprise API docs, wire OAuth/auth and replace the mock methods with real NextGen Enterprise API calls.
+- Keep all create/cancel tests sandbox-only until NextGen confirms test patient + test provider/resource.
+
+Phase 3: Production readiness
+- Client/practice authorization in NextGen API Client Portal.
+- Scope/route approval for scheduling write operations.
+- Audit logging for every booking/cancel/reschedule request.
+- Idempotency protection so retrying does not double-book.
+- Clear sandbox vs production environment separation.
+
+Risks / blockers
+----------------
+1. Appointment scheduling is non-USCDI operational data, not public patient-access FHIR data.
+2. Exact scheduling endpoints are not public; they require Enterprise API portal/docs access.
+3. NextGen onboarding/approval may take time, especially for write access.
+4. Need explicit sandbox test data: practice/location, provider/resource, appointment/event types, patient/person ids, and safe test slots.
+
+Sources checked
+---------------
+- NextGen API overview: https://www.nextgen.com/api
+- NextGen Developer Program: https://www.nextgen.com/developer-program
+- NextGen API onboarding questions: https://www.nextgen.com/api-on-boarding/questions
+- NextGen Patient Access API docs: https://www.nextgen.com/patient-access-api
+- NextGen public FHIR R4 metadata/capability statement: https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/metadata
+- Developer Portal registration flow summary: https://docs.intraconnects.com/docs/ehr-basics/nextgen/pre-requisite/

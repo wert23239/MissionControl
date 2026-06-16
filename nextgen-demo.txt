@@ -1,9 +1,41 @@
 NextGen demo feasibility notes - appointment booking / slots / cancel
-Updated: 2026-06-15
+Updated: 2026-06-16
 
 Short answer
 ------------
 Yes, we can demo a NextGen integration in our app, but true appointment scheduling is not available through the public Patient Access FHIR API. For booking appointments, getting open slots, canceling/rescheduling, etc., we need NextGen Enterprise API sandbox access and the scheduling/appointment routes approved for our app.
+
+Important clarification: this means NextGen API access is required for real booking. If by "Nexon" we mean our own app/company name, Nexon can build the demo UI and mock adapter now, but Nexon cannot actually create/cancel appointments in a NextGen EHR without NextGen Enterprise API credentials + approval.
+
+Why Enterprise API access is required
+-------------------------------------
+1. NextGen describes Patient Access APIs as read-only patient-data APIs.
+   Source: NextGen API overview, https://www.nextgen.com/api
+   Relevant text: "Read-Only RESTful API endpoints that provide patient data using the FHIR data standard (DSTU2 & R4)."
+
+2. The same NextGen page describes Enterprise APIs as the read/write integration path for provider-organization apps.
+   Source: NextGen API overview, https://www.nextgen.com/api
+   Relevant text: "Enterprise APIs" are "JSON-based RESTful APIs (800+ routes)" that "power the category of apps that are used by provider organizations and integrate with NextGen Enterprise."
+   The comparison table says Enterprise/FHIR client-facing apps use "RESTful APIs (800+ routes) enabling Read and Write transactions across an expansive array of EHR, PM, and related data using a proprietary NextGen JSON data standard."
+
+3. NextGen's onboarding form explicitly says Appointments are outside USCDIv1, and write access requires answering "No" to the read-only USCDI question.
+   Source: NextGen API onboarding questions, https://www.nextgen.com/api-on-boarding/questions
+   Relevant text from question 7: "For example, USCDIv1 DOES NOT include Appointments, Financial, or Tasking data." It also says if the app needs any non-USCDI data, or if "WRITE access is required," select "No."
+   Relevant text from question 10: "If your app is intended to 'write' information into a NextGen client system, please specify each data element your app would need to create or otherwise alter."
+
+4. NextGen's public Patient Access API page frames the public FHIR API as patient access to personal health data, not operational scheduling.
+   Source: NextGen Patient Access API docs, https://www.nextgen.com/patient-access-api
+   Relevant text: "The FHIR-based Patient Access API is for developers creating Apps intended to empower patients with access to their own personal health data in a NextGen Enterprise practice via API."
+   The same page says for Patient Access / USCDI reads there is no contracting requirement, which is consistent with read-only patient access rather than appointment writes.
+
+5. The public NextGen FHIR R4 capability statement does not advertise scheduling resources.
+   Source: NextGen public FHIR R4 metadata/capability statement, https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/metadata
+   Checked 2026-06-16. Advertised resource types included AllergyIntolerance, CarePlan, CareTeam, Observation, Condition, Coverage, Device, DiagnosticReport, DocumentReference, Encounter, Endpoint, Goal, Immunization, Location, MedicationDispense, MedicationRequest, MedicationStatement, Organization, Patient, Practitioner, PractitionerRole, Procedure, Provenance, Questionnaire, QuestionnaireResponse, RelatedPerson, ServiceRequest, and Specimen.
+   It did not advertise Appointment, Slot, or Schedule.
+
+6. Developer Portal registration/source notes say Enterprise API apps must select Enterprise APIs and receive client_id/client_secret for sandbox authentication.
+   Source: Intraconnects summary of NextGen portal flow, https://docs.intraconnects.com/docs/ehr-basics/nextgen/pre-requisite/
+   Relevant text: "If your app will use Enterprise APIs, select Enterprise APIs." It also says "The issued app credentials (client_id & client_secret) will at that time become active and may then be used for sandbox authentication."
 
 What we need from NextGen
 -------------------------
@@ -37,7 +69,7 @@ Do NOT build scheduling against public FHIR Patient Access APIs.
 
 Appointment features we need from Enterprise API docs
 -----------------------------------------------------
-The Enterprise API docs are behind NextGen's Developer Portal, so exact route names/paths need to be confirmed once we have sandbox access. In the docs, search for scheduling / appointments / availability / search ahead. Functionally we need routes for:
+The full Enterprise API docs are behind NextGen's Developer Portal / API Hub, so exact route names/paths need to be confirmed once we have sandbox access. In the docs, search for scheduling / appointments / availability / search ahead. Functionally we need routes for:
 
 1. Get available slots
    - Search available appointment times by provider/resource, location/practice, appointment type/event, date range, duration.

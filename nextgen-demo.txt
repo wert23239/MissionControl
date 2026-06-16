@@ -67,6 +67,77 @@ Do NOT build scheduling against public FHIR Patient Access APIs.
 - It does NOT advertise Appointment, Slot, or Schedule resources.
 - The public FHIR API is mainly for patient access / USCDI clinical data reads, not operational scheduling writes.
 
+
+Read-only API plan if we skip booking for now
+---------------------------------------------
+Goal: access appointments, providers, departments/locations, and patient info without creating, canceling, or rescheduling appointments.
+
+Recommended split
+- Patient demographics/info: use public NextGen Patient Access FHIR R4 where possible.
+- Providers: use public FHIR R4 Practitioner / PractitionerRole where possible.
+- Departments/locations: use public FHIR R4 Location / Organization where possible. NextGen may call these departments internally, but public FHIR exposes them as Location and Organization, not a Department resource.
+- Appointments: use NextGen Enterprise API read routes. Public Patient Access FHIR R4 does not advertise Appointment, Slot, or Schedule, so appointment history/upcoming appointments still requires Enterprise API access even if read-only.
+
+Public FHIR R4 base / auth
+- Base URL: https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/
+- OAuth authorize: https://fhir.nextgen.com/nge/prod/patient-oauth/authorize
+- OAuth token: https://fhir.nextgen.com/nge/prod/patient-oauth/token
+- Source: NextGen Patient Access API docs, https://www.nextgen.com/patient-access-api
+
+Exact public FHIR R4 calls we can use
+1. Patient search by demographics
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Patient?birthdate=YYYY-MM-DD&family=LAST&given=FIRST
+   Supported search params from capability statement: _id, identifier, name, given, family, gender, address, address-city, address-postalcode, birthdate, _lastUpdated, _maxresults.
+
+2. Patient lookup by ID
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Patient/{patient_id}
+
+3. Patient lookup by MRN / identifier
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Patient?identifier={identifier-system}|{mrn}
+   Note: identifier system may be practice/site-specific; confirm in sandbox docs/test data.
+
+4. Provider search
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Practitioner?name=NAME
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Practitioner?identifier=IDENTIFIER
+   Supported search params: _id, name, identifier, _lastUpdated, _maxresults.
+
+5. Provider role / specialty search
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/PractitionerRole?practitioner.name=NAME
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/PractitionerRole?specialty=SPECIALTY_CODE
+   Supported search params: _id, specialty, practitioner.identifier, practitioner.name, _lastUpdated, _maxresults.
+
+6. Department / location search
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Location?name=LOCATION_OR_DEPARTMENT_NAME
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Location?address-city=CITY&address-state=STATE
+   Supported search params: _id, name, address, address-city, address-state, address-postalcode, _lastUpdated, _maxresults.
+
+7. Organization / practice search
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Organization?name=ORG_OR_PRACTICE_NAME
+   Supported search params: _id, name, address, address-city, address-postalcode, address-state, address-country, _lastUpdated, _maxresults.
+
+8. Encounter read/search, if we want clinical visit history rather than scheduling appointments
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Encounter?patient=Patient/{patient_id}
+   GET https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/Encounter?patient=Patient/{patient_id}&date=geYYYY-MM-DD
+   Supported search params: _id, patient, date, _lastUpdated, _maxresults.
+
+Appointment read-only API
+- Public FHIR R4: not available in the public capability statement. It does not list Appointment, Slot, or Schedule.
+- Enterprise API base URL observed in third-party SDK docs: https://nativeapi.nextgen.com/nge/prod/nge-api/api
+- Enterprise capability needed: read appointments for a patient, with filters for past/future and optional expansions.
+- Third-party Bitfount SDK docs expose a NextGenEnterpriseAPI method named get_appointments_information(patient_id, appointment_temporal_state, expand_options), described as retrieving upcoming/past/all appointments for a patient. This is useful evidence of the Enterprise read capability, but the raw NextGen route path still needs confirmation inside the NextGen Developer Portal/API Hub.
+- Source: Bitfount NextGen API docs, https://docs.bitfount.com/api/bitfount/externals/ehr/nextgen/api
+
+What to request from NextGen if booking is out of scope
+- Patient read/search: Patient demographics and identifiers.
+- Provider read/search: Practitioner and PractitionerRole.
+- Department/location read/search: Location and Organization, plus any NextGen-specific department/resource dictionaries if departments are not represented cleanly as FHIR Locations.
+- Appointment read/search only: upcoming appointments, past appointments, appointment status, appointment type/event, provider/resource, location/department, start/end time, cancellation/no-show status if available.
+- No write routes: no appointment create, cancel, reschedule, status update, waitlist update, or task creation.
+
+Onboarding answer for read-only version
+- If appointments are included: still answer "No" to the USCDIv1-only question, because NextGen's form says USCDIv1 does not include Appointments. For write elements, answer "n/a - read only" and explicitly request read-only appointment data.
+- If appointments are excluded and we only need USCDIv1 patient/provider/location-style reads: the public Patient Access FHIR route may be enough, subject to patient authorization and practice configuration.
+
 Appointment features we need from Enterprise API docs
 -----------------------------------------------------
 The full Enterprise API docs are behind NextGen's Developer Portal / API Hub, so exact route names/paths need to be confirmed once we have sandbox access. In the docs, search for scheduling / appointments / availability / search ahead. Functionally we need routes for:

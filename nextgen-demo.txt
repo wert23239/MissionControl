@@ -200,3 +200,4 @@ Sources checked
 - NextGen Patient Access API docs: https://www.nextgen.com/patient-access-api
 - NextGen public FHIR R4 metadata/capability statement: https://fhir.nextgen.com/nge/prod/fhir-api-r4/fhir/r4/metadata
 - Developer Portal registration flow summary: https://docs.intraconnects.com/docs/ehr-basics/nextgen/pre-requisite/
+- Bitfount NextGen API SDK docs: https://docs.bitfount.com/api/bitfount/externals/ehr/nextgen/api

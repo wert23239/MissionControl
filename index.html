@@ -1862,6 +1862,21 @@ function normalizePackingResult(result){
   if(!result||!Array.isArray(result.bring))return result;
   return {...result,bring:normalizePackingItems(result.bring)};
 }
+function sanitizePackingWeatherHtml(html=''){
+  if(!html)return '';
+  const template=document.createElement('template');
+  template.innerHTML=String(html);
+  const allowed=new Set(['H3','DIV','STRONG','BR']);
+  template.content.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(node=>node.remove());
+  template.content.querySelectorAll('*').forEach(node=>{
+    if(!allowed.has(node.tagName)){
+      node.replaceWith(document.createTextNode(node.textContent||''));
+      return;
+    }
+    [...node.attributes].forEach(attr=>node.removeAttribute(attr.name));
+  });
+  return template.innerHTML;
+}
 function todayISO(){return new Date().toISOString().slice(0,10)}
 function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
 function readPackingLocal(){try{return JSON.parse(localStorage.getItem(PACKING_STORAGE_KEY)||'{}')||{};}catch(e){return {};}}
@@ -1994,12 +2009,12 @@ function renderChecklist(title,items,color,checked={},tripId=''){
   const progressText=list.length?`${checkedCount}/${list.length} packed`:'No items';
   return `<div class="card"><h3 style="margin-bottom:12px;color:${color};display:flex;justify-content:space-between;gap:12px;align-items:baseline"><span>${title}</span><span style="font-family:Inter,sans-serif;font-size:11px;font-weight:600;color:#998eb5">${progressText}</span></h3>${list.map(item=>{const key=packingItemKey(title,item);return `<label style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#d4c4f0"><input type="checkbox" ${checked[key]?'checked':''} onchange="togglePackingItem(${inlineActionArg(key)},this.checked,${inlineActionArg(tripId)})" style="margin-top:2px"> <span>${escapeHtml(item)}</span></label>`}).join('')}</div>`;
 }
-function renderPackingResult(result,weatherHtml='',checked={},tripId=''){const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=weatherHtml?'block':'none';w.innerHTML=weatherHtml||'';}if(out)out.innerHTML=result?renderChecklist('Bring',result.bring,'#22c55e',checked,tripId)+renderChecklist('Maybe',result.maybe,'#f59e0b',checked,tripId)+renderChecklist('Skip',result.skip,'#ef4444',checked,tripId):'';}
+function renderPackingResult(result,weatherHtml='',checked={},tripId=''){const safeWeatherHtml=sanitizePackingWeatherHtml(weatherHtml);const w=document.getElementById('packingWeather'),out=document.getElementById('packingOutput');if(w){w.style.display=safeWeatherHtml?'block':'none';w.innerHTML=safeWeatherHtml;}if(out)out.innerHTML=result?renderChecklist('Bring',result.bring,'#22c55e',checked,tripId)+renderChecklist('Maybe',result.maybe,'#f59e0b',checked,tripId)+renderChecklist('Skip',result.skip,'#ef4444',checked,tripId):'';}
 function renderSavedPackingTrips(state=readPackingLocal()){
   const el=document.getElementById('packingSavedTrips'); if(!el)return;
   const saved=normalizePackingState(state); const trips=saved.trips||[];
   if(!trips.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="card"><h3 style="margin-bottom:12px;color:#38bdf8">Saved trips</h3>${trips.map(trip=>`<details ${trip.id===saved.activeTripId?'open':''} style="border-top:1px solid rgba(255,255,255,0.06);padding:10px 0"><summary style="cursor:pointer;color:#d4c4f0;font-weight:700">${escapeHtml(packingTripTitle(trip))}</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button onclick="loadPackingTrip(${inlineActionArg(trip.id)})" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Load/edit</button><button onclick="deletePackingTrip(${inlineActionArg(trip.id)})" style="background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Delete</button></div>${trip.weatherHtml?`<div style="margin:8px 0">${trip.weatherHtml}</div>`:''}<div class="grid3">${trip.output?renderChecklist('Bring',trip.output.bring,'#22c55e',trip.checked,trip.id)+renderChecklist('Maybe',trip.output.maybe,'#f59e0b',trip.checked,trip.id)+renderChecklist('Skip',trip.output.skip,'#ef4444',trip.checked,trip.id):''}</div></details>`).join('')}</div>`;
+  el.innerHTML=`<div class="card"><h3 style="margin-bottom:12px;color:#38bdf8">Saved trips</h3>${trips.map(trip=>{const safeWeatherHtml=sanitizePackingWeatherHtml(trip.weatherHtml);return `<details ${trip.id===saved.activeTripId?'open':''} style="border-top:1px solid rgba(255,255,255,0.06);padding:10px 0"><summary style="cursor:pointer;color:#d4c4f0;font-weight:700">${escapeHtml(packingTripTitle(trip))}</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button onclick="loadPackingTrip(${inlineActionArg(trip.id)})" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Load/edit</button><button onclick="deletePackingTrip(${inlineActionArg(trip.id)})" style="background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:12px;cursor:pointer">Delete</button></div>${safeWeatherHtml?`<div style="margin:8px 0">${safeWeatherHtml}</div>`:''}<div class="grid3">${trip.output?renderChecklist('Bring',trip.output.bring,'#22c55e',trip.checked,trip.id)+renderChecklist('Maybe',trip.output.maybe,'#f59e0b',trip.checked,trip.id)+renderChecklist('Skip',trip.output.skip,'#ef4444',trip.checked,trip.id):''}</div></details>`}).join('')}</div>`;
 }
 function loadPackingTrip(id){const state=normalizePackingState(readPackingLocal());const trip=(state.trips||[]).find(t=>t.id===id);if(!trip)return;const next={...state,...trip,activeTripId:id,updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(next));applyPackingState(next);syncPackingRemote(next).then(()=>setPackingSyncStatus('Loaded trip synced')).catch(()=>setPackingSyncStatus('Loaded locally'));}
 function deletePackingTrip(id){

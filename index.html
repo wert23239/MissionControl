@@ -2038,6 +2038,7 @@ function togglePackingItem(key,isChecked,tripId=''){
   const activeTrip=trips.find(t=>t.id===state.activeTripId);
   const next={...state,trips,checked:activeTrip?.checked||state.checked||{},updatedAt:now};
   localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(next));
+  if(activeTrip?.output)renderPackingResult(activeTrip.output,activeTrip.weatherHtml||next.weatherHtml||'',activeTrip.checked||{},activeTrip.id);
   renderSavedPackingTrips(next);
   syncPackingRemote(next).then(()=>setPackingSyncStatus('Checkbox synced')).catch(()=>setPackingSyncStatus('Checkbox saved locally — sync failed'));
 }

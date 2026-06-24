@@ -610,8 +610,14 @@ packing:`<h2 class="panel-title">🧳 Packing List</h2>
       <div>🧥 <strong>Pea coat:</strong> cold but not Goose territory</div>
       <div>🩳 <strong>Shorts:</strong> never suggest them</div>
       <div>🌦️ <strong>Weather:</strong> uses live forecast when available</div>
-      <div>✅ <strong>Always Bring:</strong> abbreviated essentials auto-added</div>
+      <div>✅ <strong>Public defaults:</strong> generic essentials auto-added</div>
     </div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:12px">Private essentials</h3>
+    <p style="font-size:12px;color:#998eb5;line-height:1.6;margin-bottom:10px">Saved only in this browser, not in the public site source. Add one item per line or comma-separated.</p>
+    <textarea id="packEssentials" placeholder="contacts\nmeds\nextra charger" style="width:100%;min-height:116px;resize:vertical;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;margin-bottom:10px"></textarea>
+    <button onclick="savePackingEssentials()" style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">Save private essentials</button>
   </div>
 </div>
 <div id="packingSync" style="font-size:12px;color:#665c78;margin:-6px 0 12px">Syncing packing list...</div>
@@ -1838,20 +1844,39 @@ function switchPanel(id){
 // Packing list
 const PACKING_STORAGE_KEY='mc-packing-state';
 const PACKING_SYNC_KEY='current';
+const PACKING_PRIVATE_ESSENTIALS_KEY='mc-packing-private-essentials';
 const ALEX_COAT_RULES={gooseFeels:19,gooseActual:29,peaFeels:45,sweaterFeels:60};
-const PACKING_ALWAYS_BRING=[
-  'Adderall','drink pills','hair pills','condoms','razor','razor cord','contacts','brush/paste','eye mask','turtle pillow','melatonin','sunglasses','swimsuit','flash drive','lock key','sunscreen','water bottle','book','phone charger','laptop charger','Switch charger','Nintendo Switch','laptop'
+const PACKING_DEFAULT_ALWAYS_BRING=[
+  'toiletries kit','razor','brush/paste','sunglasses','sunscreen','water bottle','book','phone charger','laptop charger','laptop'
 ];
 const PACKING_REPLACEMENTS={
-  'Addy':'Adderall',
-  'protection':'condoms',
   'chargers':'phone charger',
   'laptop + charger':'laptop',
   'toothbrush + toothpaste':'brush/paste'
 };
+function parsePackingEssentialsText(text=''){
+  return String(text).split(/[\n,]+/).map(item=>item.trim()).filter(Boolean);
+}
+function readPackingPrivateEssentials(){
+  try{return parsePackingEssentialsText(localStorage.getItem(PACKING_PRIVATE_ESSENTIALS_KEY)||'');}
+  catch(e){return [];}
+}
+function packingAlwaysBringItems(){return [...PACKING_DEFAULT_ALWAYS_BRING,...readPackingPrivateEssentials()];}
+function renderPackingEssentialsEditor(){
+  const el=document.getElementById('packEssentials');
+  if(el)el.value=readPackingPrivateEssentials().join('\n');
+}
+function savePackingEssentials(){
+  const el=document.getElementById('packEssentials');
+  if(!el)return;
+  const items=parsePackingEssentialsText(el.value);
+  localStorage.setItem(PACKING_PRIVATE_ESSENTIALS_KEY,items.join('\n'));
+  el.value=items.join('\n');
+  setPackingSyncStatus('Private essentials saved in this browser');
+}
 function normalizePackingItems(items=[]){
   const normalized=[];
-  [...PACKING_ALWAYS_BRING,...items].forEach(item=>{
+  [...packingAlwaysBringItems(),...items].forEach(item=>{
     let value=PACKING_REPLACEMENTS[item]||item;
     if(value==='phone charger')normalized.push('phone charger','laptop charger');
     else normalized.push(value);
@@ -1935,6 +1960,7 @@ async function syncPackingRemote(state){
   await fetch(`${SB_URL}/rest/v1/packing_state`,{method:'POST',headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key:PACKING_SYNC_KEY,state:synced,updated_at:synced.updatedAt})});
 }
 async function initPackingTab(){
+  renderPackingEssentialsEditor();
   let local=normalizePackingState(readPackingLocal());
   if(!local.start)local={...local,start:todayISO(),end:addDaysISO(3)};
   applyPackingState(local);
@@ -1986,7 +2012,7 @@ function coatRecommendation(w){if(!w)return {item:'Layerable jacket / sweater',w
 function buildPackingList({place,start,end,notes,weatherSummary}){
   const days=tripDays(start,end), flags=activityFlags(notes), coat=coatRecommendation(weatherSummary);
   const socks=Math.min(days+2,14), underwear=Math.min(days+2,14), shirts=Math.min(days+1,12);
-  const bring=[...PACKING_ALWAYS_BRING,`${underwear} underwear`,`${socks} socks`,`${shirts} shirts / tees`,`${Math.ceil(days/2)} pants`,'sleep clothes','toiletries kit','deodorant','phone wallet keys'];
+  const bring=[...packingAlwaysBringItems(),`${underwear} underwear`,`${socks} socks`,`${shirts} shirts / tees`,`${Math.ceil(days/2)} pants`,'sleep clothes','toiletries kit','deodorant','phone wallet keys'];
   const maybe=[]; const skip=['Shorts — never'];
   if(coat.item!=='No jacket')bring.unshift(coat.item); else skip.push('Jacket');
   if(coat.item==='Canada Goose')bring.push('gloves','warm hat','scarf');

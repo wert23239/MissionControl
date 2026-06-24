@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Epic SIU Slot Cache Sample</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f8fafc; --card:#fff; --ink:#111827; --muted:#64748b; --line:#e5e7eb; --accent:#2563eb; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#0b1020; --card:#111827; --ink:#e5e7eb; --muted:#9ca3af; --line:#334155; --accent:#60a5fa; } }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); line-height:1.55; }
+    main { max-width: 1040px; margin: 0 auto; padding: 36px 20px 64px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; margin:18px 0; box-shadow:0 12px 30px rgba(15,23,42,.06); }
+    h1 { font-size: clamp(2rem, 4vw, 3rem); line-height:1.05; margin:0 0 8px; }
+    h2 { margin-top:0; }
+    .muted { color:var(--muted); }
+    .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:rgba(37,99,235,.12); color:var(--accent); font-weight:700; font-size:.85rem; }
+    pre { overflow:auto; border-radius:14px; border:1px solid var(--line); background:#020617; color:#e2e8f0; padding:18px; font-size:13px; line-height:1.45; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    ul { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+<main>
+  <p class="pill">Raw sample / no API plumbing</p>
+  <h1>Epic SIU feed → schedule slot cache sample</h1>
+  <p class="muted">Sketch for using daily Epic availability pulls plus HL7 SIU appointment events to keep cached openings fresh.</p>
+
+  <section class="card">
+    <h2>How hard is this?</h2>
+    <p><strong>Medium.</strong> Not algorithmically hard, but integration-hard. The core code is straightforward: parse SIU messages, identify appointment IDs / provider / department / start time, and remove or update matching cached slots. The harder parts are customer-specific HL7 mappings, feed transport, Epic environment quirks, retries/idempotency, and reconciliation when messages are late/missing.</p>
+    <ul>
+      <li><strong>Prototype:</strong> 1–3 days if you have sample SIU messages.</li>
+      <li><strong>Production MVP:</strong> 1–3 weeks depending on feed setup, customer testing, and mapping variance.</li>
+      <li><strong>Robust multi-customer version:</strong> 4–8+ weeks because every site’s SIU feed can differ.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Architecture</h2>
+    <ul>
+      <li>Nightly/off-hours job calls <code>GetScheduleDaysForProvider2</code> for all in-scope provider/department/visit-type combinations, 60 days out.</li>
+      <li>Normalize openings into a cache keyed by <code>providerId + departmentId + startDateTime + visitTypeId</code>.</li>
+      <li>Group slots by visit type so the UI/search layer can answer quickly.</li>
+      <li>HL7 SIU feed receives appointment creates/updates/cancels.</li>
+      <li>For booked/new appointment events, remove matching open slots from cache. For cancels, mark for reconciliation or re-query that provider/day.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Sample Node.js code</h2>
+    <pre><code>// epic-siu-slot-cache-sample.js
+// Raw demo only: no Epic API client, no MLLP listener, no DB adapter.
+// Purpose: parse HL7 SIU messages and update an in-memory availability cache.
+
+const crypto = require('crypto');
+
+// ----- Slot cache -----------------------------------------------------------
+
+class SlotCache {
+  constructor() {
+    // slotKey -> slot
+    this.slots = new Map();
+    // visitTypeId -> Set(slotKey)
+    this.byVisitType = new Map();
+    // appointmentId -> slotKey, if Epic/HL7 gives a reliable appointment id
+    this.byAppointmentId = new Map();
+  }
+
+  upsertSlot(slot) {
+    const key = makeSlotKey(slot);
+    const normalized = { ...slot, key, status: slot.status || 'open', updatedAt: new Date().toISOString() };
+
+    this.slots.set(key, normalized);
+
+    for (const visitTypeId of normalized.visitTypeIds || [normalized.visitTypeId]) {
+      if (!visitTypeId) continue;
+      if (!this.byVisitType.has(visitTypeId)) this.byVisitType.set(visitTypeId, new Set());
+      this.byVisitType.get(visitTypeId).add(key);
+    }
+
+    if (normalized.appointmentId) this.byAppointmentId.set(normalized.appointmentId, key);
+    return normalized;
+  }
+
+  removeSlot(slotKey, reason) {
+    const slot = this.slots.get(slotKey);
+    if (!slot) return false;
+
+    this.slots.delete(slotKey);
+
+    for (const visitTypeId of slot.visitTypeIds || [slot.visitTypeId]) {
+      const set = this.byVisitType.get(visitTypeId);
+      if (set) set.delete(slotKey);
+    }
+
+    if (slot.appointmentId) this.byAppointmentId.delete(slot.appointmentId);
+    console.log('removed slot', { slotKey, reason });
+    return true;
+  }
+
+  removeByAppointmentId(appointmentId, reason) {
+    const slotKey = this.byAppointmentId.get(appointmentId);
+    if (!slotKey) return false;
+    return this.removeSlot(slotKey, reason);
+  }
+
+  findLikelySlot({ providerId, departmentId, startDateTime }) {
+    for (const [key, slot] of this.slots.entries()) {
+      if (
+        slot.providerId === providerId &&
+        slot.departmentId === departmentId &&
+        sameMinute(slot.startDateTime, startDateTime)
+      ) {
+        return { key, slot };
+      }
+    }
+    return null;
+  }
+
+  listByVisitType(visitTypeId) {
+    return [...(this.byVisitType.get(visitTypeId) || [])]
+      .map(key => this.slots.get(key))
+      .filter(Boolean)
+      .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+  }
+}
+
+function makeSlotKey(slot) {
+  return [slot.providerId, slot.departmentId, slot.startDateTime, slot.visitTypeId || (slot.visitTypeIds || []).join(',')]
+    .map(v => String(v || '').trim())
+    .join('|');
+}
+
+function sameMinute(a, b) {
+  return Math.floor(new Date(a).getTime() / 60000) === Math.floor(new Date(b).getTime() / 60000);
+}
+
+// ----- Daily Epic availability cache refresh --------------------------------
+
+async function refreshDailyAvailability({ providers, departments, visitTypes, days = 60, epicClient, cache }) {
+  for (const providerId of providers) {
+    for (const departmentId of departments) {
+      for (const visitTypeId of visitTypes) {
+        // Placeholder for Epic GetScheduleDaysForProvider2.
+        // Run off-hours. Throttle aggressively. Persist progress/checkpoints.
+        const openings = await epicClient.getScheduleDaysForProvider2({
+          providerId,
+          departmentId,
+          visitTypeId,
+          startDate: todayIsoDate(),
+          endDate: addDaysIsoDate(days),
+        });
+
+        for (const opening of openings) {
+          cache.upsertSlot({
+            providerId,
+            departmentId,
+            visitTypeId,
+            visitTypeIds: opening.allowedVisitTypeIds || [visitTypeId],
+            startDateTime: opening.startDateTime,
+            endDateTime: opening.endDateTime,
+            source: 'GetScheduleDaysForProvider2',
+          });
+        }
+      }
+    }
+  }
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDaysIsoDate(days) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// ----- HL7 SIU parsing ------------------------------------------------------
+
+function parseHl7(raw) {
+  const normalized = raw.replace(/\n/g, '\r').split('\r').filter(Boolean);
+  const segments = normalized.map(line => line.split('|'));
+  const byName = new Map();
+
+  for (const fields of segments) {
+    const name = fields[0];
+    if (!byName.has(name)) byName.set(name, []);
+    byName.get(name).push(fields);
+  }
+
+  return {
+    raw,
+    segments,
+    get(name, index = 0) {
+      return byName.get(name)?.[index] || null;
+    },
+    all(name) {
+      return byName.get(name) || [];
+    },
+  };
+}
+
+function parseSiuEvent(rawHl7) {
+  const msg = parseHl7(rawHl7);
+  const msh = msg.get('MSH');
+  const sch = msg.get('SCH');
+  const pv1 = msg.get('PV1');
+  const rgs = msg.get('RGS');
+  const ais = msg.get('AIS');
+  const aip = msg.get('AIP');
+  const ail = msg.get('AIL');
+
+  if (!msh || !sch) throw new Error('Not enough HL7 data: expected MSH and SCH');
+
+  const messageType = field(msh, 9);       // e.g. SIU^S12
+  const triggerEvent = component(messageType, 2); // S12, S13, S14, S15, S17, etc.
+
+  return {
+    messageId: field(msh, 10),
+    eventType: triggerEvent,
+    eventMeaning: siuMeaning(triggerEvent),
+    appointmentId: firstNonEmpty(
+      entityId(field(sch, 1)), // placer appointment id
+      entityId(field(sch, 2)), // filler appointment id
+      field(sch, 26)           // site-specific fallback in some feeds
+    ),
+    appointmentReason: component(field(sch, 7), 2),
+    appointmentType: component(field(sch, 8), 1),
+    startDateTime: hl7TsToIso(firstNonEmpty(
+      field(sch, 11),          // timing quantity can vary by feed
+      field(ais, 4),
+      field(aip, 6)
+    )),
+    durationMinutes: numberOrNull(firstNonEmpty(field(sch, 9), field(ais, 6), field(aip, 9))),
+    patientClass: field(pv1, 2),
+    departmentId: firstNonEmpty(
+      locationId(field(ail, 3)),
+      locationId(field(pv1, 3)),
+      field(rgs, 3)
+    ),
+    providerId: firstNonEmpty(
+      personId(field(aip, 3)),
+      personId(field(pv1, 7)), // attending doctor, feed-dependent
+      personId(field(pv1, 8))
+    ),
+    visitTypeId: firstNonEmpty(
+      component(field(ais, 3), 1),
+      component(field(sch, 8), 1)
+    ),
+  };
+}
+
+function siuMeaning(eventType) {
+  return {
+    S12: 'new appointment booking',
+    S13: 'appointment rescheduling',
+    S14: 'appointment modification',
+    S15: 'appointment cancellation',
+    S17: 'appointment deletion',
+    S26: 'appointment no-show',
+  }[eventType] || 'unknown/other SIU event';
+}
+
+function applySiuToCache(rawHl7, cache) {
+  const event = parseSiuEvent(rawHl7);
+
+  // The exact SIU events to treat as “slot taken” can vary by customer.
+  const slotTakenEvents = new Set(['S12', 'S13', 'S14']);
+  const slotReleasedEvents = new Set(['S15', 'S17']);
+
+  if (slotTakenEvents.has(event.eventType)) {
+    // Prefer exact appointment id if the cache has one; otherwise match by provider/dept/start.
+    if (event.appointmentId && cache.removeByAppointmentId(event.appointmentId, event.eventMeaning)) {
+      return { action: 'removed_by_appointment_id', event };
+    }
+
+    const match = cache.findLikelySlot(event);
+    if (match) {
+      cache.removeSlot(match.key, event.eventMeaning);
+      return { action: 'removed_by_provider_department_time', event };
+    }
+
+    // Could be a booking for a slot we never cached, or mapping mismatch. Log for reconciliation.
+    return { action: 'no_matching_slot_found_reconcile', event };
+  }
+
+  if (slotReleasedEvents.has(event.eventType)) {
+    // Do not blindly add a slot back from SIU cancel/delete: visit-type rules and holds may have changed.
+    // Safer: enqueue targeted re-query for provider/day via GetScheduleDaysForProvider2.
+    return { action: 'enqueue_targeted_requery_for_provider_day', event };
+  }
+
+  return { action: 'ignored', event };
+}
+
+function field(segment, hl7FieldNumber) {
+  if (!segment) return '';
+  // Most segments: segment[0] is name, segment[1] is HL7 field 1.
+  // MSH is special: MSH-1 is the field separator itself, so after split('|')
+  // segment[1] is MSH-2, segment[8] is MSH-9, segment[9] is MSH-10, etc.
+  if (segment[0] === 'MSH') {
+    if (hl7FieldNumber === 1) return '|';
+    return segment[hl7FieldNumber - 1] || '';
+  }
+  return segment[hl7FieldNumber] || '';
+}
+
+function component(value, componentNumber) {
+  if (!value) return '';
+  return String(value).split('^')[componentNumber - 1] || '';
+}
+
+function entityId(ei) {
+  // EI: entity id ^ namespace id ^ universal id ^ universal id type
+  return component(ei, 1) || '';
+}
+
+function personId(xcn) {
+  // XCN: id ^ family ^ given ...
+  return component(xcn, 1) || '';
+}
+
+function locationId(pl) {
+  // PL often: point of care ^ room ^ bed ^ facility ...
+  // Department might be in point of care/facility depending on site mapping.
+  return component(pl, 1) || component(pl, 4) || '';
+}
+
+function hl7TsToIso(ts) {
+  if (!ts) return null;
+  // Handles basic YYYYMMDDHHmmss. Real production code should preserve timezone if supplied.
+  const clean = String(ts).replace(/[^0-9+-]/g, '');
+  const y = clean.slice(0, 4);
+  const m = clean.slice(4, 6) || '01';
+  const d = clean.slice(6, 8) || '01';
+  const hh = clean.slice(8, 10) || '00';
+  const mm = clean.slice(10, 12) || '00';
+  const ss = clean.slice(12, 14) || '00';
+  return `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
+}
+
+function numberOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function firstNonEmpty(...values) {
+  return values.find(v => v !== undefined && v !== null && String(v).trim() !== '') || '';
+}
+
+// ----- Demo -----------------------------------------------------------------
+
+const cache = new SlotCache();
+
+cache.upsertSlot({
+  providerId: 'PROV123',
+  departmentId: 'DEP456',
+  visitTypeId: 'NEWPATIENT',
+  visitTypeIds: ['NEWPATIENT', 'CONSULT'],
+  startDateTime: '2026-07-01T09:00:00',
+  endDateTime: '2026-07-01T09:30:00',
+});
+
+const sampleSiuS12 = [
+  'MSH|^~\\&|EPIC|HOSP|APP|VENDOR|20260624162500||SIU^S12|MSG00001|P|2.5',
+  'SCH|APT789|APT789|||||ROUTINE^Routine visit|NEWPATIENT^New Patient|30|MIN|20260701090000||||||||||||||BOOKED',
+  'PID|1||PAT123^^^MRN||Example^Patient',
+  'PV1|1|O|DEP456^^^FACILITY||||PROV123^Smith^Jane',
+  'RGS|1|A',
+  'AIS|1|A|NEWPATIENT^New Patient|20260701090000|30|MIN',
+  'AIL|1|A|DEP456^^^FACILITY',
+  'AIP|1|A|PROV123^Smith^Jane|20260701090000|30|MIN',
+].join('\r');
+
+console.log('before', cache.listByVisitType('NEWPATIENT'));
+console.log(applySiuToCache(sampleSiuS12, cache));
+console.log('after', cache.listByVisitType('NEWPATIENT'));
+</code></pre>
+  </section>
+
+  <section class="card">
+    <h2>Production gotchas</h2>
+    <ul>
+      <li>SIU field mappings are not universal. Validate against each customer’s sample messages.</li>
+      <li>Never assume a cancel means the slot is immediately available; re-query the provider/day.</li>
+      <li>Make SIU handling idempotent using MSH-10/message ID plus appointment ID.</li>
+      <li>Track reconciliation drift: nightly full refresh + event feed during the day is the sane combo.</li>
+      <li>For Epic, the integration lift is often access, testing, and mapping — not the cache code.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

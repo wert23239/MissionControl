@@ -21,7 +21,7 @@
 </head>
 <body>
 <main>
-  <p class="pill">Raw sample / no API plumbing</p>
+  <p class="pill">Raw sample / includes API client scaffold</p>
   <h1>Epic SIU feed → schedule slot cache sample</h1>
   <p class="muted">Sketch for using daily Epic availability pulls plus HL7 SIU appointment events to keep cached openings fresh.</p>
 
@@ -49,8 +49,8 @@
   <section class="card">
     <h2>Sample Node.js code</h2>
     <pre><code>// epic-siu-slot-cache-sample.js
-// Raw demo only: no Epic API client, no MLLP listener, no DB adapter.
-// Purpose: parse HL7 SIU messages and update an in-memory availability cache.
+// Raw demo only: no real credentials/endpoints, no MLLP listener, no DB adapter.
+// Purpose: show Epic availability pull shape + HL7 SIU slot-cache updates.
 
 const crypto = require('crypto');
 
@@ -135,21 +135,161 @@ function sameMinute(a, b) {
   return Math.floor(new Date(a).getTime() / 60000) === Math.floor(new Date(b).getTime() / 60000);
 }
 
+
+// ----- Epic API client scaffold --------------------------------------------
+
+class EpicScheduleClient {
+  constructor({
+    baseUrl,
+    bearerToken,
+    clientId,
+    clientSecret,
+    timeoutMs = 30000,
+  }) {
+    this.baseUrl = baseUrl?.replace(/\/$/, '');
+    this.bearerToken = bearerToken;
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+    this.timeoutMs = timeoutMs;
+  }
+
+  async getScheduleDaysForProvider2({ providerId, departmentId, visitTypeId, startDate, endDate }) {
+    const soapEnvelope = this.buildGetScheduleDaysForProvider2Envelope({
+      providerId,
+      departmentId,
+      visitTypeId,
+      startDate,
+      endDate,
+    });
+
+    const xml = await this.postSoap({
+      path: '/Scheduling/ProviderAvailability', // replace with customer Epic endpoint
+      soapAction: 'GetScheduleDaysForProvider2',
+      body: soapEnvelope,
+    });
+
+    return this.normalizeScheduleDaysResponse(xml, { providerId, departmentId, visitTypeId });
+  }
+
+  async postSoap({ path, soapAction, body }) {
+    if (!this.baseUrl) throw new Error('Epic baseUrl is required');
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const res = await fetch(`${this.baseUrl}${path}`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'SOAPAction': soapAction,
+          // Auth varies by Epic/customer: OAuth bearer, mTLS, VPN + basic auth, etc.
+          ...(this.bearerToken ? { Authorization: `Bearer ${this.bearerToken}` } : {}),
+          ...(this.clientId ? { 'X-Client-ID': this.clientId } : {}),
+        },
+        body,
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(`Epic SOAP ${soapAction} failed: HTTP ${res.status} ${text.slice(0, 500)}`);
+      }
+      return text;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  buildGetScheduleDaysForProvider2Envelope({ providerId, departmentId, visitTypeId, startDate, endDate }) {
+    // The exact XML namespace/body shape is customer/Epic-version specific.
+    // Treat this as the integration seam, not a guaranteed drop-in WSDL payload.
+    return `&lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sch="urn:epic-com:scheduling"&gt;
+  &lt;soapenv:Header/&gt;
+  &lt;soapenv:Body&gt;
+    &lt;sch:GetScheduleDaysForProvider2&gt;
+      &lt;sch:ProviderID&gt;${xmlEscape(providerId)}&lt;/sch:ProviderID&gt;
+      &lt;sch:DepartmentID&gt;${xmlEscape(departmentId)}&lt;/sch:DepartmentID&gt;
+      &lt;sch:VisitTypeID&gt;${xmlEscape(visitTypeId)}&lt;/sch:VisitTypeID&gt;
+      &lt;sch:StartDate&gt;${xmlEscape(startDate)}&lt;/sch:StartDate&gt;
+      &lt;sch:EndDate&gt;${xmlEscape(endDate)}&lt;/sch:EndDate&gt;
+    &lt;/sch:GetScheduleDaysForProvider2&gt;
+  &lt;/soapenv:Body&gt;
+&lt;/soapenv:Envelope&gt;`;
+  }
+
+  normalizeScheduleDaysResponse(xml, defaults) {
+    // Replace this with real WSDL-generated types or an XML parser in production.
+    // This regex version is intentionally dependency-free for a raw sample.
+    const openings = [];
+    const dayBlocks = matchXmlBlocks(xml, 'ScheduleDay');
+
+    for (const dayBlock of dayBlocks) {
+      const date = textBetween(dayBlock, 'Date');
+      for (const slotBlock of matchXmlBlocks(dayBlock, 'Opening')) {
+        const startTime = textBetween(slotBlock, 'StartTime');
+        const endTime = textBetween(slotBlock, 'EndTime');
+        const allowedVisitTypeIds = matchXmlValues(slotBlock, 'VisitTypeID');
+
+        if (!date || !startTime) continue;
+        openings.push({
+          providerId: textBetween(slotBlock, 'ProviderID') || defaults.providerId,
+          departmentId: textBetween(slotBlock, 'DepartmentID') || defaults.departmentId,
+          allowedVisitTypeIds: allowedVisitTypeIds.length ? allowedVisitTypeIds : [defaults.visitTypeId],
+          startDateTime: toIsoLocal(date, startTime),
+          endDateTime: endTime ? toIsoLocal(date, endTime) : null,
+          raw: slotBlock,
+        });
+      }
+    }
+
+    return openings;
+  }
+}
+
+function xmlEscape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '\x26amp;')
+    .replace(/</g, '\x26lt;')
+    .replace(/>/g, '\x26gt;')
+    .replace(/"/g, '\x26quot;')
+    .replace(/'/g, '\x26apos;');
+}
+
+function matchXmlBlocks(xml, tagName) {
+  const pattern = new RegExp(`&lt;(?:\\w+:)?${tagName}\\b[^&gt;]*&gt;([\\s\\S]*?)&lt;\\/(?:\\w+:)?${tagName}&gt;`, 'gi');
+  return [...String(xml || '').matchAll(pattern)].map(match =&gt; match[1]);
+}
+
+function matchXmlValues(xml, tagName) {
+  return matchXmlBlocks(xml, tagName).map(value =&gt; value.trim()).filter(Boolean);
+}
+
+function textBetween(xml, tagName) {
+  return matchXmlValues(xml, tagName)[0] || '';
+}
+
+function toIsoLocal(date, time) {
+  const cleanDate = String(date).slice(0, 10);
+  const cleanTime = String(time).includes(':') ? String(time) : `${String(time).slice(0, 2)}:${String(time).slice(2, 4)}:00`;
+  return `${cleanDate}T${cleanTime.length === 5 ? `${cleanTime}:00` : cleanTime}`;
+}
+
 // ----- Daily Epic availability cache refresh --------------------------------
 
 async function refreshDailyAvailability({ providers, departments, visitTypes, days = 60, epicClient, cache }) {
   for (const providerId of providers) {
     for (const departmentId of departments) {
       for (const visitTypeId of visitTypes) {
-        // Placeholder for Epic GetScheduleDaysForProvider2.
+        // Real code path: call Epic through the client scaffold above.
         // Run off-hours. Throttle aggressively. Persist progress/checkpoints.
-        const openings = await epicClient.getScheduleDaysForProvider2({
+        const openings = await withRetry(() => epicClient.getScheduleDaysForProvider2({
           providerId,
           departmentId,
           visitTypeId,
           startDate: todayIsoDate(),
           endDate: addDaysIsoDate(days),
-        });
+        }));
 
         for (const opening of openings) {
           cache.upsertSlot({
@@ -165,6 +305,24 @@ async function refreshDailyAvailability({ providers, departments, visitTypes, da
       }
     }
   }
+}
+
+async function withRetry(fn, { attempts = 3, baseDelayMs = 500 } = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt === attempts) break;
+      await sleep(baseDelayMs * attempt);
+    }
+  }
+  throw lastError;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function todayIsoDate() {

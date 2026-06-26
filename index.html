@@ -2080,7 +2080,7 @@ async function generatePackingList(){
   if(result.coat)weatherHtml+=`<div style="font-size:13px;color:#d4c4f0;margin-top:10px">🧥 <strong>${escapeHtml(result.coat.item)}</strong> — ${escapeHtml(result.coat.why)}</div>`;
   renderPackingResult(result,weatherHtml); savePackingState({output:result,weatherHtml});
 }
-function newPackingTrip(){const existing=normalizePackingState(readPackingLocal());const blank={...existing,activeTripId:packingTripId(),place:'',start:todayISO(),end:addDaysISO(3),notes:'',output:null,weatherHtml:'',updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(blank));applyPackingState(blank);syncPackingRemote(blank).then(()=>setPackingSyncStatus('New blank trip synced — old trips kept')).catch(()=>setPackingSyncStatus('New trip saved locally'));}
+function newPackingTrip(){const existing=normalizePackingState(readPackingLocal());const blank={...existing,activeTripId:packingTripId(),place:'',start:todayISO(),end:addDaysISO(3),notes:'',output:null,weatherHtml:'',checked:{},updatedAt:new Date().toISOString()};localStorage.setItem(PACKING_STORAGE_KEY,JSON.stringify(blank));applyPackingState(blank);syncPackingRemote(blank).then(()=>setPackingSyncStatus('New blank trip synced — old trips kept')).catch(()=>setPackingSyncStatus('New trip saved locally'));}
 function clearPackingList(){newPackingTrip()}
 
 // ── Keyboard shortcuts: 1-9,0 switch tabs, Esc blurs ──

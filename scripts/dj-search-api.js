@@ -7,7 +7,7 @@
 
 const http = require('http');
 const https = require('https');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const PORT = 8787;
 const SLSKD_URL = 'http://localhost:5893';
@@ -100,8 +100,9 @@ async function searchSpotify(query) {
 
 async function searchYouTube(query) {
   try {
-    const raw = execSync(
-      `yt-dlp --dump-json --no-download --flat-playlist "ytsearch3:${query.replace(/"/g, '\\"')}"`,
+    const raw = execFileSync(
+      'yt-dlp',
+      ['--dump-json', '--no-download', '--flat-playlist', `ytsearch3:${query}`],
       { timeout: 12000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
     // yt-dlp outputs one JSON per line
@@ -127,10 +128,11 @@ async function searchYouTube(query) {
 
 async function searchSoundCloud(query) {
   try {
-    const raw = execSync(
-      `python3 -c "
-import urllib.request, urllib.parse, re, json
-q = urllib.parse.quote('${query.replace(/'/g, "\\'")} site:soundcloud.com')
+    const raw = execFileSync(
+      'python3',
+      ['-c', `
+import urllib.request, urllib.parse, re, json, sys
+q = urllib.parse.quote(sys.argv[1] + ' site:soundcloud.com')
 url = f'https://html.duckduckgo.com/html/?q={q}'
 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
 html = urllib.request.urlopen(req, timeout=8).read().decode('utf-8', errors='ignore')
@@ -147,7 +149,7 @@ for m in matches:
     results.append({'title': title, 'artist': artist, 'url': m})
     if len(results) >= 2: break
 print(json.dumps(results))
-"`,
+`, query],
       { timeout: 12000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     const results = JSON.parse(raw);

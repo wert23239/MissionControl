@@ -65,6 +65,21 @@
     }
     .sub { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; max-width: 500px; }
     .actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .sync-pill {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      border-radius: 8px;
+      min-height: 36px;
+      padding: 8px 10px;
+      font-weight: 850;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .sync-pill.good { color: var(--good); background: #e7f4eb; border-color: #8fcfa4; }
+    .sync-pill.warn { color: var(--warn); background: #fff1d6; border-color: #e0b35f; }
+    .sync-pill.bad { color: var(--bad); background: #ffe8e6; border-color: #df9b96; }
     .btn {
       appearance: none;
       border: 1px solid var(--line);
@@ -321,9 +336,11 @@
       <header>
         <div>
           <h1>Rx call map</h1>
-          <p class="sub">Williamsburg-first call sheet. Status and notes stay in this browser.</p>
+          <p class="sub">Williamsburg-first call sheet. Status and notes sync through Supabase.</p>
         </div>
         <div class="actions">
+          <span class="sync-pill warn" id="syncStatus">Connecting to Supabase</span>
+          <button class="btn" id="copySyncLink" type="button">Copy sync link</button>
           <button class="btn" id="copyScript" type="button">Copy script</button>
           <button class="btn" id="resetFilters" type="button">Reset view</button>
         </div>
@@ -640,15 +657,46 @@
       "done": "Done"
     };
 
-    const stateKey = "rx-call-map-v1";
+    const SUPABASE_URL = "https://aihworyfcgstwbpzkzoy.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE";
+    const supabaseHeaders = {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json"
+    };
+    const legacyStateKey = "rx-call-map-v1";
+    const boardStorageKey = "rx-call-map-board-v1";
+    const boardParam = new URLSearchParams(window.location.search).get("board");
+    const boardKey = boardParam || localStorage.getItem(boardStorageKey) || (crypto.randomUUID ? crypto.randomUUID() : `board-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    localStorage.setItem(boardStorageKey, boardKey);
+    if (!boardParam) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("board", boardKey);
+      window.history.replaceState(null, "", url);
+    }
+    const stateKey = `rx-call-map-v2:${boardKey}`;
     const defaultState = pharmacies.reduce((acc, p) => {
       acc[p.id] = { status: "not-called", note: "" };
       return acc;
     }, {});
-    let saved = { ...defaultState, ...JSON.parse(localStorage.getItem(stateKey) || "{}") };
+    function readJson(key) {
+      try { return JSON.parse(localStorage.getItem(key) || "{}") || {}; }
+      catch { return {}; }
+    }
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+    let saved = { ...defaultState, ...readJson(legacyStateKey), ...readJson(stateKey) };
     let activeFilter = "all";
     let activeId = pharmacies[0].id;
     const markers = new Map();
+    const pendingNoteTimers = new Map();
 
     const map = L.map("map", { zoomControl: false }).setView([40.713, -73.952], 13);
     L.control.zoom({ position: "bottomright" }).addTo(map);
@@ -661,8 +709,87 @@
     const searchEl = document.getElementById("search");
     const sortEl = document.getElementById("sort");
 
-    function persist() {
+    function setSyncStatus(message, tone = "warn") {
+      const el = document.getElementById("syncStatus");
+      el.textContent = message;
+      el.className = `sync-pill ${tone}`;
+    }
+
+    function persistLocal() {
       localStorage.setItem(stateKey, JSON.stringify(saved));
+    }
+
+    function meaningfulState([id, value]) {
+      const base = defaultState[id] || { status: "not-called", note: "" };
+      return value.status !== base.status || (value.note || "").trim() !== "";
+    }
+
+    async function upsertRemote(id) {
+      const rowState = saved[id] || defaultState[id];
+      setSyncStatus("Saving to Supabase", "warn");
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rx_call_state?on_conflict=board_key,pharmacy_id`, {
+        method: "POST",
+        headers: { ...supabaseHeaders, Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({
+          board_key: boardKey,
+          pharmacy_id: id,
+          status: rowState.status,
+          note: rowState.note || "",
+          updated_at: new Date().toISOString()
+        })
+      });
+      if (!response.ok) throw new Error(`Supabase save failed: ${response.status}`);
+      setSyncStatus("Synced to Supabase", "good");
+    }
+
+    function saveState(id, debounce = false) {
+      persistLocal();
+      if (debounce) {
+        clearTimeout(pendingNoteTimers.get(id));
+        pendingNoteTimers.set(id, setTimeout(() => {
+          upsertRemote(id).catch((error) => {
+            console.error(error);
+            setSyncStatus("Offline cache - retry edit to sync", "bad");
+          });
+        }, 450));
+        return;
+      }
+      upsertRemote(id).catch((error) => {
+        console.error(error);
+        setSyncStatus("Offline cache - retry edit to sync", "bad");
+      });
+    }
+
+    async function loadRemoteState() {
+      try {
+        setSyncStatus("Loading from Supabase", "warn");
+        const url = `${SUPABASE_URL}/rest/v1/rx_call_state?board_key=eq.${encodeURIComponent(boardKey)}&select=pharmacy_id,status,note,updated_at`;
+        const response = await fetch(url, { headers: supabaseHeaders });
+        if (!response.ok) throw new Error(`Supabase load failed: ${response.status}`);
+        const rows = await response.json();
+        if (rows.length) {
+          const remote = rows.reduce((acc, row) => {
+            if (defaultState[row.pharmacy_id]) acc[row.pharmacy_id] = { status: row.status, note: row.note || "" };
+            return acc;
+          }, {});
+          saved = { ...defaultState, ...saved, ...remote };
+          persistLocal();
+          renderList();
+          setSyncStatus("Synced from Supabase", "good");
+          return;
+        }
+
+        const dirty = Object.entries(saved).filter(meaningfulState);
+        if (dirty.length) {
+          await Promise.all(dirty.map(([id]) => upsertRemote(id)));
+          setSyncStatus("Migrated local state to Supabase", "good");
+        } else {
+          setSyncStatus("Ready - Supabase backed", "good");
+        }
+      } catch (error) {
+        console.error(error);
+        setSyncStatus("Offline cache - Supabase unavailable", "bad");
+      }
     }
 
     function markerClass(status) {
@@ -791,7 +918,7 @@
               ${phone}
               <a href="${mapUrl(p)}" target="_blank" rel="noopener">Open map</a>
             </div>
-            <textarea data-action="note" data-id="${p.id}" placeholder="Notes: who answered, stock window, shipment day, alternate strength...">${rowState.note || ""}</textarea>
+            <textarea data-action="note" data-id="${p.id}" placeholder="Notes: who answered, stock window, shipment day, alternate strength...">${escapeHtml(rowState.note || "")}</textarea>
           </article>
         `;
       }).join("");
@@ -820,7 +947,7 @@
       if (target.dataset.action === "focus") focusPharmacy(id);
       if (target.dataset.action === "quick") {
         saved[id].status = target.dataset.status;
-        persist();
+        saveState(id);
         renderList();
         focusPharmacy(id);
       }
@@ -830,7 +957,7 @@
       const target = event.target;
       if (target.dataset.action === "status") {
         saved[target.dataset.id].status = target.value;
-        persist();
+        saveState(target.dataset.id);
         renderList();
       }
     });
@@ -839,7 +966,7 @@
       const target = event.target;
       if (target.dataset.action === "note") {
         saved[target.dataset.id].note = target.value;
-        persist();
+        saveState(target.dataset.id, true);
         renderStats();
       }
     });
@@ -875,9 +1002,23 @@
       }
     });
 
+    document.getElementById("copySyncLink").addEventListener("click", async () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("board", boardKey);
+      const text = url.toString();
+      try {
+        await navigator.clipboard.writeText(text);
+        document.getElementById("copySyncLink").textContent = "Copied";
+        setTimeout(() => document.getElementById("copySyncLink").textContent = "Copy sync link", 1300);
+      } catch {
+        window.prompt("Copy sync link", text);
+      }
+    });
+
     renderList();
     const bounds = L.latLngBounds(pharmacies.slice(0, 10).map((p) => [p.lat, p.lng]));
     map.fitBounds(bounds.pad(.2));
+    loadRemoteState();
   </script>
 </body>
 </html>

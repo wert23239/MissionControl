@@ -142,6 +142,10 @@
       gap: 9px;
     }
     .card.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(23, 108, 98, .12), var(--shadow); }
+    .card.status-lead { background: #f1fbf4; border-color: #8fcfa4; }
+    .card.status-next, .card.status-waiting { background: #fff9eb; border-color: #e0b35f; }
+    .card.status-no { background: #fff0ee; border-color: #df9b96; }
+    .card.status-called, .card.status-done { background: #f0f2f1; border-color: #c8cfcb; }
     .topline {
       display: grid;
       grid-template-columns: 32px 1fr auto;
@@ -183,6 +187,10 @@
       font-weight: 800;
       max-width: 160px;
     }
+    .status.status-lead { background: #dbf3e3; color: var(--good); border-color: #8fcfa4; }
+    .status.status-next, .status.status-waiting { background: #fff1d6; color: var(--warn); border-color: #e0b35f; }
+    .status.status-no { background: #ffe2df; color: var(--bad); border-color: #df9b96; }
+    .status.status-called, .status.status-done { background: #e7ebe8; color: #4f5a55; border-color: #c8cfcb; }
     .quick {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -201,6 +209,10 @@
     .quick button.good { background: #e5f5eb; color: var(--good); }
     .quick button.warn { background: #fff1d6; color: var(--warn); }
     .quick button.bad { background: #ffe8e6; color: var(--bad); }
+    .quick button.selected {
+      border-color: currentColor;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.72), 0 0 0 2px rgba(23,32,26,.08);
+    }
     .detail {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -242,6 +254,24 @@
       font-size: 13px;
     }
     .script b { color: #9edfc9; }
+    .verify {
+      margin-top: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+    .verify h2 { margin-bottom: 8px; }
+    .verify ol {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+    .verify li + li { margin-top: 7px; }
+    .verify strong { color: var(--ink); }
     .leaflet-popup-content { font-size: 13px; line-height: 1.35; margin: 11px 12px; }
     .leaflet-popup-content b { font-size: 14px; }
     .pin {
@@ -330,6 +360,17 @@
         <b>Call script:</b> Hi, I have an active prescription for [med, dose, quantity]. My usual pharmacy is out. Before I ask my prescriber to send it, are you able to fill that today or this week for an existing valid prescription? Generic or brand is okay if available.
         <br><br>
         <b>If no:</b> Do you expect an order this week? Would a different strength be easier if my prescriber rewrites it? Is brand or generic easier? Any sister location worth checking?
+      </section>
+
+      <section class="verify">
+        <h2>Other ways to confirm</h2>
+        <ol>
+          <li><strong>Prescriber/pharmacy portal:</strong> ask the prescriber to send a same-day message to a target pharmacy or resend fast once you find a lead.</li>
+          <li><strong>Transfer route:</strong> ask Daily Dose whether they can transfer the e-script or whether the prescriber must resend. NYC rules can allow transfers, but pharmacy policy varies.</li>
+          <li><strong>Delivery pharmacies:</strong> try Capsule or Alto-style chat intake, but expect them to verify after receiving the script, not show public stock.</li>
+          <li><strong>Inventory-search service:</strong> Medfinder is the paid fallback when 10-15 calls fail; they basically do the calling/checking loop for the exact dose.</li>
+          <li><strong>Prescriber alternates:</strong> ask in advance about brand/generic, lisdexamfetamine vs Vyvanse, different strengths, or another clinically appropriate stimulant so a lead does not go cold.</li>
+        </ol>
       </section>
     </main>
 
@@ -728,7 +769,7 @@
           ? `<a class="phone" href="${phoneHref(p.phone)}">${p.phone}</a>`
           : `<span class="phone">Phone needed</span>`;
         return `
-          <article class="card ${p.id === activeId ? "active" : ""}" data-id="${p.id}">
+          <article class="card status-${rowState.status} ${p.id === activeId ? "active" : ""}" data-id="${p.id}">
             <div class="topline">
               <button class="rank" type="button" data-action="focus" data-id="${p.id}" aria-label="Show ${p.name} on map">${p.priority}</button>
               <div>
@@ -736,15 +777,15 @@
                 <div class="meta">${p.area} · ${p.address}</div>
                 <div class="tags">${tags}</div>
               </div>
-              <select class="status" data-action="status" data-id="${p.id}" aria-label="Status for ${p.name}">
+              <select class="status status-${rowState.status}" data-action="status" data-id="${p.id}" aria-label="Status for ${p.name}">
                 ${Object.entries(statusLabels).map(([value, label]) => `<option value="${value}" ${rowState.status === value ? "selected" : ""}>${label}</option>`).join("")}
               </select>
             </div>
             <div class="quick">
-              <button type="button" data-action="quick" data-status="next" data-id="${p.id}" class="warn">Call next</button>
-              <button type="button" data-action="quick" data-status="lead" data-id="${p.id}" class="good">Lead</button>
-              <button type="button" data-action="quick" data-status="no" data-id="${p.id}" class="bad">No stock</button>
-              <button type="button" data-action="quick" data-status="waiting" data-id="${p.id}" class="warn">Waiting</button>
+              <button type="button" data-action="quick" data-status="next" data-id="${p.id}" class="warn ${rowState.status === "next" ? "selected" : ""}">Call next</button>
+              <button type="button" data-action="quick" data-status="lead" data-id="${p.id}" class="good ${rowState.status === "lead" ? "selected" : ""}">Lead</button>
+              <button type="button" data-action="quick" data-status="no" data-id="${p.id}" class="bad ${rowState.status === "no" ? "selected" : ""}">No stock</button>
+              <button type="button" data-action="quick" data-status="waiting" data-id="${p.id}" class="warn ${rowState.status === "waiting" ? "selected" : ""}">Waiting</button>
             </div>
             <div class="detail">
               ${phone}

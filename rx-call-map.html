@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rx Call Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f3;
+      --panel: #ffffff;
+      --ink: #17201a;
+      --muted: #657064;
+      --line: #d9dfd6;
+      --soft: #eef2ea;
+      --accent: #176c62;
+      --accent-2: #244f88;
+      --warn: #956000;
+      --bad: #9d3434;
+      --good: #116c3d;
+      --shadow: 0 10px 28px rgba(31, 45, 34, .08);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    button, input, select, textarea { font: inherit; }
+    a { color: var(--accent-2); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .shell {
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: minmax(440px, 46%) 1fr;
+    }
+    .side {
+      min-height: 100vh;
+      padding: 18px;
+      overflow: auto;
+    }
+    .map-wrap {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      min-height: 520px;
+      border-left: 1px solid var(--line);
+    }
+    #map { width: 100%; height: 100%; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 25px;
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+    .sub { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; max-width: 500px; }
+    .actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 36px;
+      padding: 8px 11px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid rgba(23, 108, 98, .23);
+      outline-offset: 1px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+    }
+    .stat strong { display: block; font-size: 22px; line-height: 1; }
+    .stat span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 145px;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .field, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 40px;
+      background: var(--panel);
+      color: var(--ink);
+      padding: 9px 10px;
+    }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 5px;
+      margin-bottom: 8px;
+    }
+    .tab {
+      white-space: nowrap;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 850;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .tab.active { background: var(--ink); color: white; border-color: var(--ink); }
+    .list { display: grid; gap: 9px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 9px;
+    }
+    .card.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(23, 108, 98, .12), var(--shadow); }
+    .topline {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+    .rank {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--soft);
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--accent);
+    }
+    h2 { margin: 0; font-size: 16px; line-height: 1.18; letter-spacing: 0; }
+    .meta { color: var(--muted); font-size: 12px; line-height: 1.35; margin-top: 3px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+    .tag {
+      border-radius: 999px;
+      padding: 4px 7px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+    }
+    .tag.hot { color: var(--good); background: #e7f4eb; }
+    .tag.remote { color: var(--warn); background: #fff0d1; }
+    .tag.provider { color: var(--accent-2); background: #e7effb; }
+    .status {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 8px;
+      min-height: 34px;
+      background: white;
+      font-size: 12px;
+      font-weight: 800;
+      max-width: 160px;
+    }
+    .quick {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .quick button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      min-height: 34px;
+      padding: 7px 6px;
+      font-size: 11px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+    .quick button.good { background: #e5f5eb; color: var(--good); }
+    .quick button.warn { background: #fff1d6; color: var(--warn); }
+    .quick button.bad { background: #ffe8e6; color: var(--bad); }
+    .detail {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .detail a, .phone {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: white;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 850;
+      font-size: 12px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 58px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: #fbfcfa;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .script {
+      margin-top: 12px;
+      background: #17201a;
+      color: white;
+      border-radius: 8px;
+      padding: 12px;
+      line-height: 1.45;
+      font-size: 13px;
+    }
+    .script b { color: #9edfc9; }
+    .leaflet-popup-content { font-size: 13px; line-height: 1.35; margin: 11px 12px; }
+    .leaflet-popup-content b { font-size: 14px; }
+    .pin {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px 10px 10px 2px;
+      transform: rotate(45deg);
+      border: 2px solid white;
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 12px rgba(20, 28, 22, .32);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 950;
+    }
+    .pin span { transform: rotate(-45deg); }
+    .pin.good { background: var(--good); }
+    .pin.warn { background: var(--warn); }
+    .pin.bad { background: var(--bad); }
+    .pin.done { background: #6c7470; }
+    .empty {
+      border: 1px dashed var(--line);
+      background: rgba(255,255,255,.55);
+      border-radius: 8px;
+      padding: 22px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 800;
+    }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { min-height: auto; padding: 14px; }
+      .map-wrap { position: relative; height: 50vh; min-height: 360px; border-left: 0; border-top: 1px solid var(--line); }
+      header { flex-direction: column; }
+      .actions { justify-content: flex-start; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .controls { grid-template-columns: 1fr; }
+      .quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .detail { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <main class="side">
+      <header>
+        <div>
+          <h1>Rx call map</h1>
+          <p class="sub">Williamsburg-first call sheet. Status and notes stay in this browser.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="copyScript" type="button">Copy script</button>
+          <button class="btn" id="resetFilters" type="button">Reset view</button>
+        </div>
+      </header>
+
+      <section class="stats" aria-label="Call stats">
+        <div class="stat"><strong id="statTotal">0</strong><span>Targets</span></div>
+        <div class="stat"><strong id="statCalled">0</strong><span>Called</span></div>
+        <div class="stat"><strong id="statLead">0</strong><span>Leads</span></div>
+        <div class="stat"><strong id="statNext">0</strong><span>Next calls</span></div>
+      </section>
+
+      <section class="controls">
+        <input class="field" id="search" type="search" placeholder="Search pharmacy, area, note" />
+        <select id="sort">
+          <option value="priority">Priority</option>
+          <option value="distance">Near first</option>
+          <option value="status">Status</option>
+        </select>
+      </section>
+
+      <nav class="tabs" aria-label="Filters">
+        <button class="tab active" data-filter="all" type="button">All</button>
+        <button class="tab" data-filter="local" type="button">Local</button>
+        <button class="tab" data-filter="specialty" type="button">Specialty</button>
+        <button class="tab" data-filter="provider" type="button">Provider list</button>
+        <button class="tab" data-filter="lead" type="button">Leads</button>
+        <button class="tab" data-filter="not-called" type="button">Not called</button>
+      </nav>
+
+      <section class="list" id="list"></section>
+
+      <section class="script" id="scriptText">
+        <b>Call script:</b> Hi, I have an active prescription for [med, dose, quantity]. My usual pharmacy is out. Before I ask my prescriber to send it, are you able to fill that today or this week for an existing valid prescription? Generic or brand is okay if available.
+        <br><br>
+        <b>If no:</b> Do you expect an order this week? Would a different strength be easier if my prescriber rewrites it? Is brand or generic easier? Any sister location worth checking?
+      </section>
+    </main>
+
+    <aside class="map-wrap">
+      <div id="map" aria-label="Pharmacy map"></div>
+    </aside>
+  </div>
+
+  <script>
+    const pharmacies = [
+      {
+        id: "daily-dose",
+        name: "Daily Dose Pharmacy",
+        area: "Williamsburg",
+        address: "839 Broadway, Brooklyn, NY",
+        phone: "",
+        lat: 40.7019,
+        lng: -73.9412,
+        priority: 1,
+        distance: 1,
+        tags: ["usual pharmacy", "relationship", "local"],
+        bucket: ["local"]
+      },
+      {
+        id: "mg",
+        name: "MG Pharmacy",
+        area: "Bushwick / Broadway",
+        address: "950 Broadway, Brooklyn, NY 11221",
+        phone: "(347) 915-2828",
+        lat: 40.6971,
+        lng: -73.9365,
+        priority: 2,
+        distance: 3,
+        tags: ["specialty listed", "high value"],
+        bucket: ["local", "specialty"]
+      },
+      {
+        id: "northside",
+        name: "Northside Pharmacy",
+        area: "North Williamsburg",
+        address: "559 Driggs Ave, Brooklyn, NY 11211",
+        phone: "(718) 387-6566",
+        lat: 40.7167,
+        lng: -73.9564,
+        priority: 3,
+        distance: 1,
+        tags: ["independent", "local", "good talk-to-human odds"],
+        bucket: ["local"]
+      },
+      {
+        id: "central-kent",
+        name: "Central Pharmacy",
+        area: "Williamsburg waterfront",
+        address: "121 Kent Ave, Brooklyn, NY 11249",
+        phone: "(929) 397-0331",
+        lat: 40.7201,
+        lng: -73.9618,
+        priority: 4,
+        distance: 1,
+        tags: ["local", "independent"],
+        bucket: ["local"]
+      },
+      {
+        id: "williamsburg-pharm",
+        name: "Williamsburg Pharmacy",
+        area: "South Williamsburg",
+        address: "244 Roebling St, Brooklyn, NY 11211",
+        phone: "(718) 387-9772",
+        lat: 40.7087,
+        lng: -73.9597,
+        priority: 5,
+        distance: 1,
+        tags: ["independent", "local"],
+        bucket: ["local"]
+      },
+      {
+        id: "united",
+        name: "United Pharmacy",
+        area: "Williamsburg",
+        address: "556 Grand St, Brooklyn, NY 11211",
+        phone: "(718) 384-7901",
+        lat: 40.7108,
+        lng: -73.9477,
+        priority: 6,
+        distance: 1,
+        tags: ["independent", "local"],
+        bucket: ["local"]
+      },
+      {
+        id: "altru",
+        name: "Altru Chemists",
+        area: "Greenpoint",
+        address: "987 Manhattan Ave, Brooklyn, NY 11222",
+        phone: "(718) 349-9009",
+        lat: 40.7335,
+        lng: -73.9544,
+        priority: 7,
+        distance: 2,
+        tags: ["provider list", "independent", "Greenpoint"],
+        bucket: ["local", "provider"]
+      },
+      {
+        id: "sai",
+        name: "Sai Apteka Pharmacy",
+        area: "Greenpoint",
+        address: "151 Nassau Ave, Brooklyn, NY 11222",
+        phone: "(718) 349-8989",
+        lat: 40.7249,
+        lng: -73.9486,
+        priority: 8,
+        distance: 2,
+        tags: ["independent", "Greenpoint"],
+        bucket: ["local"]
+      },
+      {
+        id: "omm",
+        name: "Omm Pharmacy",
+        area: "Greenpoint",
+        address: "942 Manhattan Ave, Brooklyn, NY 11222",
+        phone: "(718) 500-4928",
+        lat: 40.7317,
+        lng: -73.9545,
+        priority: 9,
+        distance: 2,
+        tags: ["independent", "Greenpoint"],
+        bucket: ["local"]
+      },
+      {
+        id: "nassau",
+        name: "Nassau Pharmacy",
+        area: "Greenpoint",
+        address: "94 Nassau Ave, Brooklyn, NY 11222",
+        phone: "",
+        lat: 40.7243,
+        lng: -73.9512,
+        priority: 10,
+        distance: 2,
+        tags: ["independent", "Greenpoint"],
+        bucket: ["local"]
+      },
+      {
+        id: "meds",
+        name: "MEDS",
+        area: "Upper East Side",
+        address: "1104 2nd Ave, New York, NY",
+        phone: "(212) 371-6000",
+        lat: 40.7604,
+        lng: -73.9655,
+        priority: 11,
+        distance: 5,
+        tags: ["provider list", "Manhattan"],
+        bucket: ["provider"]
+      },
+      {
+        id: "carnegie",
+        name: "Carnegie Hill Pharmacy",
+        area: "Carnegie Hill",
+        address: "1331 Madison Ave, New York, NY",
+        phone: "",
+        lat: 40.7859,
+        lng: -73.9553,
+        priority: 12,
+        distance: 5,
+        tags: ["provider list", "Manhattan"],
+        bucket: ["provider"]
+      },
+      {
+        id: "preferred",
+        name: "Preferred Pharmacy",
+        area: "Midtown / Broadway",
+        address: "1771 Broadway, New York, NY",
+        phone: "",
+        lat: 40.7665,
+        lng: -73.9819,
+        priority: 13,
+        distance: 5,
+        tags: ["provider list", "Manhattan"],
+        bucket: ["provider"]
+      },
+      {
+        id: "pill-drop",
+        name: "Pill Drop Pharmacy",
+        area: "Marine Park",
+        address: "6315 Avenue N, Brooklyn, NY",
+        phone: "(718) 513-4807",
+        lat: 40.6200,
+        lng: -73.9170,
+        priority: 14,
+        distance: 6,
+        tags: ["provider list", "Brooklyn"],
+        bucket: ["provider"]
+      },
+      {
+        id: "la-pharmacie",
+        name: "La Pharmacie",
+        area: "Boerum Hill",
+        address: "450 Atlantic Ave, Brooklyn, NY",
+        phone: "",
+        lat: 40.6865,
+        lng: -73.9848,
+        priority: 15,
+        distance: 4,
+        tags: ["provider list", "Brooklyn"],
+        bucket: ["provider"]
+      },
+      {
+        id: "alexandria",
+        name: "Alexandria Pharmacy",
+        area: "Astoria",
+        address: "2546 Steinway St, Astoria, NY",
+        phone: "",
+        lat: 40.7660,
+        lng: -73.9120,
+        priority: 16,
+        distance: 5,
+        tags: ["provider list", "Queens"],
+        bucket: ["provider"]
+      },
+      {
+        id: "sm",
+        name: "S And M Pharmacy",
+        area: "Flushing",
+        address: "68-50 Main St, Queens, NY",
+        phone: "",
+        lat: 40.7322,
+        lng: -73.8245,
+        priority: 17,
+        distance: 7,
+        tags: ["provider list", "Queens"],
+        bucket: ["provider"]
+      },
+      {
+        id: "jd",
+        name: "JD Drugstore",
+        area: "Flushing",
+        address: "41-70 Main St, Queens, NY",
+        phone: "",
+        lat: 40.7576,
+        lng: -73.8290,
+        priority: 18,
+        distance: 7,
+        tags: ["provider list", "Queens"],
+        bucket: ["provider"]
+      },
+      {
+        id: "mymeds",
+        name: "MYMEDS Specialty Pharmacy",
+        area: "Far Rockaway",
+        address: "1720 Village Lane, Far Rockaway, NY",
+        phone: "",
+        lat: 40.6045,
+        lng: -73.7538,
+        priority: 19,
+        distance: 8,
+        tags: ["provider list", "specialty", "far"],
+        bucket: ["provider", "specialty"]
+      }
+    ];
+
+    const statusLabels = {
+      "not-called": "Not called",
+      "next": "Call next",
+      "called": "Called",
+      "lead": "Lead",
+      "no": "No stock",
+      "waiting": "Waiting",
+      "done": "Done"
+    };
+
+    const stateKey = "rx-call-map-v1";
+    const defaultState = pharmacies.reduce((acc, p) => {
+      acc[p.id] = { status: "not-called", note: "" };
+      return acc;
+    }, {});
+    let saved = { ...defaultState, ...JSON.parse(localStorage.getItem(stateKey) || "{}") };
+    let activeFilter = "all";
+    let activeId = pharmacies[0].id;
+    const markers = new Map();
+
+    const map = L.map("map", { zoomControl: false }).setView([40.713, -73.952], 13);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap &copy; CARTO"
+    }).addTo(map);
+
+    const listEl = document.getElementById("list");
+    const searchEl = document.getElementById("search");
+    const sortEl = document.getElementById("sort");
+
+    function persist() {
+      localStorage.setItem(stateKey, JSON.stringify(saved));
+    }
+
+    function markerClass(status) {
+      if (status === "lead") return "good";
+      if (status === "waiting" || status === "next") return "warn";
+      if (status === "no") return "bad";
+      if (status === "done" || status === "called") return "done";
+      return "";
+    }
+
+    function iconFor(p) {
+      const status = saved[p.id]?.status || "not-called";
+      return L.divIcon({
+        className: "",
+        html: `<div class="pin ${markerClass(status)}"><span>${p.priority}</span></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 28],
+        popupAnchor: [0, -27]
+      });
+    }
+
+    function mapUrl(p) {
+      return `https://maps.google.com/?q=${encodeURIComponent(`${p.name} ${p.address}`)}`;
+    }
+
+    function phoneHref(phone) {
+      return phone ? `tel:${phone.replace(/[^0-9]/g, "")}` : "";
+    }
+
+    function statusScore(status) {
+      return ["lead", "next", "waiting", "not-called", "called", "no", "done"].indexOf(status);
+    }
+
+    function filtered() {
+      const q = searchEl.value.trim().toLowerCase();
+      let rows = pharmacies.filter((p) => {
+        const rowState = saved[p.id] || defaultState[p.id];
+        const haystack = [p.name, p.area, p.address, p.phone, rowState.status, rowState.note, ...p.tags].join(" ").toLowerCase();
+        const matchesText = !q || haystack.includes(q);
+        const matchesFilter =
+          activeFilter === "all" ||
+          (activeFilter === "lead" && rowState.status === "lead") ||
+          (activeFilter === "not-called" && rowState.status === "not-called") ||
+          p.bucket.includes(activeFilter);
+        return matchesText && matchesFilter;
+      });
+
+      const sort = sortEl.value;
+      rows.sort((a, b) => {
+        if (sort === "distance") return a.distance - b.distance || a.priority - b.priority;
+        if (sort === "status") return statusScore(saved[a.id].status) - statusScore(saved[b.id].status) || a.priority - b.priority;
+        return a.priority - b.priority;
+      });
+      return rows;
+    }
+
+    function renderStats() {
+      const states = Object.values(saved);
+      document.getElementById("statTotal").textContent = pharmacies.length;
+      document.getElementById("statCalled").textContent = states.filter((s) => s.status !== "not-called").length;
+      document.getElementById("statLead").textContent = states.filter((s) => s.status === "lead").length;
+      document.getElementById("statNext").textContent = states.filter((s) => s.status === "next").length;
+    }
+
+    function renderMap(rows) {
+      const visible = new Set(rows.map((p) => p.id));
+      pharmacies.forEach((p) => {
+        const marker = markers.get(p.id);
+        marker.setIcon(iconFor(p));
+        if (visible.has(p.id) && !map.hasLayer(marker)) marker.addTo(map);
+        if (!visible.has(p.id) && map.hasLayer(marker)) marker.remove();
+      });
+    }
+
+    function focusPharmacy(id) {
+      activeId = id;
+      const p = pharmacies.find((row) => row.id === id);
+      if (!p) return;
+      map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), { animate: true });
+      markers.get(id).openPopup();
+      document.querySelectorAll(".card").forEach((card) => card.classList.toggle("active", card.dataset.id === id));
+    }
+
+    function renderList() {
+      const rows = filtered();
+      renderStats();
+      renderMap(rows);
+
+      if (!rows.length) {
+        listEl.innerHTML = `<div class="empty">No matching pharmacies</div>`;
+        return;
+      }
+
+      listEl.innerHTML = rows.map((p) => {
+        const rowState = saved[p.id] || defaultState[p.id];
+        const tags = p.tags.map((tag) => {
+          let cls = "";
+          if (tag.includes("specialty") || tag.includes("relationship") || tag.includes("high value")) cls = "hot";
+          if (tag.includes("provider")) cls = "provider";
+          if (tag.includes("far")) cls = "remote";
+          return `<span class="tag ${cls}">${tag}</span>`;
+        }).join("");
+        const phone = p.phone
+          ? `<a class="phone" href="${phoneHref(p.phone)}">${p.phone}</a>`
+          : `<span class="phone">Phone needed</span>`;
+        return `
+          <article class="card ${p.id === activeId ? "active" : ""}" data-id="${p.id}">
+            <div class="topline">
+              <button class="rank" type="button" data-action="focus" data-id="${p.id}" aria-label="Show ${p.name} on map">${p.priority}</button>
+              <div>
+                <h2>${p.name}</h2>
+                <div class="meta">${p.area} · ${p.address}</div>
+                <div class="tags">${tags}</div>
+              </div>
+              <select class="status" data-action="status" data-id="${p.id}" aria-label="Status for ${p.name}">
+                ${Object.entries(statusLabels).map(([value, label]) => `<option value="${value}" ${rowState.status === value ? "selected" : ""}>${label}</option>`).join("")}
+              </select>
+            </div>
+            <div class="quick">
+              <button type="button" data-action="quick" data-status="next" data-id="${p.id}" class="warn">Call next</button>
+              <button type="button" data-action="quick" data-status="lead" data-id="${p.id}" class="good">Lead</button>
+              <button type="button" data-action="quick" data-status="no" data-id="${p.id}" class="bad">No stock</button>
+              <button type="button" data-action="quick" data-status="waiting" data-id="${p.id}" class="warn">Waiting</button>
+            </div>
+            <div class="detail">
+              ${phone}
+              <a href="${mapUrl(p)}" target="_blank" rel="noopener">Open map</a>
+            </div>
+            <textarea data-action="note" data-id="${p.id}" placeholder="Notes: who answered, stock window, shipment day, alternate strength...">${rowState.note || ""}</textarea>
+          </article>
+        `;
+      }).join("");
+    }
+
+    pharmacies.forEach((p) => {
+      const marker = L.marker([p.lat, p.lng], { icon: iconFor(p) })
+        .bindPopup(`
+          <b>${p.priority}. ${p.name}</b><br>
+          ${p.area}<br>
+          <small>${p.address}</small><br>
+          ${p.phone ? `<a href="${phoneHref(p.phone)}">${p.phone}</a><br>` : ""}
+          <a href="${mapUrl(p)}" target="_blank" rel="noopener">Open in Google Maps</a>
+        `)
+        .on("click", () => {
+          activeId = p.id;
+          document.querySelectorAll(".card").forEach((card) => card.classList.toggle("active", card.dataset.id === p.id));
+        });
+      markers.set(p.id, marker);
+    });
+
+    listEl.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-action]");
+      if (!target) return;
+      const id = target.dataset.id;
+      if (target.dataset.action === "focus") focusPharmacy(id);
+      if (target.dataset.action === "quick") {
+        saved[id].status = target.dataset.status;
+        persist();
+        renderList();
+        focusPharmacy(id);
+      }
+    });
+
+    listEl.addEventListener("change", (event) => {
+      const target = event.target;
+      if (target.dataset.action === "status") {
+        saved[target.dataset.id].status = target.value;
+        persist();
+        renderList();
+      }
+    });
+
+    listEl.addEventListener("input", (event) => {
+      const target = event.target;
+      if (target.dataset.action === "note") {
+        saved[target.dataset.id].note = target.value;
+        persist();
+        renderStats();
+      }
+    });
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        activeFilter = tab.dataset.filter;
+        document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el === tab));
+        renderList();
+      });
+    });
+
+    searchEl.addEventListener("input", renderList);
+    sortEl.addEventListener("change", renderList);
+
+    document.getElementById("resetFilters").addEventListener("click", () => {
+      activeFilter = "all";
+      searchEl.value = "";
+      sortEl.value = "priority";
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.filter === "all"));
+      map.setView([40.713, -73.952], 13);
+      renderList();
+    });
+
+    document.getElementById("copyScript").addEventListener("click", async () => {
+      const text = document.getElementById("scriptText").innerText.replace(/\s+/g, " ").trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        document.getElementById("copyScript").textContent = "Copied";
+        setTimeout(() => document.getElementById("copyScript").textContent = "Copy script", 1300);
+      } catch {
+        window.prompt("Copy script", text);
+      }
+    });
+
+    renderList();
+    const bounds = L.latLngBounds(pharmacies.slice(0, 10).map((p) => [p.lat, p.lng]));
+    map.fitBounds(bounds.pad(.2));
+  </script>
+</body>
+</html>

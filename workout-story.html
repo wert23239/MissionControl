@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Winter Split Story</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #121417;
+      --muted: #667085;
+      --line: #d9dee7;
+      --paper: #f7f4ee;
+      --panel: #ffffff;
+      --push: #e5484d;
+      --pull: #247a6b;
+      --legs: #7c5cff;
+      --gold: #d89a00;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+    }
+
+    main {
+      width: min(100vw, 430px);
+      height: 100dvh;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.38)),
+        var(--paper);
+      overflow: hidden;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 10px;
+      padding: 2px 2px 4px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: .96;
+      letter-spacing: 0;
+    }
+
+    .source {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .total {
+      min-width: 86px;
+      border-left: 1px solid var(--line);
+      padding-left: 10px;
+      text-align: right;
+    }
+
+    .total strong {
+      display: block;
+      font-size: 28px;
+      line-height: .9;
+    }
+
+    .total span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    .sheet {
+      background: var(--panel);
+      border: 1px solid rgba(18,20,23,.1);
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 0;
+      flex: 1 1 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 5px;
+      box-shadow: 0 8px 22px rgba(18,20,23,.07);
+    }
+
+    .sheet-head {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 24px;
+    }
+
+    .sheet-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .metric {
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .metric strong {
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .rows {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 3px;
+      min-height: 0;
+    }
+
+    .exercise {
+      display: grid;
+      grid-template-columns: minmax(92px, 1fr) 96px 48px;
+      align-items: center;
+      gap: 6px;
+      min-height: 22px;
+    }
+
+    .name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .chart {
+      width: 96px;
+      height: 22px;
+      display: block;
+      overflow: visible;
+    }
+
+    .pct {
+      justify-self: end;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      height: 18px;
+      border: 1px solid color-mix(in srgb, var(--accent) 48%, transparent);
+      color: color-mix(in srgb, var(--accent) 72%, #111318);
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .loading {
+      margin: auto;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .foot {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.2;
+      padding: 0 2px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    @media (max-height: 720px) {
+      main { padding: 10px; gap: 6px; }
+      h1 { font-size: 26px; }
+      .sheet { padding: 7px; gap: 3px; }
+      .exercise { min-height: 20px; }
+      .name { font-size: 10px; }
+      .chart { height: 19px; }
+      .source, .metric, .foot { font-size: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="topline">
+      <div>
+        <h1>Winter Split</h1>
+        <div class="source" id="source">Supabase snapshot</div>
+      </div>
+      <div class="total">
+        <strong id="totalDays">...</strong>
+        <span>logged days</span>
+      </div>
+    </section>
+
+    <section id="content" class="loading">Loading workout data...</section>
+
+    <div class="foot">
+      <span>Best-so-far strength score</span>
+      <span>Dots mark gap days</span>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://aihworyfcgstwbpzkzoy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE';
+    const SNAPSHOT_ID = 'alex-winter-2025';
+    const ACCENTS = { Push: '#e5484d', Pull: '#247a6b', Legs: '#7c5cff' };
+
+    const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+    const shortDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+
+    function sparkline(exercise, accent) {
+      const points = exercise.progressPoints.filter((value) => value !== null);
+      const min = Math.min(...points);
+      const max = Math.max(...points);
+      const span = Math.max(1, max - min);
+      const w = 96;
+      const h = 22;
+      const xStep = exercise.progressPoints.length > 1 ? w / (exercise.progressPoints.length - 1) : w;
+      let last = null;
+      const coords = exercise.progressPoints.map((value, index) => {
+        if (value !== null) last = value;
+        const yValue = last ?? min;
+        return [index * xStep, h - 3 - ((yValue - min) / span) * (h - 7)];
+      });
+      const d = coords.map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+      const gapDots = exercise.points
+        .map((value, index) => value === null ? `<circle cx="${(index * xStep).toFixed(1)}" cy="20" r=".9" fill="#a8b0bd" />` : '')
+        .join('');
+      return `
+        <svg class="chart" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+          <path d="M0 19.5H96" stroke="#e7ebf0" stroke-width="1" />
+          ${gapDots}
+          <path d="${d}" fill="none" stroke="${accent}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      `;
+    }
+
+    function render(payload, updatedAt) {
+      const content = document.getElementById('content');
+      content.className = '';
+      content.innerHTML = '';
+
+      const totalDays = payload.tabs.reduce((sum, tab) => sum + tab.days, 0);
+      document.getElementById('totalDays').textContent = totalDays;
+      document.getElementById('source').textContent = `Sheets -> Supabase, ${shortDate.format(new Date(updatedAt))}`;
+
+      for (const tab of payload.tabs) {
+        const accent = ACCENTS[tab.name] || '#121417';
+        const sheet = document.createElement('section');
+        sheet.className = 'sheet';
+        sheet.style.setProperty('--accent', accent);
+        sheet.innerHTML = `
+          <div class="sheet-head">
+            <div class="sheet-title"><span class="dot"></span><span>${tab.name}</span></div>
+            <div class="metric"><strong>${tab.days}</strong> days</div>
+            <div class="metric"><strong>${tab.gapSlots}</strong> gaps</div>
+          </div>
+          <div class="rows">
+            ${tab.exercises.map((exercise) => `
+              <div class="exercise">
+                <div class="name">${exercise.name}</div>
+                ${sparkline(exercise, accent)}
+                <div class="pct">+${number.format(exercise.pct)}%</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        content.appendChild(sheet);
+      }
+    }
+
+    async function load() {
+      const url = `${SUPABASE_URL}/rest/v1/workout_story_snapshots?id=eq.${SNAPSHOT_ID}&select=payload,updated_at`;
+      const res = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      });
+      if (!res.ok) throw new Error(`Supabase returned ${res.status}`);
+      const rows = await res.json();
+      if (!rows.length) throw new Error('Workout snapshot is missing');
+      render(rows[0].payload, rows[0].updated_at);
+    }
+
+    load().catch((error) => {
+      document.getElementById('content').textContent = error.message;
+    });
+  </script>
+</body>
+</html>

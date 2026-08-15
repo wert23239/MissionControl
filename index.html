@@ -253,6 +253,33 @@ function stat(label,value,sub=''){return `<div class="stat"><div class="stat-lab
 function progress(label,pct,color='#e879f9'){return `<div class="progress-wrap"><div class="progress-label"><span>${label}</span><span>${pct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div></div>`}
 function kanbanItem(t,type){return `<div class="kanban-item">${t}<br>${tag(type)}</div>`}
 
+const oneOffLinks=[
+  {title:'Splits',href:'workout-story.html',kind:'Site',note:'Workout progression story'},
+  {title:'Rx Call Map',href:'rx-call-map.html',kind:'Site',note:'Pharmacy call workflow'},
+  {title:'Apartment Tours',href:'apartment-tours.html',kind:'Site',note:'Williamsburg touring notes'},
+  {title:'34 N7 Buy Brief',href:'condo-brief-34-n7.html',kind:'Site',note:'Condo decision brief'},
+  {title:'Williamsburg Bars',href:'williamsburg-bars.html',kind:'Site',note:'Neighborhood bar map'},
+  {title:'Midtown Spurs Bars',href:'midtown-spurs-bars.html',kind:'Site',note:'Match-day bar shortlist'},
+  {title:'Hiro Ingestion Prompt',href:'hiro-ingestion-prompt.html',kind:'Site',note:'Classifier prompt page'},
+  {title:'Epic SIU Sample',href:'epic-siu-sample.html',kind:'Site',note:'Slot cache sample'},
+  {title:'LiveKit Voice Agent Design',href:'livekit-voice-agent-design.html',kind:'Site',note:'Migration design'},
+  {title:'Theme Picker',href:'themes.html',kind:'Site',note:'Dashboard redesign options'},
+  {title:'Hot or Not',href:'hot-or-not/',kind:'Site',note:'Chamonix photo game'},
+  {title:'Photo Streak',href:'photo-streak/',kind:'Site',note:'Shared streak view'},
+  {title:'Meet X Marker Tester Zip',href:'downloads/meet-x-marker-0.1.0.zip',kind:'Download',note:'Unpacked Chrome extension build',download:true},
+  {title:'Meet X Marker Store Zip',href:'downloads/meet-x-marker-public-0.1.0.zip',kind:'Download',note:'Chrome Web Store package',download:true}
+];
+
+function renderLinkShelf(limit){
+  return oneOffLinks.slice(0,limit||oneOffLinks.length).map(item=>`<a class="quick-link" href="${escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer"${item.download?' download':''}>
+    <span style="font-size:18px">${item.kind==='Download'?'📦':'🔗'}</span>
+    <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+      <span style="color:#e8e0f0;font-weight:700">${escapeHtml(item.title)}</span>
+      <span style="color:#665c78;font-size:11px;line-height:1.35">${escapeHtml(item.kind)} · ${escapeHtml(item.note)}</span>
+    </span>
+  </a>`).join('');
+}
+
 const panels={
 overview:`<h2 class="panel-title">🏠 Overview</h2>
 <div class="panel-sub">Command center • everything at a glance</div>
@@ -284,6 +311,11 @@ ${stat('Test Coverage','<span id="covPct">—</span>','<span id="covSub">loading
 <a class="quick-link" href="#" onclick="switchPanel('nexon-ecw');return false">🧪 Nexon eCW Experiment Doc</a>
 <a class="quick-link" href="#" onclick="return false">💬 Discord — openclawboy #9415</a>
 <a class="quick-link" href="https://clawhub.com" target="_blank">🔌 ClawHub — 700+ skills</a>
+</div>
+<h3 style="font-size:13px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">One-Offs & Downloads</h3>
+<div class="grid2" style="margin-bottom:28px">
+${renderLinkShelf(6)}
+<a class="quick-link" href="#" onclick="switchPanel('projects');return false">🗂️ All one-offs and packages</a>
 </div>
 <h3 style="font-size:13px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Recent Activity</h3>
 <div class="card" id="overviewActivity"><div style="color:#665c78;font-size:13px">Loading recent activity...</div></div>`,
@@ -735,6 +767,10 @@ projects:`<h2 class="panel-title">🚀 Projects</h2>
 <input type="text" id="projRepo" placeholder="Repo URL (optional)" style="flex:1;min-width:200px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
 </div>
 <button onclick="addProject()" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add Project</button>
+</div>
+<h3 style="font-size:13px;margin-bottom:12px;color:#665c78;text-transform:uppercase;letter-spacing:0.5px;font-weight:700">One-Off Sites & Downloads</h3>
+<div class="grid2" style="margin-bottom:28px">
+${renderLinkShelf()}
 </div>
 <div id="projectGrid" class="grid2"></div>`,
 

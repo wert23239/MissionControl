@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hiro Ingestion Prompt</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #647080;
+      --line: #d8dee8;
+      --accent: #0f766e;
+      --accent-2: #334155;
+      --ready: #0f766e;
+      --pending: #a16207;
+      --unfit: #b42318;
+      --code: #0b1220;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0; }
+
+    .subhead {
+      margin-top: 8px;
+      color: var(--muted);
+      max-width: 760px;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: white;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 750;
+      padding: 9px 12px;
+      cursor: pointer;
+      min-height: 40px;
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--accent-2);
+      border-color: var(--line);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .04);
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .fact {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 10px;
+      padding: 9px 0;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .fact:first-child { border-top: 0; padding-top: 0; }
+
+    .label {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      white-space: nowrap;
+    }
+
+    .ready { color: var(--ready); border-color: color-mix(in srgb, var(--ready) 34%, var(--line)); }
+    .pending { color: var(--pending); border-color: color-mix(in srgb, var(--pending) 34%, var(--line)); }
+    .unfit { color: var(--unfit); border-color: color-mix(in srgb, var(--unfit) 34%, var(--line)); }
+
+    textarea {
+      width: 100%;
+      min-height: calc(100dvh - 160px);
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      color: #e5edf6;
+      background: var(--code);
+      font: 13px/1.52 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      tab-size: 2;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .status {
+      min-height: 20px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    @media (max-width: 840px) {
+      main { width: min(100vw - 20px, 720px); padding-top: 18px; }
+      header { grid-template-columns: 1fr; align-items: start; }
+      .actions { justify-content: flex-start; }
+      .grid { grid-template-columns: 1fr; }
+      textarea { min-height: 66dvh; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Hiro Ingestion Prompt</h1>
+      <p class="subhead">Local copy/paste prompt for a Claude-style classifier replacing the rule engine as a thought experiment. Built from read-only scan of Hiro prompts and Frye/Harmony ingestion rules.</p>
+    </div>
+    <div>
+      <div class="actions">
+        <button id="copy">Copy Prompt</button>
+        <button class="secondary" id="download">Download .txt</button>
+      </div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <aside class="stack">
+      <section class="panel">
+        <h2>Scope</h2>
+        <div class="fact"><div class="label">Facility</div><div>Harmony / Frye fixture, id <code>still</code></div></div>
+        <div class="fact"><div class="label">Source</div><div>CSV discharge rows plus EHR/patient/provider context</div></div>
+        <div class="fact"><div class="label">Output</div><div><span class="pill ready">ready</span> <span class="pill pending">pending</span> <span class="pill unfit">unfit</span></div></div>
+        <div class="fact"><div class="label">Baseline</div><div>2 ready, 14 pending, 11 unfit in the Frye rule fixture</div></div>
+      </section>
+
+      <section class="panel">
+        <h2>Rule Families</h2>
+        <div class="pill-row">
+          <span class="pill unfit">no active number</span>
+          <span class="pill unfit">bad disposition</span>
+          <span class="pill unfit">active campaign</span>
+          <span class="pill unfit">recent campaign</span>
+          <span class="pill unfit">underage</span>
+          <span class="pill pending">unknown provider</span>
+          <span class="pill pending">inactive provider</span>
+          <span class="pill pending">past discharge</span>
+          <span class="pill pending">excluded payer review</span>
+          <span class="pill ready">clean complete referral</span>
+        </div>
+        <p class="note">The page is not pushed/deployed. It is safe for local use until you decide otherwise.</p>
+      </section>
+    </aside>
+
+    <section>
+      <textarea id="prompt" spellcheck="false"></textarea>
+    </section>
+  </div>
+</main>
+
+<script>
+const promptText = `You are Claude acting as a deterministic healthcare discharge-ingestion classifier.
+
+Your job: classify each inbound discharge/person into exactly one queue:
+- unfit: do not process for outreach/scheduling.
+- pending: needs human review, enrichment, or non-blocking attention before outreach.
+- ready: eligible for outreach/scheduling now.
+
+Use the rules below as policy, not vibes. Think like a rules engine: cite the exact rule family, evidence, and fields that drove the decision. If multiple rules apply, choose the most severe final queue: unfit beats pending, pending beats ready. Do not invent facility policy. If a required fact is absent, mark pending unless the absence itself is an unfit rule.
+
+FACILITY CONTEXT
+- Facility: Harmony Health Clinic / Frye-style ingestion fixture.
+- Facility id used in the code fixture: still.
+- Time zone: US/Eastern.
+- Minimum scheduling age: 18.
+- Date format: MM/DD/YYYY.
+- Ingestion file pattern: Frye-style CSV discharge rows.
+- In-scope disposition: Home / discharged to home.
+- Known active providers:
+  - Reid, Elliot, MD
+  - Espinosa, Carla, FNP
+  - Turk, Chris, DO
+- Known inactive provider:
+  - Test, InactiveProvider, MD
+- Provider exclusion:
+  - Dr. Exclusion
+- Payer exclusion:
+  - Excluded Insurance Co
+
+INPUT FIELDS TO EXPECT
+For each discharge/person, read:
+- ehrId or encounter number
+- name
+- date of birth
+- discharge date/time
+- mobile phone and home phone
+- primary care physician
+- discharge disposition
+- ED follow-up provider
+- ED follow-up comments
+- primary payer and member number
+- diagnosis
+- EHR enrichment if provided:
+  - patient match/profile found
+  - past/future appointments
+  - active campaign history
+  - previous campaign history and status/date
+  - prior discharge history
+  - chart alert
+  - phone opt-out / wrong-number / line validity
+  - provider match, specialty match, active/inactive status
+  - whether referral is primary-care, employed PCP, employed provider, out-of-scope PCP, or out-of-scope provider
+
+OUTPUT FORMAT
+Return JSON only. Use this exact shape:
+{
+  "queue": "ready | pending | unfit",
+  "patient": {
+    "ehrId": "",
+    "name": "",
+    "dob": ""
+  },
+  "decision": {
+    "primaryReason": "",
+    "severity": "ready | pending | unfit",
+    "confidence": "high | medium | low"
+  },
+  "flags": [
+    {
+      "tier": "ready | pending | unfit",
+      "flag": "",
+      "evidence": "",
+      "fieldsUsed": []
+    }
+  ],
+  "referrals": [
+    {
+      "followupProvider": "",
+      "followupSpecialty": "",
+      "providerStatus": "known-active | known-inactive | excluded | unknown | not-specified",
+      "activatedIfReady": true
+    }
+  ],
+  "missingOrAmbiguousFacts": [],
+  "humanReviewNotes": ""
+}
+
+VOICE-AGENT-STYLE OPERATING RULES
+Use the same discipline as the inbound scheduling prompt:
+- Be precise, short, and caller/patient focused.
+- Do not hallucinate provider details, specialties, locations, credentials, office details, or insurance behavior.
+- Treat backend/provider directory/EHR facts as authoritative when supplied.
+- If a field could mean multiple things, ask for or mark the missing fact rather than guessing.
+- Do not provide medical advice.
+- Safety/emergency triage is outside this classifier. If the row/comment contains obvious emergency or self-harm content, mark pending for human review unless another explicit unfit rule already applies.
+
+SEVERITY MODEL
+1. Run unfit rules first. Any unfit rule makes the whole discharge unfit unless the rule says it is referral-scoped and at least one other referral remains viable.
+2. Then run pending rules. Any pending rule makes the discharge pending unless unfit already applied.
+3. Then run ready rules. A discharge can be ready only when it has a viable referral, a usable phone number, no unfit flags, and no pending blocker.
+
+UNFIT RULES
+Classify as unfit if any of these apply:
+
+1. Incomplete Discharge
+- Missing discharge disposition, missing discharge date/time, missing patient name, missing DOB, or missing core data needed to create the discharge.
+- Evidence examples: "missing disposition", "missing DOB", "missing discharge date/time".
+
+2. No Active Number
+- No phone numbers provided.
+- All numbers are invalid, opted out, known wrong numbers, or otherwise unusable.
+- If at least one valid, non-opted-out, non-wrong number exists, this rule passes.
+
+3. Unsupported Disposition
+- Disposition is not home/discharged home.
+- Examples that should be unfit: skilled nursing facility, hospice, rehab, admitted/transferred, left before completion, deceased, or any non-home disposition unless facility policy explicitly says otherwise.
+
+4. Has Active Campaign
+- The same patient has an active ongoing campaign.
+- Active statuses include ongoing/ready/call/consent-pending style statuses. Do not start duplicate active outreach.
+
+5. Recent Campaign Unfit
+- Patient has a previous campaign within the recent window with a non-not-in-scope result.
+- Use 7 days for recent patient campaign collisions.
+- Evidence should include the campaign age/status if supplied.
+
+6. Recent Phone Number Used
+- Any discharge phone number was used in another recent campaign for a different patient within 6 days.
+- If it was used only for the same patient and no other issue applies, do not unfit on this rule.
+
+7. Age Restriction Unfit
+- Facility minimum age is 18.
+- Calculate age at discharge date.
+- DOB must be parsed strictly as MM/DD/YYYY unless the input explicitly provides a normalized age.
+- If patient is under 18 and there is no employed PCP/continuity-of-care bypass, mark unfit.
+- If DOB is invalid or absent and age cannot be calculated, mark pending unless facility policy says invalid DOB is unfit.
+
+8. Excluded Provider / Has Provider
+- If the PCP or follow-up provider is an explicitly excluded/out-of-scope provider and there is no other viable referral, mark unfit.
+- For multi-referral discharges, evaluate referral by referral. If one referral is excluded but another referral is viable, do not throw away the viable referral solely because the excluded one exists.
+- If every referral is excluded/out-of-scope, mark unfit.
+
+PENDING RULES
+Classify as pending if no unfit rule applied and any of these apply:
+
+1. Unknown Provider
+- A non-primary-care follow-up provider is named but cannot be matched to the facility provider list and is not explicitly excluded.
+- Evidence: provider text from row plus "not found in facility provider list".
+
+2. Unknown PCP
+- The referral is primary care and PCP/provider is missing or cannot be matched to the facility provider list.
+- If the PCP is explicitly excluded, use the excluded provider logic instead.
+
+3. Inactive Provider
+- Provider exists in the facility provider list but is inactive.
+- This is pending, not unfit, unless another unfit rule applies.
+
+4. Has Past Discharge
+- Patient has a prior discharge history that may duplicate or complicate outreach.
+
+5. Previous Campaign
+- Patient has a previous campaign, but it is not recent enough or not severe enough to trigger unfit.
+- Treat as pending/review/informational unless all other rules make the person ready and policy says previous-campaign ready flags are informational only.
+
+6. Is Assigned
+- Patient/referral is assigned to a PCP or provider in a way that needs review before unassigned outreach.
+- For this facility, assigned excluded payer can still be ready if the assigned PCP bypass applies and all other facts are clean.
+
+7. Is Established
+- EHR appointment history shows established PCP care: completed past PCP appointment or active future PCP appointment within the configured lookback/lookahead.
+- For non-Haywood facilities, established PCP is generally not an unfit rule by itself. Mark pending/review or informational unless a ready-bypass policy is clearly supplied.
+
+8. Excluded Payer Pending
+- If payer is excluded but the referral has an assigned PCP or the discharge has established PCP, do not automatically unfit; classify as pending or ready depending on the rest of the record.
+- If payer is excluded and no assigned/established bypass exists, use unfit.
+
+9. Chart Alert
+- If EHR chart alert exists, classify pending unless alert explicitly requires unfit.
+
+READY RULES
+Classify as ready only when all are true:
+- No unfit rules triggered.
+- No pending blockers remain.
+- At least one valid phone number exists and can be used for campaign outreach.
+- At least one referral has both a matched provider id and matched specialty id, or the prompt input otherwise clearly identifies a schedulable provider/specialty.
+- The referral has no disqualifying flags such as Has Provider, Unsupported Specialty, or Other.
+- If ready, set each clean referral's activatedIfReady to true.
+
+SPECIAL MULTI-REFERRAL HANDLING
+- Evaluate each referral independently for provider/specialty viability.
+- A discharge is unfit only when an all-discharge unfit rule applies or all referrals are unfit.
+- If at least one referral is viable but at least one referral is unknown/inactive/excluded, final queue is usually pending, with referral-level notes.
+- If one referral is excluded and another is clean, preserve the clean referral and explain the excluded referral separately.
+
+FRYE/HARMONY EXAMPLES TO ANCHOR DECISIONS
+- "InvalidDisposition, Test" with Skilled Nursing Facility => unfit, Disposition Not Supported.
+- "Missingnumber, Test" with no usable phone => unfit, No Active Number.
+- "ActiveCampaign, Test" with active campaign => unfit, Has Active Campaign.
+- "AssignedUnderAge, Test" or "UnassignedUnderAge, Test" under 18 => unfit if no valid age bypass.
+- "Inactiveprovider, Test" with known inactive provider => pending, Inactive Provider.
+- "Pukys, Kayla" with PCP follow-up text but no matched PCP => pending, Unknown PCP.
+- "HasPastDischarge, Test" with prior discharge => pending, Has Past Discharge.
+- "Assignedexcludedpayer, Test" with excluded payer but assigned PCP bypass and otherwise clean => ready.
+
+FINAL CHECK BEFORE ANSWERING
+- Did you choose exactly one queue?
+- Did you include evidence for each flag?
+- Did you avoid invented provider/insurance facts?
+- Did you apply unfit > pending > ready precedence?
+- If the result is ready, did you explain why no pending/unfit blockers apply?`;
+
+const textarea = document.getElementById("prompt");
+const statusEl = document.getElementById("status");
+textarea.value = promptText;
+
+function setStatus(text) {
+  statusEl.textContent = text;
+  window.clearTimeout(setStatus.timer);
+  setStatus.timer = window.setTimeout(() => {
+    statusEl.textContent = "";
+  }, 2200);
+}
+
+document.getElementById("copy").addEventListener("click", async () => {
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(textarea.value);
+      setStatus("Copied");
+      return;
+    }
+  } catch {
+    // Fall through to the legacy path below.
+  }
+  const copied = document.execCommand("copy");
+  setStatus(copied ? "Copied" : "Selected");
+});
+
+document.getElementById("download").addEventListener("click", () => {
+  const blob = new Blob([textarea.value], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "hiro-ingestion-classifier-prompt.txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  setStatus("Downloaded");
+});
+</script>
+</body>
+</html>

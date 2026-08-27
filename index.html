@@ -3004,6 +3004,8 @@ function renderCal(){
   if(!el)return;
   if(!list.length){el.innerHTML='<div class="empty-state">📅 No events yet — add some dates!</div>';return}
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const todayStart=new Date();
+  todayStart.setHours(0,0,0,0);
   let curMonth='';
   let html='';
   list.forEach((item,i)=>{
@@ -3017,15 +3019,15 @@ function renderCal(){
     const dayNum=parseInt(d);
     const dt=new Date(parseInt(y),parseInt(m)-1,dayNum);
     const dayName=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()];
-    const isPast=new Date(item.date)<new Date(new Date().toDateString());
-    html+=`<div data-cal-date="${item.date}" style="display:flex;align-items:center;gap:12px;padding:8px 4px;border-radius:8px;transition:background 0.3s;${isPast?'opacity:0.4;':''}">
+    const isPast=dt<todayStart;
+    html+=`<div data-cal-date="${escapeHtml(item.date)}" style="display:flex;align-items:center;gap:12px;padding:8px 4px;border-radius:8px;transition:background 0.3s;${isPast?'opacity:0.4;':''}">
       <div style="min-width:60px;text-align:right;">
         <span style="font-size:20px;font-weight:700;color:#e8e0f0">${dayNum}</span>
         <span style="font-size:11px;color:#665c78;margin-left:4px">${dayName}</span>
       </div>
       <div style="width:3px;height:28px;background:#e879f9;border-radius:2px;flex-shrink:0"></div>
-      <div style="flex:1;font-size:14px;color:#d4c4f0">${item.event}</div>
-      <button onclick="deleteCal(${item.id})" style="background:none;border:none;color:#665c78;cursor:pointer;font-size:14px;padding:0 4px">×</button>
+      <div style="flex:1;font-size:14px;color:#d4c4f0">${escapeHtml(item.event)}</div>
+      <button onclick="deleteCal(${inlineActionArg(item.id)})" style="background:none;border:none;color:#665c78;cursor:pointer;font-size:14px;padding:0 4px">×</button>
     </div>`;
   });
   el.innerHTML=html;
@@ -3044,7 +3046,7 @@ function renderCalGrid(){
   calCache.forEach(item=>{eventDates[item.date]=(eventDates[item.date]||0)+1;});
   const firstDay=new Date(calGridYear,calGridMonth,1).getDay();
   const daysInMonth=new Date(calGridYear,calGridMonth+1,0).getDate();
-  const todayISO=new Date().toISOString().slice(0,10);
+  const todayISO=localDateKey();
   let grid='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
   grid+='<button onclick="calGridMonth--;if(calGridMonth<0){calGridMonth=11;calGridYear--;}renderCalGrid()" style="background:none;border:none;color:#e879f9;cursor:pointer;font-size:18px;padding:4px 8px">‹</button>';
   grid+='<span style="font-size:15px;font-weight:700;color:#e8e0f0">'+months[calGridMonth]+' '+calGridYear+'</span>';

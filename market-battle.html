@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alex vs Elizabeth Market Battle</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17201c;
+      --muted: #67706b;
+      --line: #dce4df;
+      --paper: #fbfcf8;
+      --soft: #eef5ef;
+      --alex: #1f7a6b;
+      --elizabeth: #8d4f72;
+      --gold: #c7942f;
+      --bad: #b95047;
+      --white: #fff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(31,122,107,.14), transparent 32%),
+        linear-gradient(225deg, rgba(141,79,114,.12), transparent 34%),
+        var(--paper);
+      color: var(--ink);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 34px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--alex), var(--elizabeth));
+      box-shadow: 0 10px 24px rgba(23,32,28,.13);
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 4vw, 2.45rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 5px;
+      font-size: .95rem;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .icon-btn,
+    .text-btn {
+      min-height: 40px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--ink);
+      color: var(--white);
+      padding: 0 13px;
+      font-weight: 700;
+      box-shadow: 0 9px 18px rgba(23,32,28,.14);
+    }
+
+    .icon-btn {
+      width: 40px;
+      padding: 0;
+    }
+
+    .text-btn.secondary,
+    .icon-btn.secondary {
+      background: var(--white);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .status {
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: .86rem;
+      white-space: nowrap;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(220,228,223,.9);
+      border-radius: 8px;
+      box-shadow: 0 16px 42px rgba(23,32,28,.08);
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(190px, .54fr) minmax(0, 1fr);
+      gap: 1px;
+      overflow: hidden;
+      background: var(--line);
+      margin-bottom: 16px;
+    }
+
+    .score {
+      background: rgba(255,255,255,.86);
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .score.center {
+      display: grid;
+      align-content: center;
+      gap: 10px;
+      text-align: center;
+      background: #fffaf0;
+    }
+
+    .score-name {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .score h2 {
+      margin: 0;
+      font-size: 1.08rem;
+      letter-spacing: 0;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: .78rem;
+      color: var(--muted);
+      background: var(--white);
+      white-space: nowrap;
+    }
+
+    .big {
+      font-size: clamp(1.65rem, 4vw, 2.55rem);
+      line-height: 1;
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+
+    .big.positive { color: var(--alex); }
+    .big.negative { color: var(--bad); }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .mini {
+      border-top: 1px solid var(--line);
+      padding-top: 9px;
+      min-width: 0;
+    }
+
+    .mini span {
+      display: block;
+      color: var(--muted);
+      font-size: .76rem;
+      margin-bottom: 4px;
+    }
+
+    .mini strong {
+      display: block;
+      font-size: .94rem;
+      overflow-wrap: anywhere;
+    }
+
+    .versus {
+      color: var(--gold);
+      font-size: .8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .winner {
+      font-size: 1.15rem;
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+
+    input, select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 40px;
+      padding: 8px 10px;
+      margin-top: 6px;
+      color: var(--ink);
+      background: var(--white);
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #8fb8ad;
+      box-shadow: 0 0 0 3px rgba(31,122,107,.13);
+    }
+
+    .boards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .board {
+      overflow: hidden;
+    }
+
+    .board-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .board-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 850;
+      font-size: 1.05rem;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 82%);
+      flex: 0 0 auto;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 620px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: rgba(255,255,255,.88);
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      background: #f5f8f5;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th:nth-child(1) { width: 42px; }
+    th:nth-child(2) { width: 116px; }
+    th:nth-child(3) { width: 104px; }
+    th:nth-child(4),
+    th:nth-child(5) { width: 106px; }
+    th:nth-child(6) { width: 108px; }
+
+    td input, td select {
+      margin: 0;
+      min-height: 36px;
+      padding: 7px 8px;
+      border-color: #e2e8e3;
+    }
+
+    .slot {
+      color: var(--muted);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .result-cell {
+      font-weight: 850;
+      line-height: 1.2;
+    }
+
+    .result-cell span {
+      display: block;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .positive { color: var(--alex); }
+    .negative { color: var(--bad); }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: .82rem;
+      padding: 12px 2px 0;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 940px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .scoreboard,
+      .boards {
+        grid-template-columns: 1fr;
+      }
+
+      .score.center {
+        order: -1;
+      }
+
+      .settings {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        width: min(100% - 18px, 1180px);
+        padding-top: 14px;
+      }
+
+      .settings {
+        grid-template-columns: 1fr;
+      }
+
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .text-btn .optional-text {
+        display: none;
+      }
+
+      table {
+        min-width: 0;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tbody {
+        display: grid;
+        gap: 10px;
+        padding: 10px;
+      }
+
+      tr {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px;
+        background: var(--white);
+      }
+
+      td {
+        border: 0;
+        padding: 0;
+      }
+
+      td:not(.slot)::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: .68rem;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      td.slot {
+        grid-row: span 3;
+        align-self: stretch;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        background: var(--soft);
+      }
+
+      td:nth-child(6) {
+        grid-column: 2 / span 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark"><i data-lucide="candlestick-chart"></i></div>
+        <div>
+          <h1>Alex vs Elizabeth</h1>
+          <div class="subtitle">10 picks each. Best portfolio wins.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="status" id="syncStatus"><i data-lucide="cloud"></i><span>Loading</span></span>
+        <button class="icon-btn secondary" id="shareBtn" type="button" title="Copy link" aria-label="Copy link"><i data-lucide="link"></i></button>
+        <button class="icon-btn secondary" id="resetBtn" type="button" title="Clear slots" aria-label="Clear slots"><i data-lucide="rotate-ccw"></i></button>
+        <button class="text-btn" id="saveBtn" type="button"><i data-lucide="save"></i><span class="optional-text">Save</span></button>
+      </div>
+    </header>
+
+    <section class="scoreboard panel" aria-label="Scoreboard">
+      <article class="score" id="alexScore"></article>
+      <article class="score center">
+        <div class="versus">Market Battle</div>
+        <div class="winner" id="winnerText">No winner yet</div>
+        <div class="chip" id="spreadChip"><i data-lucide="scale"></i><span>Even</span></div>
+      </article>
+      <article class="score" id="elizabethScore"></article>
+    </section>
+
+    <section class="settings panel" aria-label="Battle settings">
+      <div>
+        <label for="battleName">Name</label>
+        <input id="battleName" value="One Month Market Battle" autocomplete="off">
+      </div>
+      <div>
+        <label for="startDate">Start</label>
+        <input id="startDate" type="date">
+      </div>
+      <div>
+        <label for="endDate">Check-in</label>
+        <input id="endDate" type="date">
+      </div>
+      <div>
+        <label for="stake">Stakes</label>
+        <input id="stake" value="Bragging rights" autocomplete="off">
+      </div>
+    </section>
+
+    <section class="boards">
+      <article class="board panel" style="--accent: var(--alex)">
+        <div class="board-head">
+          <div class="board-title"><span class="dot"></span><span>Alex</span></div>
+          <span class="chip" id="alexCount">0 picks</span>
+        </div>
+        <div class="table-wrap">
+          <table aria-label="Alex picks">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Ticker</th>
+                <th>Type</th>
+                <th>Start</th>
+                <th>Current</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="alexRows"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="board panel" style="--accent: var(--elizabeth)">
+        <div class="board-head">
+          <div class="board-title"><span class="dot"></span><span>Elizabeth</span></div>
+          <span class="chip" id="elizabethCount">0 picks</span>
+        </div>
+        <div class="table-wrap">
+          <table aria-label="Elizabeth picks">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Ticker</th>
+                <th>Type</th>
+                <th>Start</th>
+                <th>Current</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="elizabethRows"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <div class="footer">
+      <span id="updatedAt">Never saved</span>
+      <span>Manual values only.</span>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://aihworyfcgstwbpzkzoy.supabase.co";
+    const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE";
+    const headers = {
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${ANON_KEY}`,
+      "Content-Type": "application/json"
+    };
+    const TYPES = ["Stock", "Crypto", "ETF", "Other"];
+    const PLAYERS = ["alex", "elizabeth"];
+    const battleParam = new URLSearchParams(window.location.search).get("battle");
+    const battleKey = battleParam || "alex-elizabeth-2026-09-market-battle";
+    const localKey = `market-battle:${battleKey}`;
+    let lastRemoteUpdatedAt = null;
+    let saveTimer = null;
+    let saveInFlight = false;
+
+    if (!battleParam) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("battle", battleKey);
+      window.history.replaceState(null, "", url);
+    }
+
+    function addMonths(date, months) {
+      const next = new Date(date);
+      next.setMonth(next.getMonth() + months);
+      return next;
+    }
+
+    function isoDate(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function blankPicks() {
+      return Array.from({ length: 10 }, () => ({ symbol: "", type: "Stock", start: "", current: "" }));
+    }
+
+    function defaultState() {
+      const now = new Date();
+      return {
+        name: "One Month Market Battle",
+        startDate: isoDate(now),
+        endDate: isoDate(addMonths(now, 1)),
+        stake: "Bragging rights",
+        players: {
+          alex: { name: "Alex", picks: blankPicks() },
+          elizabeth: { name: "Elizabeth", picks: blankPicks() }
+        }
+      };
+    }
+
+    function readLocal() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(localKey) || "null");
+        return saved && saved.players ? saved : null;
+      } catch {
+        return null;
+      }
+    }
+
+    let state = readLocal() || defaultState();
+
+    const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+    const pct = new Intl.NumberFormat("en-US", { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const shortDateTime = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+    function asNumber(value) {
+      if (value === "" || value === null || value === undefined) return null;
+      const num = Number(String(value).replace(/[$,\s]/g, ""));
+      return Number.isFinite(num) ? num : null;
+    }
+
+    function cleanMoney(value) {
+      const num = asNumber(value);
+      return num === null ? "" : String(num);
+    }
+
+    function summarize(player) {
+      const picks = state.players[player].picks;
+      let start = 0;
+      let current = 0;
+      let completed = 0;
+      let filled = 0;
+
+      for (const pick of picks) {
+        const startValue = asNumber(pick.start);
+        const currentValue = asNumber(pick.current);
+        if ((pick.symbol || "").trim()) filled += 1;
+        if (startValue !== null && currentValue !== null) {
+          start += startValue;
+          current += currentValue;
+          completed += 1;
+        }
+      }
+
+      const gain = current - start;
+      const gainPct = start > 0 ? gain / start : 0;
+      return { start, current, gain, gainPct, completed, filled };
+    }
+
+    function toneClass(value) {
+      if (value > 0) return "positive";
+      if (value < 0) return "negative";
+      return "";
+    }
+
+    function renderScore(player, id, accent) {
+      const summary = summarize(player);
+      const name = state.players[player].name;
+      document.getElementById(id).innerHTML = `
+        <div class="score-name">
+          <h2>${escapeHtml(name)}</h2>
+          <span class="chip" style="border-color: ${accent}44"><i data-lucide="list-checks"></i>${summary.completed}/10 scored</span>
+        </div>
+        <div class="big ${toneClass(summary.gain)}">${currency.format(summary.gain)}</div>
+        <div class="mini-grid">
+          <div class="mini"><span>Return</span><strong class="${toneClass(summary.gainPct)}">${pct.format(summary.gainPct)}</strong></div>
+          <div class="mini"><span>Start</span><strong>${currency.format(summary.start)}</strong></div>
+          <div class="mini"><span>Current</span><strong>${currency.format(summary.current)}</strong></div>
+        </div>
+      `;
+      document.getElementById(`${player}Count`).textContent = `${summary.filled} picks`;
+    }
+
+    function renderWinner() {
+      const alex = summarize("alex");
+      const elizabeth = summarize("elizabeth");
+      const spread = alex.gain - elizabeth.gain;
+      const allComplete = alex.completed === 10 && elizabeth.completed === 10;
+      const hasScores = alex.completed > 0 || elizabeth.completed > 0;
+      let winner = "No winner yet";
+
+      if (hasScores) {
+        if (spread > 0) winner = "Alex is leading";
+        else if (spread < 0) winner = "Elizabeth is leading";
+        else winner = "Dead even";
+      }
+      if (allComplete && spread !== 0) winner = spread > 0 ? "Alex wins" : "Elizabeth wins";
+
+      document.getElementById("winnerText").textContent = winner;
+      document.querySelector("#spreadChip span").textContent = `${currency.format(Math.abs(spread))} spread`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function renderRows(player, targetId) {
+      const rows = document.getElementById(targetId);
+      rows.innerHTML = "";
+      state.players[player].picks.forEach((pick, index) => {
+        const start = asNumber(pick.start);
+        const current = asNumber(pick.current);
+        const gain = start !== null && current !== null ? current - start : null;
+        const gainPct = gain !== null && start > 0 ? gain / start : null;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="slot">${index + 1}</td>
+          <td data-label="Ticker"><input data-player="${player}" data-index="${index}" data-field="symbol" value="${escapeHtml(pick.symbol)}" autocomplete="off" aria-label="${state.players[player].name} slot ${index + 1} ticker"></td>
+          <td data-label="Type">
+            <select data-player="${player}" data-index="${index}" data-field="type" aria-label="${state.players[player].name} slot ${index + 1} type">
+              ${TYPES.map((type) => `<option value="${type}" ${pick.type === type ? "selected" : ""}>${type}</option>`).join("")}
+            </select>
+          </td>
+          <td data-label="Start"><input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="start" value="${escapeHtml(pick.start)}" aria-label="${state.players[player].name} slot ${index + 1} starting value"></td>
+          <td data-label="Current"><input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="current" value="${escapeHtml(pick.current)}" aria-label="${state.players[player].name} slot ${index + 1} current value"></td>
+          <td data-label="Result" class="result-cell ${toneClass(gain || 0)}">
+            ${gain === null ? "-" : currency.format(gain)}
+            <span>${gainPct === null ? "" : pct.format(gainPct)}</span>
+          </td>
+        `;
+        rows.appendChild(tr);
+      });
+    }
+
+    function render() {
+      document.getElementById("battleName").value = state.name || "";
+      document.getElementById("startDate").value = state.startDate || "";
+      document.getElementById("endDate").value = state.endDate || "";
+      document.getElementById("stake").value = state.stake || "";
+      renderScore("alex", "alexScore", "#1f7a6b");
+      renderScore("elizabeth", "elizabethScore", "#8d4f72");
+      renderWinner();
+      renderRows("alex", "alexRows");
+      renderRows("elizabeth", "elizabethRows");
+      lucide.createIcons();
+    }
+
+    function persistLocal() {
+      localStorage.setItem(localKey, JSON.stringify(state));
+    }
+
+    function setStatus(text, icon = "cloud") {
+      document.getElementById("syncStatus").innerHTML = `<i data-lucide="${icon}"></i><span>${escapeHtml(text)}</span>`;
+      lucide.createIcons();
+    }
+
+    function markUpdatedAt() {
+      const el = document.getElementById("updatedAt");
+      if (!lastRemoteUpdatedAt) {
+        el.textContent = "Not saved yet";
+        return;
+      }
+      el.textContent = `Saved ${shortDateTime.format(new Date(lastRemoteUpdatedAt))}`;
+    }
+
+    async function loadRemote() {
+      setStatus("Loading", "cloud");
+      const url = `${SUPABASE_URL}/rest/v1/market_battles?battle_key=eq.${encodeURIComponent(battleKey)}&select=payload,updated_at`;
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error(`Load failed ${response.status}`);
+      const rows = await response.json();
+      if (rows.length) {
+        state = { ...defaultState(), ...rows[0].payload };
+        lastRemoteUpdatedAt = rows[0].updated_at;
+        persistLocal();
+        setStatus("Synced", "check-circle");
+      } else {
+        await saveRemote();
+      }
+      markUpdatedAt();
+      render();
+    }
+
+    async function saveRemote() {
+      if (saveInFlight) return;
+      saveInFlight = true;
+      setStatus("Saving", "loader");
+      persistLocal();
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/market_battles?on_conflict=battle_key`, {
+        method: "POST",
+        headers: { ...headers, Prefer: "resolution=merge-duplicates,return=representation" },
+        body: JSON.stringify({ battle_key: battleKey, payload: state, updated_at: new Date().toISOString() })
+      });
+      saveInFlight = false;
+      if (!response.ok) throw new Error(`Save failed ${response.status}`);
+      const rows = await response.json();
+      lastRemoteUpdatedAt = rows[0]?.updated_at || new Date().toISOString();
+      setStatus("Saved", "check-circle");
+      markUpdatedAt();
+    }
+
+    function queueSave() {
+      persistLocal();
+      setStatus("Editing", "pencil");
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveRemote().catch((error) => {
+          console.error(error);
+          setStatus("Local only", "wifi-off");
+        });
+      }, 650);
+    }
+
+    function handleInput(event) {
+      const el = event.target;
+      if (el.id === "battleName") state.name = el.value;
+      if (el.id === "startDate") state.startDate = el.value;
+      if (el.id === "endDate") state.endDate = el.value;
+      if (el.id === "stake") state.stake = el.value;
+      if (el.dataset.player) {
+        const pick = state.players[el.dataset.player].picks[Number(el.dataset.index)];
+        pick[el.dataset.field] = ["start", "current"].includes(el.dataset.field) ? cleanMoney(el.value) : el.value.toUpperCase();
+      }
+      render();
+      queueSave();
+    }
+
+    document.addEventListener("input", handleInput);
+    document.addEventListener("change", handleInput);
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      clearTimeout(saveTimer);
+      saveRemote().catch((error) => {
+        console.error(error);
+        setStatus("Local only", "wifi-off");
+      });
+    });
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(window.location.href);
+      setStatus("Link copied", "link");
+      setTimeout(() => setStatus("Synced", "check-circle"), 1200);
+    });
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (!confirm("Clear all 20 slots?")) return;
+      state.players.alex.picks = blankPicks();
+      state.players.elizabeth.picks = blankPicks();
+      render();
+      queueSave();
+    });
+
+    render();
+    loadRemote().catch((error) => {
+      console.error(error);
+      setStatus("Local only", "wifi-off");
+      markUpdatedAt();
+    });
+  </script>
+</body>
+</html>

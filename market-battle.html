@@ -248,6 +248,116 @@
       margin-bottom: 16px;
     }
 
+    .chart-panel {
+      padding: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .chart-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .chart-title {
+      display: grid;
+      gap: 4px;
+    }
+
+    .chart-title strong {
+      font-size: 1.05rem;
+    }
+
+    .chart-title span,
+    .chart-note {
+      color: var(--muted);
+      font-size: .83rem;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .legend-line {
+      width: 24px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .chart-wrap {
+      width: 100%;
+      min-height: 260px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff, #f7faf7);
+      overflow: hidden;
+    }
+
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: 260px;
+    }
+
+    .chart-grid {
+      stroke: #dce4df;
+      stroke-width: 1;
+    }
+
+    .chart-axis {
+      stroke: #aeb9b2;
+      stroke-width: 1.3;
+    }
+
+    .chart-line {
+      fill: none;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chart-area {
+      opacity: .08;
+    }
+
+    .chart-point {
+      fill: #fff;
+      stroke-width: 3;
+    }
+
+    .chart-label {
+      fill: #67706b;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .chart-empty {
+      display: grid;
+      place-items: center;
+      min-height: 260px;
+      color: var(--muted);
+      font-weight: 800;
+      text-align: center;
+      padding: 18px;
+    }
+
     label {
       color: var(--muted);
       font-size: .78rem;
@@ -315,7 +425,7 @@
 
     table {
       width: 100%;
-      min-width: 700px;
+      min-width: 820px;
       border-collapse: collapse;
       table-layout: fixed;
       background: rgba(255,255,255,.88);
@@ -343,8 +453,9 @@
     th:nth-child(2) { width: 146px; }
     th:nth-child(3) { width: 104px; }
     th:nth-child(4) { width: 106px; }
-    th:nth-child(5) { width: 146px; }
-    th:nth-child(6) { width: 120px; }
+    th:nth-child(5) { width: 116px; }
+    th:nth-child(6) { width: 146px; }
+    th:nth-child(7) { width: 120px; }
 
     td input, td select {
       margin: 0;
@@ -431,6 +542,14 @@
       .settings {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .chart-head {
+        flex-direction: column;
+      }
+
+      .legend {
+        justify-content: flex-start;
+      }
     }
 
     @media (max-width: 560px) {
@@ -499,7 +618,7 @@
         background: var(--soft);
       }
 
-      td:nth-child(6) {
+      td:nth-child(7) {
         grid-column: 2 / span 2;
       }
     }
@@ -552,6 +671,22 @@
       </div>
     </section>
 
+    <section class="chart-panel panel" aria-label="Portfolio graph">
+      <div class="chart-head">
+        <div class="chart-title">
+          <strong>Portfolio Race</strong>
+          <span>Each pick starts at $100. Later price updates move the line.</span>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-line" style="--accent: var(--alex)"></span>Alex</span>
+          <span class="legend-item"><span class="legend-line" style="--accent: var(--elizabeth)"></span>Elizabeth</span>
+          <button class="text-btn secondary" id="snapshotBtn" type="button"><i data-lucide="line-chart"></i><span class="optional-text">Save snapshot</span></button>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chartWrap"></div>
+      <div class="chart-note" id="chartNote">No snapshots yet.</div>
+    </section>
+
     <section class="boards">
       <article class="board panel" style="--accent: var(--alex)">
         <div class="board-head">
@@ -565,8 +700,9 @@
                 <th>#</th>
                 <th>Pick</th>
                 <th>Type</th>
-                <th>Start</th>
-                <th>Current</th>
+                <th>Stake</th>
+                <th>Buy $</th>
+                <th>Later $</th>
                 <th>Result</th>
               </tr>
             </thead>
@@ -587,8 +723,9 @@
                 <th>#</th>
                 <th>Pick</th>
                 <th>Type</th>
-                <th>Start</th>
-                <th>Current</th>
+                <th>Stake</th>
+                <th>Buy $</th>
+                <th>Later $</th>
                 <th>Result</th>
               </tr>
             </thead>
@@ -600,7 +737,7 @@
 
     <div class="footer">
       <span id="updatedAt">Never saved</span>
-      <span>Manual values only.</span>
+      <span>Manual later prices, with crypto refresh where available.</span>
     </div>
   </main>
 
@@ -616,6 +753,24 @@
     const PLAYERS = ["alex", "elizabeth"];
     const DEFAULT_START_VALUE = "100";
     const SAVE_DEBOUNCE_MS = 1800;
+    const INITIAL_PICKS = {
+      alex: [
+        { symbol: "DOGE", type: "Crypto", entryPrice: "0.085" },
+        { symbol: "VOO", type: "ETF", entryPrice: "0.061" },
+        { symbol: "ATZAF", type: "Stock", entryPrice: "93.15" },
+        { symbol: "GOOG", type: "Stock", entryPrice: "335.31" },
+        { symbol: "UMG", type: "Stock" },
+        { symbol: "NVD", type: "Stock" }
+      ],
+      elizabeth: [
+        { symbol: "ELF", type: "Stock", entryPrice: "109.67" },
+        { symbol: "TTWO", type: "Stock", entryPrice: "214.69" },
+        { symbol: "LVMUY", type: "Stock", entryPrice: "99.75" },
+        { symbol: "GOOS", type: "Stock", entryPrice: "8.14" },
+        { symbol: "AMZN", type: "Stock", entryPrice: "258.51" },
+        { symbol: "LACR", type: "Stock", entryPrice: "19.6" }
+      ]
+    };
     const CRYPTO_IDS = {
       btc: "bitcoin",
       bitcoin: "bitcoin",
@@ -666,6 +821,10 @@
       return Array.from({ length: 10 }, () => ({ symbol: "", type: "Stock", start: DEFAULT_START_VALUE, current: "", entryPrice: "", currentPrice: "", pricedAt: "" }));
     }
 
+    function seededPicks(player) {
+      return blankPicks().map((pick, index) => ({ ...pick, ...(INITIAL_PICKS[player]?.[index] || {}) }));
+    }
+
     function defaultState() {
       const now = new Date();
       return {
@@ -674,9 +833,10 @@
         endDate: isoDate(addMonths(now, 1)),
         stake: "Bragging rights",
         players: {
-          alex: { name: "Alex", picks: blankPicks() },
-          elizabeth: { name: "Elizabeth", picks: blankPicks() }
-        }
+          alex: { name: "Alex", picks: seededPicks("alex") },
+          elizabeth: { name: "Elizabeth", picks: seededPicks("elizabeth") }
+        },
+        history: []
       };
     }
 
@@ -691,12 +851,13 @@
 
     function normalizeState(nextState) {
       const base = { ...defaultState(), ...nextState };
+      base.history = Array.isArray(nextState?.history) ? nextState.history : [];
       for (const player of PLAYERS) {
         const playerState = base.players[player] || defaultState().players[player];
         const picks = Array.isArray(playerState.picks) ? playerState.picks : [];
         base.players[player] = {
           ...playerState,
-          picks: blankPicks().map((pick, index) => {
+          picks: seededPicks(player).map((pick, index) => {
             const saved = picks[index] || {};
             return { ...pick, ...saved, start: saved.start === "" || saved.start === undefined ? DEFAULT_START_VALUE : saved.start };
           })
@@ -713,7 +874,13 @@
 
     function asNumber(value) {
       if (value === "" || value === null || value === undefined) return null;
-      const num = Number(String(value).replace(/[$,\s]/g, ""));
+      let cleaned = String(value).trim().replace(/usd/gi, "").replace(/[$\s]/g, "");
+      if (cleaned.includes(",") && !cleaned.includes(".") && /^\d+,\d{1,4}$/.test(cleaned)) {
+        cleaned = cleaned.replace(",", ".");
+      } else {
+        cleaned = cleaned.replace(/,/g, "");
+      }
+      const num = Number(cleaned.replace(/[^0-9.-]/g, ""));
       return Number.isFinite(num) ? num : null;
     }
 
@@ -728,6 +895,20 @@
 
     function cryptoIdFor(value) {
       return CRYPTO_IDS[cleanAssetKey(value)] || null;
+    }
+
+    function currentValueForPick(pick) {
+      const startValue = asNumber(pick.start);
+      const manualCurrent = asNumber(pick.current);
+      const entryPrice = asNumber(pick.entryPrice);
+      const currentPrice = asNumber(pick.currentPrice);
+      if (startValue === null) return manualCurrent;
+      if (entryPrice !== null && currentPrice !== null && entryPrice > 0) {
+        return startValue * currentPrice / entryPrice;
+      }
+      if (manualCurrent !== null) return manualCurrent;
+      if ((pick.symbol || "").trim() && entryPrice !== null) return startValue;
+      return null;
     }
 
     async function fetchCryptoPrice(value) {
@@ -749,7 +930,7 @@
 
       for (const pick of picks) {
         const startValue = asNumber(pick.start);
-        const currentValue = asNumber(pick.current);
+        const currentValue = currentValueForPick(pick);
         if ((pick.symbol || "").trim()) filled += 1;
         if (startValue !== null && currentValue !== null) {
           start += startValue;
@@ -787,6 +968,79 @@
       document.getElementById(`${player}Count`).textContent = `${summary.filled} picks`;
     }
 
+    function snapshotForToday() {
+      const alex = summarize("alex");
+      const elizabeth = summarize("elizabeth");
+      return {
+        date: isoDate(new Date()),
+        alexValue: Number(alex.current.toFixed(2)),
+        alexReturn: alex.gainPct,
+        elizabethValue: Number(elizabeth.current.toFixed(2)),
+        elizabethReturn: elizabeth.gainPct
+      };
+    }
+
+    function chartPoints() {
+      const points = [
+        { date: state.startDate || "Start", alexReturn: 0, elizabethReturn: 0 },
+        ...(state.history || [])
+      ];
+      const today = snapshotForToday();
+      const existingToday = points.find((point, index) => index > 0 && point.date === today.date);
+      if (existingToday) {
+        existingToday.alexReturn = today.alexReturn;
+        existingToday.elizabethReturn = today.elizabethReturn;
+        existingToday.alexValue = today.alexValue;
+        existingToday.elizabethValue = today.elizabethValue;
+      } else {
+        points.push(today);
+      }
+      return points;
+    }
+
+    function renderChart() {
+      const wrap = document.getElementById("chartWrap");
+      const points = chartPoints();
+      const width = 760;
+      const height = 260;
+      const pad = { top: 28, right: 28, bottom: 42, left: 58 };
+      const values = points.flatMap((point) => [point.alexReturn || 0, point.elizabethReturn || 0, 0]);
+      let min = Math.min(...values);
+      let max = Math.max(...values);
+      if (min === max) {
+        min -= 0.05;
+        max += 0.05;
+      }
+      const buffer = Math.max((max - min) * 0.16, 0.03);
+      min -= buffer;
+      max += buffer;
+      const x = (index) => pad.left + (points.length === 1 ? 0 : index * (width - pad.left - pad.right) / (points.length - 1));
+      const y = (value) => pad.top + (max - value) * (height - pad.top - pad.bottom) / (max - min);
+      const line = (field) => points.map((point, index) => `${x(index)},${y(point[field] || 0)}`).join(" ");
+      const area = (field) => `${pad.left},${y(0)} ${line(field)} ${x(points.length - 1)},${y(0)}`;
+      const ticks = [max, (max + min) / 2, min];
+      wrap.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Alex and Elizabeth portfolio return graph">
+          ${ticks.map((tick) => `
+            <line class="chart-grid" x1="${pad.left}" y1="${y(tick)}" x2="${width - pad.right}" y2="${y(tick)}"></line>
+            <text class="chart-label" x="12" y="${y(tick) + 4}">${pct.format(tick)}</text>
+          `).join("")}
+          <line class="chart-axis" x1="${pad.left}" y1="${y(0)}" x2="${width - pad.right}" y2="${y(0)}"></line>
+          <polygon class="chart-area" points="${area("alexReturn")}" fill="#1f7a6b"></polygon>
+          <polygon class="chart-area" points="${area("elizabethReturn")}" fill="#8d4f72"></polygon>
+          <polyline class="chart-line" points="${line("alexReturn")}" stroke="#1f7a6b"></polyline>
+          <polyline class="chart-line" points="${line("elizabethReturn")}" stroke="#8d4f72"></polyline>
+          ${points.map((point, index) => `
+            <circle class="chart-point" cx="${x(index)}" cy="${y(point.alexReturn || 0)}" r="5" stroke="#1f7a6b"></circle>
+            <circle class="chart-point" cx="${x(index)}" cy="${y(point.elizabethReturn || 0)}" r="5" stroke="#8d4f72"></circle>
+            <text class="chart-label" x="${x(index)}" y="${height - 16}" text-anchor="middle">${escapeHtml(index === 0 ? "Start" : point.date.slice(5))}</text>
+          `).join("")}
+        </svg>
+      `;
+      const saved = (state.history || []).length;
+      document.getElementById("chartNote").textContent = saved ? `${saved} saved snapshot${saved === 1 ? "" : "s"}. Latest line includes unsaved edits.` : "Baseline is ready. Add later prices, then save a snapshot.";
+    }
+
     function renderWinner() {
       const alex = summarize("alex");
       const elizabeth = summarize("elizabeth");
@@ -810,6 +1064,7 @@
       renderScore("alex", "alexScore", "#1f7a6b");
       renderScore("elizabeth", "elizabethScore", "#8d4f72");
       renderWinner();
+      renderChart();
       lucide.createIcons();
     }
 
@@ -828,7 +1083,7 @@
       rows.innerHTML = "";
       state.players[player].picks.forEach((pick, index) => {
         const start = asNumber(pick.start);
-        const current = asNumber(pick.current);
+        const current = currentValueForPick(pick);
         const gain = start !== null && current !== null ? current - start : null;
         const gainPct = gain !== null && start > 0 ? gain / start : null;
         const tr = document.createElement("tr");
@@ -840,10 +1095,11 @@
               ${TYPES.map((type) => `<option value="${type}" ${pick.type === type ? "selected" : ""}>${type}</option>`).join("")}
             </select>
           </td>
-          <td data-label="Start"><input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="start" value="${escapeHtml(pick.start)}" aria-label="${state.players[player].name} slot ${index + 1} starting value"></td>
-          <td data-label="Current">
+          <td data-label="Stake"><input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="start" value="${escapeHtml(pick.start)}" aria-label="${state.players[player].name} slot ${index + 1} starting stake"></td>
+          <td data-label="Buy Price"><input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="entryPrice" value="${escapeHtml(pick.entryPrice)}" aria-label="${state.players[player].name} slot ${index + 1} entry price"></td>
+          <td data-label="Later Price">
             <div class="current-cell">
-              <input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="current" value="${escapeHtml(pick.current)}" aria-label="${state.players[player].name} slot ${index + 1} current value">
+              <input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="currentPrice" value="${escapeHtml(pick.currentPrice)}" aria-label="${state.players[player].name} slot ${index + 1} later price">
               <button class="quote-btn" data-action="price" data-player="${player}" data-index="${index}" type="button" title="Use crypto price" aria-label="Use crypto price"><i data-lucide="refresh-cw"></i></button>
             </div>
           </td>
@@ -870,7 +1126,7 @@
     function updateResultCell(player, index) {
       const pick = state.players[player].picks[index];
       const start = asNumber(pick.start);
-      const current = asNumber(pick.current);
+      const current = currentValueForPick(pick);
       const gain = start !== null && current !== null ? current - start : null;
       const gainPct = gain !== null && start > 0 ? gain / start : null;
       const cell = document.querySelector(`[data-result="${player}-${index}"]`);
@@ -958,7 +1214,7 @@
       if (el.dataset.player) {
         const index = Number(el.dataset.index);
         const pick = state.players[el.dataset.player].picks[index];
-        pick[el.dataset.field] = ["start", "current"].includes(el.dataset.field) ? cleanMoney(el.value) : el.value;
+        pick[el.dataset.field] = ["start", "current", "entryPrice", "currentPrice"].includes(el.dataset.field) ? cleanMoney(el.value) : el.value;
         updateResultCell(el.dataset.player, index);
       }
       renderTotals();
@@ -979,9 +1235,11 @@
       pick.type = "Crypto";
       if (entryPrice === null) {
         pick.entryPrice = String(price);
+        pick.currentPrice = "";
         pick.current = String(startValue);
         setStatus("Entry price set", "check-circle");
       } else {
+        pick.currentPrice = String(price);
         pick.current = String(Number((startValue * price / entryPrice).toFixed(2)));
         setStatus("Price updated", "check-circle");
       }
@@ -1024,7 +1282,16 @@
       if (!confirm("Clear all 20 slots?")) return;
       state.players.alex.picks = blankPicks();
       state.players.elizabeth.picks = blankPicks();
+      state.history = [];
       render();
+      queueSave();
+    });
+    document.getElementById("snapshotBtn").addEventListener("click", () => {
+      const today = snapshotForToday();
+      const history = (state.history || []).filter((point) => point.date !== today.date);
+      history.push(today);
+      state.history = history.slice(-24);
+      renderTotals();
       queueSave();
     });
 

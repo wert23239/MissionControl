@@ -591,6 +591,7 @@
     };
     const TYPES = ["Stock", "Crypto", "ETF", "Other"];
     const PLAYERS = ["alex", "elizabeth"];
+    const DEFAULT_START_VALUE = "100";
     const battleParam = new URLSearchParams(window.location.search).get("battle");
     const battleKey = battleParam || "alex-elizabeth-2026-09-market-battle";
     const localKey = `market-battle:${battleKey}`;
@@ -615,7 +616,7 @@
     }
 
     function blankPicks() {
-      return Array.from({ length: 10 }, () => ({ symbol: "", type: "Stock", start: "", current: "" }));
+      return Array.from({ length: 10 }, () => ({ symbol: "", type: "Stock", start: DEFAULT_START_VALUE, current: "" }));
     }
 
     function defaultState() {
@@ -641,7 +642,23 @@
       }
     }
 
-    let state = readLocal() || defaultState();
+    function normalizeState(nextState) {
+      const base = { ...defaultState(), ...nextState };
+      for (const player of PLAYERS) {
+        const playerState = base.players[player] || defaultState().players[player];
+        const picks = Array.isArray(playerState.picks) ? playerState.picks : [];
+        base.players[player] = {
+          ...playerState,
+          picks: blankPicks().map((pick, index) => {
+            const saved = picks[index] || {};
+            return { ...pick, ...saved, start: saved.start === "" || saved.start === undefined ? DEFAULT_START_VALUE : saved.start };
+          })
+        };
+      }
+      return base;
+    }
+
+    let state = normalizeState(readLocal() || defaultState());
 
     const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
     const pct = new Intl.NumberFormat("en-US", { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -800,7 +817,7 @@
       if (!response.ok) throw new Error(`Load failed ${response.status}`);
       const rows = await response.json();
       if (rows.length) {
-        state = { ...defaultState(), ...rows[0].payload };
+        state = normalizeState(rows[0].payload);
         lastRemoteUpdatedAt = rows[0].updated_at;
         persistLocal();
         setStatus("Synced", "check-circle");

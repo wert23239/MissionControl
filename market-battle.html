@@ -540,7 +540,7 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Ticker</th>
+                <th>Pick</th>
                 <th>Type</th>
                 <th>Start</th>
                 <th>Current</th>
@@ -562,7 +562,7 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Ticker</th>
+                <th>Pick</th>
                 <th>Type</th>
                 <th>Start</th>
                 <th>Current</th>
@@ -592,6 +592,7 @@
     const TYPES = ["Stock", "Crypto", "ETF", "Other"];
     const PLAYERS = ["alex", "elizabeth"];
     const DEFAULT_START_VALUE = "100";
+    const SAVE_DEBOUNCE_MS = 1800;
     const battleParam = new URLSearchParams(window.location.search).get("battle");
     const battleKey = battleParam || "alex-elizabeth-2026-09-market-battle";
     const localKey = `market-battle:${battleKey}`;
@@ -762,7 +763,7 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="slot">${index + 1}</td>
-          <td data-label="Ticker"><input data-player="${player}" data-index="${index}" data-field="symbol" value="${escapeHtml(pick.symbol)}" autocomplete="off" aria-label="${state.players[player].name} slot ${index + 1} ticker"></td>
+          <td data-label="Pick"><input data-player="${player}" data-index="${index}" data-field="symbol" value="${escapeHtml(pick.symbol)}" autocomplete="off" placeholder="DOGE or Dogecoin" aria-label="${state.players[player].name} slot ${index + 1} pick"></td>
           <td data-label="Type">
             <select data-player="${player}" data-index="${index}" data-field="type" aria-label="${state.players[player].name} slot ${index + 1} type">
               ${TYPES.map((type) => `<option value="${type}" ${pick.type === type ? "selected" : ""}>${type}</option>`).join("")}
@@ -855,18 +856,19 @@
           console.error(error);
           setStatus("Local only", "wifi-off");
         });
-      }, 650);
+      }, SAVE_DEBOUNCE_MS);
     }
 
     function handleInput(event) {
       const el = event.target;
+      if (event.type === "change" && el.tagName !== "SELECT") return;
       if (el.id === "battleName") state.name = el.value;
       if (el.id === "startDate") state.startDate = el.value;
       if (el.id === "endDate") state.endDate = el.value;
       if (el.id === "stake") state.stake = el.value;
       if (el.dataset.player) {
         const pick = state.players[el.dataset.player].picks[Number(el.dataset.index)];
-        pick[el.dataset.field] = ["start", "current"].includes(el.dataset.field) ? cleanMoney(el.value) : el.value.toUpperCase();
+        pick[el.dataset.field] = ["start", "current"].includes(el.dataset.field) ? cleanMoney(el.value) : el.value;
       }
       render();
       queueSave();

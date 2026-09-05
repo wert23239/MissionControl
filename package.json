@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "market:update": "node scripts/update-market-battle.js",
     "test": "jest tests/dj.test.js tests/dj-integration.test.js --coverage && node scripts/update-coverage-badge.js",
     "test:unit": "jest tests/dj.test.js --coverage",
     "test:integration": "jest tests/dj-integration.test.js --testTimeout=30000",

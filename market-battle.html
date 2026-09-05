@@ -675,7 +675,7 @@
       <div class="chart-head">
         <div class="chart-title">
           <strong>Portfolio Race</strong>
-          <span>Each pick starts at $100. Later price updates move the line.</span>
+          <span>Each pick starts at $100. Daily current prices move the line.</span>
         </div>
         <div class="legend">
           <span class="legend-item"><span class="legend-line" style="--accent: var(--alex)"></span>Alex</span>
@@ -702,7 +702,7 @@
                 <th>Type</th>
                 <th>Stake</th>
                 <th>Buy $</th>
-                <th>Later $</th>
+                <th>Current $</th>
                 <th>Result</th>
               </tr>
             </thead>
@@ -725,7 +725,7 @@
                 <th>Type</th>
                 <th>Stake</th>
                 <th>Buy $</th>
-                <th>Later $</th>
+                <th>Current $</th>
                 <th>Result</th>
               </tr>
             </thead>
@@ -737,7 +737,7 @@
 
     <div class="footer">
       <span id="updatedAt">Never saved</span>
-      <span>Manual later prices, with crypto refresh where available.</span>
+      <span id="quoteUpdatedAt">Daily quote updater enabled.</span>
     </div>
   </main>
 
@@ -1038,7 +1038,7 @@
         </svg>
       `;
       const saved = (state.history || []).length;
-      document.getElementById("chartNote").textContent = saved ? `${saved} saved snapshot${saved === 1 ? "" : "s"}. Latest line includes unsaved edits.` : "Baseline is ready. Add later prices, then save a snapshot.";
+      document.getElementById("chartNote").textContent = saved ? `${saved} saved snapshot${saved === 1 ? "" : "s"}. Latest line includes current edits.` : "Baseline is ready. Current prices will update daily.";
     }
 
     function renderWinner() {
@@ -1097,10 +1097,10 @@
           </td>
           <td data-label="Stake"><input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="start" value="${escapeHtml(pick.start)}" aria-label="${state.players[player].name} slot ${index + 1} starting stake"></td>
           <td data-label="Buy Price"><input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="entryPrice" value="${escapeHtml(pick.entryPrice)}" aria-label="${state.players[player].name} slot ${index + 1} entry price"></td>
-          <td data-label="Later Price">
+          <td data-label="Current Price">
             <div class="current-cell">
-              <input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="currentPrice" value="${escapeHtml(pick.currentPrice)}" aria-label="${state.players[player].name} slot ${index + 1} later price">
-              <button class="quote-btn" data-action="price" data-player="${player}" data-index="${index}" type="button" title="Use crypto price" aria-label="Use crypto price"><i data-lucide="refresh-cw"></i></button>
+              <input inputmode="decimal" data-player="${player}" data-index="${index}" data-field="currentPrice" value="${escapeHtml(pick.currentPrice)}" aria-label="${state.players[player].name} slot ${index + 1} current price">
+              <button class="quote-btn" data-action="price" data-player="${player}" data-index="${index}" type="button" title="Refresh price" aria-label="Refresh price"><i data-lucide="refresh-cw"></i></button>
             </div>
           </td>
           <td data-label="Result" class="result-cell ${toneClass(gain || 0)}" data-result="${player}-${index}">
@@ -1154,6 +1154,10 @@
         return;
       }
       el.textContent = `Saved ${shortDateTime.format(new Date(lastRemoteUpdatedAt))}`;
+      const quoteEl = document.getElementById("quoteUpdatedAt");
+      if (quoteEl) {
+        quoteEl.textContent = state.quoteUpdatedAt ? `Quotes updated ${shortDateTime.format(new Date(state.quoteUpdatedAt))}` : "Daily quote updater enabled.";
+      }
     }
 
     async function loadRemote() {

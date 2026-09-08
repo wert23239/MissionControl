@@ -101,6 +101,7 @@ function classifyVersion(name) {
   const lower = (name || '').toLowerCase();
   if (lower.includes('extended')) return 'Extended';
   if (lower.includes('edit')) return 'Edit';
+  if (/\boriginal\s+mix\b/.test(lower)) return 'Original';
   if (lower.includes('remix') || lower.includes(' mix')) return 'Remix';
   return 'Original';
 }

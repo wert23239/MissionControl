@@ -174,6 +174,7 @@ describe('classifyVersion', () => {
   test('identifies edit', () => expect(classifyVersion('Closer (Radio Edit)')).toBe('Edit'));
   test('identifies remix', () => expect(classifyVersion('Closer (R3HAB Remix)')).toBe('Remix'));
   test('identifies mix as remix', () => expect(classifyVersion('Closer (Club Mix)')).toBe('Remix'));
+  test('keeps original mix as original', () => expect(classifyVersion('Josh Baker - Back It Up (Original Mix)')).toBe('Original'));
   test('extended priority over remix', () => expect(classifyVersion('Extended Remix Version')).toBe('Extended'));
   test('handles empty/null', () => {
     expect(classifyVersion('')).toBe('Original');

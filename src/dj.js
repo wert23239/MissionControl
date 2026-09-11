@@ -42,6 +42,7 @@ function pickBestFile(files) {
   for (const f of files) {
     const score = qualityScore(f.filename || '');
     if (score === 0) continue;
+    if (typeof f.size === 'number' && f.size < 512000) continue;
     
     if (!best) {
       best = f;

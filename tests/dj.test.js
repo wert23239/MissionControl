@@ -95,6 +95,22 @@ describe('pickBestFile', () => {
     expect(pickBestFile(files).filename).toBe('song.mp3');
   });
 
+  test('skips preview-sized audio files', () => {
+    const files = [
+      { filename: '[278509342] Michael Jackson - Beat It.mp3', size: 500000 },
+      { filename: 'Michael Jackson - Beat It.wav', size: 47000000 },
+    ];
+    expect(pickBestFile(files).filename).toBe('Michael Jackson - Beat It.wav');
+  });
+
+  test('returns null when all audio candidates are preview-sized', () => {
+    const files = [
+      { filename: 'short-preview.mp3', size: 320000 },
+      { filename: 'tiny-preview.wav', size: 480000 },
+    ];
+    expect(pickBestFile(files)).toBeNull();
+  });
+
   test('returns null for empty/null', () => {
     expect(pickBestFile([])).toBeNull();
     expect(pickBestFile(null)).toBeNull();

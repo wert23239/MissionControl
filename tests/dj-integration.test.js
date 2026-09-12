@@ -70,7 +70,7 @@ describe('Soulseek (slskd) Integration', () => {
     // At least one audio file
     const audioFiles = allFiles.filter(f => {
       const fn = (f.filename || '').toLowerCase();
-      return fn.endsWith('.mp3') || fn.endsWith('.flac') || fn.endsWith('.wav');
+      return fn.endsWith('.mp3') || fn.endsWith('.flac') || fn.endsWith('.wav') || fn.endsWith('.aiff') || fn.endsWith('.aif');
     });
     expect(audioFiles.length).toBeGreaterThan(0);
 

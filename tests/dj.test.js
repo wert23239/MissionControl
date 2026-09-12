@@ -46,6 +46,10 @@ describe('sanitizeName', () => {
 
 describe('qualityScore', () => {
   test('WAV scores highest (3)', () => expect(qualityScore('track.wav')).toBe(3));
+  test('AIFF scores as lossless highest quality (3)', () => {
+    expect(qualityScore('track.aiff')).toBe(3);
+    expect(qualityScore('track.aif')).toBe(3);
+  });
   test('FLAC scores 2', () => expect(qualityScore('track.flac')).toBe(2));
   test('MP3 scores 1', () => expect(qualityScore('track.mp3')).toBe(1));
   test('unknown format scores 0', () => {
@@ -69,6 +73,14 @@ describe('pickBestFile', () => {
       { filename: 'song.wav', size: 50000000 },
     ];
     expect(pickBestFile(files).filename).toBe('song.wav');
+  });
+
+  test('picks AIFF as a top lossless candidate', () => {
+    const files = [
+      { filename: 'song.mp3', size: 9000000 },
+      { filename: 'song.aiff', size: 52000000 },
+    ];
+    expect(pickBestFile(files).filename).toBe('song.aiff');
   });
 
   test('picks FLAC over MP3', () => {
@@ -237,6 +249,11 @@ describe('planCleanup', () => {
 
   test('identifies nested files for flattening', () => {
     const r = planCleanup([{ name: 'song.wav', extension: 'wav', depth: 1 }]);
+    expect(r.toFlatten).toHaveLength(1);
+  });
+
+  test('identifies nested AIFF files for flattening', () => {
+    const r = planCleanup([{ name: 'song.aiff', extension: 'aiff', depth: 1 }]);
     expect(r.toFlatten).toHaveLength(1);
   });
 

@@ -135,6 +135,7 @@ function planCleanup(files) {
   for (const f of files) {
     if (f.isDirectory && f.name !== '.incomplete') {
       // Directories should be flattened then removed
+      toDelete.push(f);
       continue;
     }
     

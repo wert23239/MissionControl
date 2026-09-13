@@ -276,6 +276,12 @@ describe('planCleanup', () => {
     expect(r.toDelete).toHaveLength(0);
   });
 
+  test('removes regular directories after flattening', () => {
+    const r = planCleanup([{ name: 'Album Folder', isDirectory: true, depth: 0 }]);
+    expect(r.toDelete).toHaveLength(1);
+    expect(r.toDelete[0].name).toBe('Album Folder');
+  });
+
   test('handles empty array', () => {
     const r = planCleanup([]);
     expect(r.toConvert).toHaveLength(0);

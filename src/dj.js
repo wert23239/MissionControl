@@ -130,7 +130,25 @@ function sortVersions(versions) {
 function planCleanup(files) {
   const toConvert = [];  // FLACs that need WAV conversion
   const toFlatten = [];  // Files in subfolders that need moving to root
-  const toDelete = [];   // Junk files (m4a, jpg, empty folders)
+  const toDelete = [];   // Junk files (m4a, cover art, playlists, empty folders)
+  const junkExtensions = new Set([
+    'm4a',
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+    'gif',
+    'bmp',
+    'txt',
+    'nfo',
+    'cue',
+    'log',
+    'm3u',
+    'm3u8',
+    'ini',
+    'url',
+    'db',
+  ]);
 
   for (const f of files) {
     if (f.isDirectory && f.name !== '.incomplete') {
@@ -143,7 +161,7 @@ function planCleanup(files) {
     
     if (ext === 'flac') {
       toConvert.push(f);
-    } else if (ext === 'm4a' || ext === 'jpg' || ext === 'jpeg' || ext === 'png') {
+    } else if (junkExtensions.has(ext)) {
       toDelete.push(f);
     }
     

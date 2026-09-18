@@ -270,6 +270,23 @@ describe('planCleanup', () => {
     expect(r.toDelete).toHaveLength(2);
   });
 
+  test('identifies album sidecar files as junk', () => {
+    const r = planCleanup([
+      { name: 'Folder.webp', extension: 'webp', depth: 0 },
+      { name: 'release.nfo', extension: 'nfo', depth: 0 },
+      { name: 'tracklist.m3u', extension: 'm3u', depth: 0 },
+      { name: 'rip.log', extension: 'log', depth: 0 },
+      { name: 'desktop.ini', extension: 'ini', depth: 0 },
+    ]);
+    expect(r.toDelete.map((f) => f.name)).toEqual([
+      'Folder.webp',
+      'release.nfo',
+      'tracklist.m3u',
+      'rip.log',
+      'desktop.ini',
+    ]);
+  });
+
   test('skips .incomplete directory', () => {
     const r = planCleanup([{ name: '.incomplete', isDirectory: true, depth: 0 }]);
     expect(r.toConvert).toHaveLength(0);

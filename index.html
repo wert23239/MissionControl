@@ -2673,21 +2673,26 @@ async function djSearch(){
         const sel=selected.has(i);
         const srcColor=srcColors[opt.source]||'#665c78';
         const srcLabel=srcLabels[opt.source]||opt.source;
-        const qualBadge=opt.quality?`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">${opt.quality}</span>`:'';
+        const artUrl=safeExternalUrl(opt.art);
+        const playUrl=safeExternalUrl(opt.playUrl);
+        const titleText=escapeHtml(opt.title||'Untitled');
+        const artistText=escapeHtml(opt.artist||'');
+        const durationText=opt.duration?' · '+Math.floor(opt.duration/60)+':'+String(opt.duration%60).padStart(2,'0'):'';
+        const qualBadge=opt.quality?`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">${escapeHtml(opt.quality)}</span>`:'';
         const multiSrc=opt.multiSource?`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:600;">⭐ multi-src</span>`:'';
         const popBar='';
         html+=`<div onclick="window._djToggle(${i})" style="display:flex;gap:8px;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.04);border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:4px;cursor:pointer;transition:all 0.2s;">
           <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${sel?'#e879f9':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;${sel?'background:#e879f9;color:#fff;':''}">${sel?'✓':''}</div>
-          ${opt.art?`<img src="${opt.art}" style="width:36px;height:36px;border-radius:6px;flex-shrink:0;">`:`<div style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${opt.sourceIcon||"🎵"}</div>`}
-          ${opt.playUrl?`<a href="${opt.playUrl}" target="_blank" onclick="event.stopPropagation()" style="color:#7c3aed;font-size:16px;text-decoration:none;flex-shrink:0;padding:0 2px;" title="Preview">▶</a>`:''}
+          ${artUrl?`<img src="${escapeHtml(artUrl)}" style="width:36px;height:36px;border-radius:6px;flex-shrink:0;" alt="">`:`<div style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${escapeHtml(opt.sourceIcon||"🎵")}</div>`}
+          ${playUrl?`<a href="${escapeHtml(playUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:#7c3aed;font-size:16px;text-decoration:none;flex-shrink:0;padding:0 2px;" title="Preview">▶</a>`:''}
           <div style="flex:1;min-width:0;">
-            <div style="color:#d4c4f0;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.title}</div>
-            <div style="color:#665c78;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${opt.artist}${opt.duration?' · '+Math.floor(opt.duration/60)+':'+String(opt.duration%60).padStart(2,'0'):''}</div>
+            <div style="color:#d4c4f0;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titleText}</div>
+            <div style="color:#665c78;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${artistText}${escapeHtml(durationText)}</div>
           </div>
-          <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${srcColor}22;color:${srcColor};font-weight:600;white-space:nowrap;">${srcLabel}</span>
+          <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${srcColor}22;color:${srcColor};font-weight:600;white-space:nowrap;">${escapeHtml(srcLabel)}</span>
           ${qualBadge}${multiSrc}
           ${popBar}
-          <div style="color:${sel?'#e879f9':'#665c78'};font-size:10px;font-weight:500;flex-shrink:0;">${opt.tag}</div>
+          <div style="color:${sel?'#e879f9':'#665c78'};font-size:10px;font-weight:500;flex-shrink:0;">${escapeHtml(opt.tag||'')}</div>
         </div>`;
       });
       html+=`<div style="display:flex;gap:8px;margin-top:6px;">
@@ -2709,16 +2714,17 @@ async function djSearch(){
   const picks=await pickTracks();
 
   const showStatus=(track,status,sub)=>{
+    const artUrl=safeExternalUrl(track.art);
     pipe.innerHTML=`
       <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;">
-        ${track.art?`<img src="${track.art}" style="width:40px;height:40px;border-radius:8px;">`:''}
+        ${artUrl?`<img src="${escapeHtml(artUrl)}" style="width:40px;height:40px;border-radius:8px;" alt="">`:''}
         <div style="flex:1;min-width:0;">
-          <div style="color:#d4c4f0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title}</div>
-          <div style="color:#665c78;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.artist}</div>
+          <div style="color:#d4c4f0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(track.title||'Untitled')}</div>
+          <div style="color:#665c78;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(track.artist||'')}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="color:#e879f9;font-size:11px;font-weight:600;">${status}</div>
-          ${sub?`<div style="color:#665c78;font-size:10px;margin-top:1px;">${sub}</div>`:''}
+          <div style="color:#e879f9;font-size:11px;font-weight:600;">${escapeHtml(status)}</div>
+          ${sub?`<div style="color:#665c78;font-size:10px;margin-top:1px;">${escapeHtml(sub)}</div>`:''}
         </div>
       </div>`;
   };

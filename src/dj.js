@@ -30,29 +30,131 @@ function qualityScore(filename) {
   return 0;
 }
 
+function stripExtension(name) {
+  return (name || '').split(/[/\\]/).pop().replace(/\.[^.]+$/, '');
+}
+
+function normalizeTokens(value) {
+  return (value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\b(feat|featuring|ft|with|x)\b\.?/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(t => t.length > 1);
+}
+
+function normalizeCompact(value) {
+  return normalizeTokens(value).join('');
+}
+
+function uniq(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+/**
+ * Parse common DJ queue formats into title-first search pieces.
+ * Supports "Song — Artist" from Mission Control and "Artist - Song".
+ * @param {string} query
+ * @returns {{title: string, artist: string, searchText: string}}
+ */
+function parseSongQuery(query) {
+  const raw = (query || '').trim();
+  let title = raw;
+  let artist = '';
+
+  if (raw.includes('—')) {
+    const parts = raw.split('—');
+    title = parts[0].trim();
+    artist = parts.slice(1).join('—').trim();
+  } else {
+    const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
+    if (dash) {
+      artist = dash[1].trim();
+      title = dash[2].trim();
+    }
+  }
+
+  const searchText = title || raw;
+  return { title: title || raw, artist, searchText };
+}
+
+/**
+ * Score how well a Soulseek filename matches the intended track.
+ * Title match is mandatory-ish; artist is a bonus so remixes and messy tags
+ * still have a chance when the filename contains the song name.
+ * @param {string} filename
+ * @param {string|object} query
+ * @returns {number}
+ */
+function songMatchScore(filename, query) {
+  const parsed = typeof query === 'object' ? query : parseSongQuery(query || '');
+  const base = stripExtension(filename);
+  const fileCompact = normalizeCompact(base);
+  const titleTokens = uniq(normalizeTokens(parsed.title));
+  const artistTokens = uniq(normalizeTokens(parsed.artist));
+
+  if (!titleTokens.length) return 0;
+
+  const matchedTitle = titleTokens.filter(t => fileCompact.includes(t));
+  const titleCoverage = matchedTitle.length / titleTokens.length;
+  const titleCompact = normalizeCompact(parsed.title);
+  let score = 0;
+
+  if (titleCompact && fileCompact.includes(titleCompact)) score += 80;
+  score += Math.round(titleCoverage * 70);
+
+  const longTitleTokens = titleTokens.filter(t => t.length >= 4);
+  const hasAnchor = longTitleTokens.some(t => fileCompact.includes(t)) || (titleCompact.length >= 4 && fileCompact.includes(titleCompact));
+  if (!hasAnchor || titleCoverage < 0.45) return 0;
+
+  if (artistTokens.length) {
+    const matchedArtist = artistTokens.filter(t => fileCompact.includes(t));
+    score += Math.round((matchedArtist.length / artistTokens.length) * 30);
+  }
+
+  return score;
+}
+
 /**
  * Pick the best file from a list of search results
- * Priority: WAV > FLAC > MP3, then largest file size
+ * Priority: title match, artist closeness, WAV > FLAC > MP3, then file size
  * @param {Array} files - Array of {filename, size} objects
+ * @param {string|object} query - Optional requested track
  * @returns {object|null} Best file or null
  */
-function pickBestFile(files) {
+function pickBestFile(files, query = '') {
   if (!files || !files.length) return null;
   
   let best = null;
+  let bestRank = null;
   for (const f of files) {
     const score = qualityScore(f.filename || '');
     if (score === 0) continue;
     if (typeof f.size === 'number' && f.size < 512000) continue;
+
+    const match = query ? songMatchScore(f.filename || '', query) : 1;
+    if (query && match <= 0) continue;
+    const rank = {
+      match,
+      quality: score,
+      size: f.size || 0,
+    };
     
     if (!best) {
       best = f;
+      bestRank = rank;
       continue;
     }
     
-    const bestScore = qualityScore(best.filename || '');
-    if (score > bestScore || (score === bestScore && (f.size || 0) > (best.size || 0))) {
+    if (
+      rank.match > bestRank.match ||
+      (rank.match === bestRank.match && rank.quality > bestRank.quality) ||
+      (rank.match === bestRank.match && rank.quality === bestRank.quality && rank.size > bestRank.size)
+    ) {
       best = f;
+      bestRank = rank;
     }
   }
   return best;
@@ -196,6 +298,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     sanitizeName,
     qualityScore,
+    parseSongQuery,
+    songMatchScore,
     pickBestFile,
     validateDownload,
     getExtension,

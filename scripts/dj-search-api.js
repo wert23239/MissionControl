@@ -56,6 +56,63 @@ function classifyVersion(name) {
 
 const versionOrder = { Original: 0, Extended: 1, Edit: 2, Remix: 3 };
 
+function normalizeTokens(value) {
+  return (value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\b(feat|featuring|ft|with|x)\b\.?/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(t => t.length > 1);
+}
+
+function normalizeCompact(value) {
+  return normalizeTokens(value).join('');
+}
+
+function parseSongQuery(query) {
+  const raw = (query || '').trim();
+  let title = raw;
+  let artist = '';
+  if (raw.includes('—')) {
+    const parts = raw.split('—');
+    title = parts[0].trim();
+    artist = parts.slice(1).join('—').trim();
+  } else {
+    const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
+    if (dash) {
+      artist = dash[1].trim();
+      title = dash[2].trim();
+    }
+  }
+  return { title: title || raw, artist, searchText: title || raw };
+}
+
+function songMatchScore(filename, parsed) {
+  const base = (filename || '').split(/[/\\]/).pop().replace(/\.[^.]+$/, '');
+  const fileCompact = normalizeCompact(base);
+  const titleTokens = [...new Set(normalizeTokens(parsed.title))];
+  const artistTokens = [...new Set(normalizeTokens(parsed.artist))];
+  if (!titleTokens.length) return 0;
+
+  const matchedTitle = titleTokens.filter(t => fileCompact.includes(t));
+  const titleCoverage = matchedTitle.length / titleTokens.length;
+  const titleCompact = normalizeCompact(parsed.title);
+  let score = titleCompact && fileCompact.includes(titleCompact) ? 80 : 0;
+  score += Math.round(titleCoverage * 70);
+
+  const longTitleTokens = titleTokens.filter(t => t.length >= 4);
+  const hasAnchor = longTitleTokens.some(t => fileCompact.includes(t)) || (titleCompact.length >= 4 && fileCompact.includes(titleCompact));
+  if (!hasAnchor || titleCoverage < 0.45) return 0;
+
+  if (artistTokens.length) {
+    const matchedArtist = artistTokens.filter(t => fileCompact.includes(t));
+    score += Math.round((matchedArtist.length / artistTokens.length) * 30);
+  }
+  return score;
+}
+
 // ── Spotify ──
 
 async function getSpotifyToken() {
@@ -171,6 +228,7 @@ print(json.dumps(results))
 // ── Soulseek (slskd) ──
 
 async function searchSoulseek(query) {
+  const parsed = parseSongQuery(query);
   // Auth
   const auth = await fetchJSON(`${SLSKD_URL}/api/v0/session`, {
     method: 'POST',
@@ -184,7 +242,7 @@ async function searchSoulseek(query) {
   const search = await fetchJSON(`${SLSKD_URL}/api/v0/searches`, {
     method: 'POST',
     headers,
-    body: { searchText: query },
+    body: { searchText: parsed.searchText },
   });
   if (!search?.id) return [];
 
@@ -205,13 +263,15 @@ async function searchSoulseek(query) {
       if (!fn.endsWith('.wav') && !fn.endsWith('.aiff') && !fn.endsWith('.aif') && !fn.endsWith('.flac') && !fn.endsWith('.mp3')) continue;
       const qualScore = (fn.endsWith('.wav') || fn.endsWith('.aiff') || fn.endsWith('.aif')) ? 3 : fn.endsWith('.flac') ? 2 : 1;
       const basename = (f.filename || '').split(/[/\\]/).pop();
+      const matchScore = songMatchScore(basename, parsed);
+      if (matchScore <= 0) continue;
       candidates.push({
         title: basename.replace(/\.[^.]+$/, '').replace(/_/g, ' '),
         artist: resp.username || '',
         art: '',
         source: 'soulseek',
         sourceIcon: '🟣',
-        popularity: qualScore * 25 + Math.min(25, Math.round((f.size || 0) / 2000000)),
+        popularity: matchScore + qualScore * 25 + Math.min(25, Math.round((f.size || 0) / 2000000)),
         tag: classifyVersion(basename),
         duration: 0,
         quality: fn.endsWith('.wav') ? 'WAV' : (fn.endsWith('.aiff') || fn.endsWith('.aif')) ? 'AIFF' : fn.endsWith('.flac') ? 'FLAC' : 'MP3',

@@ -2803,7 +2803,6 @@ function renderDJ(){
       <div class="q-quality">${escapeHtml(d.quality||d.genre||'')}</div>
       ${statusBadge}
       ${d.source&&d.done?`<span style="font-size:10px;color:#665c78;">${escapeHtml(d.source)}</span>`:''}
-      <button onclick="deleteDJ(${actionArg})" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;font-family:Courier New,monospace;padding:0 4px;transition:color .15s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='#555'">×</button>
     </div>`;
   }
 

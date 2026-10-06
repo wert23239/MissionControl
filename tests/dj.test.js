@@ -1,6 +1,8 @@
 const {
   sanitizeName,
   qualityScore,
+  parseSongQuery,
+  songMatchScore,
   pickBestFile,
   validateDownload,
   getExtension,
@@ -61,6 +63,52 @@ describe('qualityScore', () => {
     expect(qualityScore('track.FLAC')).toBe(2);
   });
   test('handles no extension', () => expect(qualityScore('trackname')).toBe(0));
+});
+
+// ─── parseSongQuery / songMatchScore ───
+
+describe('parseSongQuery', () => {
+  test('parses Mission Control title-first queue format', () => {
+    expect(parseSongQuery('Atmosphere — FISHER, Kita Alexander')).toEqual({
+      title: 'Atmosphere',
+      artist: 'FISHER, Kita Alexander',
+      searchText: 'Atmosphere',
+    });
+  });
+
+  test('parses artist dash title format', () => {
+    expect(parseSongQuery('Daft Punk - One More Time')).toEqual({
+      title: 'One More Time',
+      artist: 'Daft Punk',
+      searchText: 'One More Time',
+    });
+  });
+
+  test('keeps plain title as title-only search', () => {
+    expect(parseSongQuery('B-Side')).toEqual({
+      title: 'B-Side',
+      artist: '',
+      searchText: 'B-Side',
+    });
+  });
+});
+
+describe('songMatchScore', () => {
+  test('matches by song title even when artist is missing', () => {
+    const score = songMatchScore('07 - Atmosphere (Extended Mix).flac', 'Atmosphere — FISHER, Kita Alexander');
+    expect(score).toBeGreaterThan(0);
+  });
+
+  test('artist closeness improves the score but is not required', () => {
+    const query = 'Atmosphere — FISHER, Kita Alexander';
+    const titleOnly = songMatchScore('07 - Atmosphere (Extended Mix).flac', query);
+    const withArtist = songMatchScore('FISHER & Kita Alexander - Atmosphere.wav', query);
+    expect(withArtist).toBeGreaterThan(titleOnly);
+  });
+
+  test('rejects unrelated high quality files', () => {
+    expect(songMatchScore('Daft Punk - One More Time.wav', 'Atmosphere — FISHER, Kita Alexander')).toBe(0);
+  });
 });
 
 // ─── pickBestFile ───
@@ -134,6 +182,23 @@ describe('pickBestFile', () => {
       { filename: 'song.wav', size: 50000000 },
     ];
     expect(pickBestFile(files).filename).toBe('song.wav');
+  });
+
+  test('with a query, prefers a title match over an unrelated larger WAV', () => {
+    const files = [
+      { filename: 'Daft Punk - One More Time.wav', size: 90000000 },
+      { filename: '07 - Atmosphere.mp3', size: 9000000 },
+    ];
+    expect(pickBestFile(files, 'Atmosphere — FISHER, Kita Alexander').filename).toBe('07 - Atmosphere.mp3');
+  });
+
+  test('with a query, uses artist closeness after title match', () => {
+    const files = [
+      { filename: 'Random Artist - Atmosphere.wav', size: 80000000 },
+      { filename: 'FISHER Kita Alexander - Atmosphere.wav', size: 60000000 },
+    ];
+    expect(pickBestFile(files, 'Atmosphere — FISHER, Kita Alexander').filename)
+      .toBe('FISHER Kita Alexander - Atmosphere.wav');
   });
 });
 

@@ -64,8 +64,9 @@ function parseSongQuery(query) {
   let title = raw;
   let artist = '';
 
-  if (raw.includes('—')) {
-    const parts = raw.split('—');
+  const titleFirstDash = raw.match(/^(.+?)\s*[—–]\s*(.+)$/);
+  if (titleFirstDash) {
+    const parts = raw.split(/[—–]/);
     title = parts[0].trim();
     artist = parts.slice(1).join('—').trim();
   } else {

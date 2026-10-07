@@ -76,6 +76,22 @@ describe('parseSongQuery', () => {
     });
   });
 
+  test('parses title-first en dash exports', () => {
+    expect(parseSongQuery('Atmosphere – FISHER, Kita Alexander')).toEqual({
+      title: 'Atmosphere',
+      artist: 'FISHER, Kita Alexander',
+      searchText: 'Atmosphere',
+    });
+  });
+
+  test('parses title-first dash exports without surrounding spaces', () => {
+    expect(parseSongQuery('Atmosphere—FISHER, Kita Alexander')).toEqual({
+      title: 'Atmosphere',
+      artist: 'FISHER, Kita Alexander',
+      searchText: 'Atmosphere',
+    });
+  });
+
   test('parses artist dash title format', () => {
     expect(parseSongQuery('Daft Punk - One More Time')).toEqual({
       title: 'One More Time',

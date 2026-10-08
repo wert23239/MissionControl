@@ -108,6 +108,14 @@ describe('parseSongQuery', () => {
     });
   });
 
+  test('parses title by artist exports', () => {
+    expect(parseSongQuery('One More Time by Daft Punk')).toEqual({
+      title: 'One More Time',
+      artist: 'Daft Punk',
+      searchText: 'One More Time',
+    });
+  });
+
   test('keeps plain title as title-only search', () => {
     expect(parseSongQuery('B-Side')).toEqual({
       title: 'B-Side',
@@ -136,6 +144,11 @@ describe('songMatchScore', () => {
 
   test('matches pasted artist-first en dash rows by song title', () => {
     const score = songMatchScore('Daft Punk - One More Time.wav', 'Daft Punk – One More Time');
+    expect(score).toBeGreaterThan(0);
+  });
+
+  test('matches pasted title-by-artist rows by song title', () => {
+    const score = songMatchScore('Daft Punk - One More Time.wav', 'One More Time by Daft Punk');
     expect(score).toBeGreaterThan(0);
   });
 });

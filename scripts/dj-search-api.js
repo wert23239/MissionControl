@@ -84,27 +84,33 @@ function parseSongQuery(query) {
     title = emDash[1].trim();
     artist = emDash[2].trim();
   } else {
-    const enDash = raw.match(/^(.+?)\s+–\s+(.+)$/);
-    if (enDash) {
-      const left = enDash[1].trim();
-      const right = enDash[2].trim();
-      if (looksLikeArtistList(right) && !looksLikeArtistList(left)) {
-        title = left;
-        artist = right;
-      } else {
-        artist = left;
-        title = right;
-      }
+    const byArtist = raw.match(/^(.+?)\s+by\s+(.+)$/i);
+    if (byArtist) {
+      title = byArtist[1].trim();
+      artist = byArtist[2].trim();
     } else {
-      const tightEnDash = raw.match(/^(.+?)\s*–\s*(.+)$/);
-      if (tightEnDash) {
-        title = tightEnDash[1].trim();
-        artist = tightEnDash[2].trim();
+      const enDash = raw.match(/^(.+?)\s+–\s+(.+)$/);
+      if (enDash) {
+        const left = enDash[1].trim();
+        const right = enDash[2].trim();
+        if (looksLikeArtistList(right) && !looksLikeArtistList(left)) {
+          title = left;
+          artist = right;
+        } else {
+          artist = left;
+          title = right;
+        }
       } else {
-        const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
-        if (dash) {
-          artist = dash[1].trim();
-          title = dash[2].trim();
+        const tightEnDash = raw.match(/^(.+?)\s*–\s*(.+)$/);
+        if (tightEnDash) {
+          title = tightEnDash[1].trim();
+          artist = tightEnDash[2].trim();
+        } else {
+          const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
+          if (dash) {
+            artist = dash[1].trim();
+            title = dash[2].trim();
+          }
         }
       }
     }

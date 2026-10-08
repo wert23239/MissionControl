@@ -53,9 +53,15 @@ function uniq(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function looksLikeArtistList(value) {
+  return /,|&|\band\b|\bfeat\b|\bfeaturing\b|\bft\b/i.test(value || '');
+}
+
 /**
  * Parse common DJ queue formats into title-first search pieces.
  * Supports "Song — Artist" from Mission Control and "Artist - Song".
+ * Treats spaced en dash as artist-first unless the right side clearly looks
+ * like an artist list, which keeps pasted Beatport-style rows searchable.
  * @param {string} query
  * @returns {{title: string, artist: string, searchText: string}}
  */
@@ -64,16 +70,34 @@ function parseSongQuery(query) {
   let title = raw;
   let artist = '';
 
-  const titleFirstDash = raw.match(/^(.+?)\s*[—–]\s*(.+)$/);
-  if (titleFirstDash) {
-    const parts = raw.split(/[—–]/);
-    title = parts[0].trim();
-    artist = parts.slice(1).join('—').trim();
+  const emDash = raw.match(/^(.+?)\s*—\s*(.+)$/);
+  if (emDash) {
+    title = emDash[1].trim();
+    artist = emDash[2].trim();
   } else {
-    const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
-    if (dash) {
-      artist = dash[1].trim();
-      title = dash[2].trim();
+    const enDash = raw.match(/^(.+?)\s+–\s+(.+)$/);
+    if (enDash) {
+      const left = enDash[1].trim();
+      const right = enDash[2].trim();
+      if (looksLikeArtistList(right) && !looksLikeArtistList(left)) {
+        title = left;
+        artist = right;
+      } else {
+        artist = left;
+        title = right;
+      }
+    } else {
+      const tightEnDash = raw.match(/^(.+?)\s*–\s*(.+)$/);
+      if (tightEnDash) {
+        title = tightEnDash[1].trim();
+        artist = tightEnDash[2].trim();
+      } else {
+        const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
+        if (dash) {
+          artist = dash[1].trim();
+          title = dash[2].trim();
+        }
+      }
     }
   }
 

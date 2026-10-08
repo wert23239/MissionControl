@@ -71,20 +71,42 @@ function normalizeCompact(value) {
   return normalizeTokens(value).join('');
 }
 
+function looksLikeArtistList(value) {
+  return /,|&|\band\b|\bfeat\b|\bfeaturing\b|\bft\b/i.test(value || '');
+}
+
 function parseSongQuery(query) {
   const raw = (query || '').trim();
   let title = raw;
   let artist = '';
-  const titleFirstDash = raw.match(/^(.+?)\s*[—–]\s*(.+)$/);
-  if (titleFirstDash) {
-    const parts = raw.split(/[—–]/);
-    title = parts[0].trim();
-    artist = parts.slice(1).join('—').trim();
+  const emDash = raw.match(/^(.+?)\s*—\s*(.+)$/);
+  if (emDash) {
+    title = emDash[1].trim();
+    artist = emDash[2].trim();
   } else {
-    const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
-    if (dash) {
-      artist = dash[1].trim();
-      title = dash[2].trim();
+    const enDash = raw.match(/^(.+?)\s+–\s+(.+)$/);
+    if (enDash) {
+      const left = enDash[1].trim();
+      const right = enDash[2].trim();
+      if (looksLikeArtistList(right) && !looksLikeArtistList(left)) {
+        title = left;
+        artist = right;
+      } else {
+        artist = left;
+        title = right;
+      }
+    } else {
+      const tightEnDash = raw.match(/^(.+?)\s*–\s*(.+)$/);
+      if (tightEnDash) {
+        title = tightEnDash[1].trim();
+        artist = tightEnDash[2].trim();
+      } else {
+        const dash = raw.match(/^(.+?)\s+-\s+(.+)$/);
+        if (dash) {
+          artist = dash[1].trim();
+          title = dash[2].trim();
+        }
+      }
     }
   }
   return { title: title || raw, artist, searchText: title || raw };

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Williamsburg Watch</title>
+  <style>
+    :root {
+      --bg: #f6f7f4;
+      --panel: #ffffff;
+      --ink: #171916;
+      --muted: #667066;
+      --line: #dfe5db;
+      --green: #176b45;
+      --blue: #225c8f;
+      --amber: #986800;
+      --red: #9c3b31;
+      --shadow: 0 10px 30px rgba(24, 35, 25, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+    a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    main { max-width: 1280px; margin: 0 auto; padding: 26px 18px 54px; }
+    header { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; align-items: end; margin-bottom: 18px; }
+    .eyebrow { color: var(--muted); font-size: 12px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { font-size: clamp(36px, 6vw, 76px); line-height: .95; letter-spacing: 0; margin: 8px 0 10px; }
+    .sub { color: var(--muted); font-size: 17px; max-width: 800px; margin: 0; }
+    .hero-map { min-height: 265px; border: 1px solid var(--line); border-radius: 8px; background: #e8eee4; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+    .hero-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .map-label { position: absolute; left: 14px; bottom: 14px; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font-size: 12px; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
+    .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; box-shadow: 0 4px 14px rgba(24,35,25,.04); }
+    .stat .label { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .06em; font-weight: 850; }
+    .stat .value { font-size: 26px; font-weight: 900; margin-top: 2px; }
+    .stat .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .controls { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: rgba(246,247,244,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); padding: 10px 0; margin-bottom: 16px; }
+    .seg, .select, .search { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; height: 38px; color: var(--ink); font: inherit; }
+    .seg { display: inline-flex; overflow: hidden; }
+    .seg button { border: 0; background: transparent; color: var(--muted); padding: 0 12px; font: inherit; font-weight: 800; cursor: pointer; }
+    .seg button.active { background: var(--ink); color: white; }
+    .select { padding: 0 10px; min-width: 170px; }
+    .search { padding: 0 12px; min-width: min(310px, 100%); flex: 1 1 260px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 100%; }
+    .thumb { height: 154px; background: #e5ebe1; position: relative; border-bottom: 1px solid var(--line); overflow: hidden; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(.85) contrast(.95); }
+    .thumb .fallback { position: absolute; inset: 0; background: linear-gradient(135deg, #d9e5da, #edf0e5 48%, #cad9d3); }
+    .thumb .fallback::before { content: ""; position: absolute; inset: 18px; border: 2px solid rgba(23,25,22,.12); border-radius: 4px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.42) 0 20px, transparent 20px 34px); }
+    .pin { position: absolute; right: 12px; bottom: 12px; background: rgba(255,255,255,.95); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; font-weight: 850; }
+    .body { padding: 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    h2 { font-size: 18px; line-height: 1.15; margin: 0; }
+    .price { font-size: 22px; font-weight: 950; white-space: nowrap; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; min-height: 26px; padding: 4px 8px; border-radius: 999px; background: #eef2eb; color: #465044; font-size: 12px; font-weight: 800; }
+    .chip.good { background: #e4f2ea; color: var(--green); }
+    .chip.warn { background: #fff1d0; color: var(--amber); }
+    .chip.bad { background: #ffe6e0; color: var(--red); }
+    .notes { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+    .note-line { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #eef1eb; padding-top: 7px; }
+    .note-line strong { color: var(--ink); font-weight: 850; text-align: right; }
+    .actions { margin-top: auto; display: flex; gap: 8px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; border-radius: 8px; padding: 0 12px; border: 1px solid var(--line); text-decoration: none; font-weight: 850; font-size: 13px; background: #f9faf7; color: var(--ink); }
+    .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .empty { display: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 22px; color: var(--muted); }
+    .footer { color: var(--muted); font-size: 12px; margin-top: 20px; }
+    @media (max-width: 980px) { header { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero-map { min-height: 220px; } }
+    @media (max-width: 640px) { main { padding: 20px 12px 40px; } .stats, .grid { grid-template-columns: 1fr; } .controls { position: static; } .seg { width: 100%; } .seg button { flex: 1; padding: 0 7px; } .price { font-size: 19px; } .top { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">Mission Control • StreetEasy watcher</div>
+        <h1>Williamsburg Watch</h1>
+        <p class="sub">Current buy-side candidates from the watcher: active Williamsburg condo sales under $1.6M with estimated mortgage P&I at or below $8K/mo using $450K down, 7%, 30-year terms.</p>
+      </div>
+      <div class="hero-map" aria-label="Map of current listings">
+        <svg id="overviewMap" role="img"></svg>
+        <div class="map-label"><strong id="mapCount">32</strong> saved matches • refreshed <span id="refreshLabel"></span></div>
+      </div>
+    </header>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="controls" aria-label="Listing controls">
+      <div class="seg" id="bedFilter" aria-label="Bedrooms">
+        <button class="active" data-bed="all">All</button>
+        <button data-bed="2">2BR</button>
+        <button data-bed="1">1BR</button>
+      </div>
+      <div class="seg" id="zoneFilter" aria-label="Area">
+        <button class="active" data-zone="all">All zones</button>
+        <button data-zone="north">North</button>
+        <button data-zone="bedford">≤10m Bedford</button>
+        <button data-zone="value">Value</button>
+      </div>
+      <select class="select" id="sortMode" aria-label="Sort listings">
+        <option value="bedford">Sort by Bedford walk</option>
+        <option value="price">Sort by price</option>
+        <option value="pi">Sort by P&I</option>
+        <option value="beds">Sort 2BR first</option>
+      </select>
+      <input class="search" id="searchBox" placeholder="Search address, broker, area" />
+    </section>
+
+    <section class="grid" id="listings"></section>
+    <section class="empty" id="empty">No listings match that filter.</section>
+
+    <p class="footer">P&I excludes taxes, common charges, insurance, and closing costs. Map thumbnails are map previews, not listing photos; StreetEasy image fetch is currently bot-wall blocked. Open listing links for official photos and details.</p>
+  </main>
+
+  <script id="watchData" type="application/json">{"generatedAt":"2026-10-10T22:55:07.005Z","listings":[{"id":"1850936","title":"100 Scholes Street #4A","price":"$1,445,000","bedrooms":2,"bathrooms":1,"areaName":"Williamsburg","street":"100 Scholes Street","unit":"4A","url":"https://streeteasy.com/building/100-scholes-street-brooklyn/4a","sourceGroupLabel":"R New York","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.45756656461630923,"lat":40.70833,"lon":-73.94587},{"id":"1852253","title":"106 Graham Avenue #1","price":"$875,000","bedrooms":2,"bathrooms":1.5,"areaName":"Williamsburg","street":"106 Graham Avenue","unit":"1","url":"https://streeteasy.com/building/106-graham-avenue-brooklyn/1","sourceGroupLabel":"Compass","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.7530286981221636,"lat":40.70489,"lon":-73.94248},{"id":"1843086","title":"117 Powers Street #GARDEN 2","price":"$1,395,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"117 Powers Street","unit":"GARDEN 2","url":"https://streeteasy.com/building/117-powers-street-brooklyn/garden-2","sourceGroupLabel":"Douglas Elliman","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.2389402787212451,"lat":40.712383,"lon":-73.94626},{"id":"1847098","title":"120 North 7th Street #1D","price":"$1,250,000","bedrooms":1,"bathrooms":1.5,"areaName":"Williamsburg","street":"120 North 7th Street","unit":"1D","url":"https://streeteasy.com/building/sevenberry-condominium/1d","sourceGroupLabel":"Compass","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.11977491372633163,"lat":40.718643,"lon":-73.959496},{"id":"1846443","title":"120 North 7th Street #2B","price":"$1,398,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"120 North 7th Street","unit":"2B","url":"https://streeteasy.com/building/sevenberry-condominium/2b","sourceGroupLabel":"Douglas Elliman","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.11977491372633163,"lat":40.718643,"lon":-73.959496},{"id":"1846070","title":"120 North 7th Street #3A","price":"$1,200,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"120 North 7th Street","unit":"3A","url":"https://streeteasy.com/building/sevenberry-condominium/3a","sourceGroupLabel":"Corcoran","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.11977491372633163,"lat":40.718643,"lon":-73.959496},{"id":"1847319","title":"125 North 10th Street #S3I","price":"$1,295,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"125 North 10th Street","unit":"S3I","url":"https://streeteasy.com/building/125-north-10th-street-brooklyn/s3i","sourceGroupLabel":"SERHANT.","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.1801202509978457,"lat":40.7202,"lon":-73.9565},{"id":"1815131","title":"127 Kent Avenue #PH1D","price":"$1,495,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"127 Kent Avenue","unit":"PH1D","url":"https://streeteasy.com/building/the-sixth/ph1d","sourceGroupLabel":"Corcoran","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.2682131969224365,"lat":40.719875,"lon":-73.96182},{"id":"1839919","title":"135 North 11th Street #5E","price":"$1,050,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"135 North 11th Street","unit":"5E","url":"https://streeteasy.com/building/the-residences-at-the-williamsburg/5e","sourceGroupLabel":"Coastal Property Advisors","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.24251089405004247,"lat":40.7209,"lon":-73.9556},{"id":"1844061","title":"161 North 4th Street #1I","price":"$1,400,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"161 North 4th Street","unit":"1I","url":"https://streeteasy.com/building/nforth-condominium/1i","sourceGroupLabel":"Corcoran","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.14485037400961193,"lat":40.7157,"lon":-73.9583},{"id":"1843916","title":"184 Kent Avenue #506B","price":"$1,500,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"184 Kent Avenue","unit":"506B","url":"https://streeteasy.com/building/austin-nichols-house/506b","sourceGroupLabel":"Keller Williams NYC","formula":"2BR","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.37365325215999723,"lat":40.7186,"lon":-73.9646},{"id":"1845736","title":"184 Kent Avenue #A616","price":"$1,180,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"184 Kent Avenue","unit":"A616","url":"https://streeteasy.com/building/austin-nichols-house/a616","sourceGroupLabel":"Corcoran","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.37365325215999723,"lat":40.7186,"lon":-73.9646},{"id":"1845317","title":"184 Kent Avenue #B304","price":"$999,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"184 Kent Avenue","unit":"B304","url":"https://streeteasy.com/building/austin-nichols-house/b304","sourceGroupLabel":"SERHANT.","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.37365325215999723,"lat":40.7186,"lon":-73.9646},{"id":"1851134","title":"184 Kent Avenue #C103","price":"$1,125,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"184 Kent Avenue","unit":"C103","url":"https://streeteasy.com/building/austin-nichols-house/c103","sourceGroupLabel":"Compass","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.37365325215999723,"lat":40.7186,"lon":-73.9646},{"id":"1850734","title":"214 North 11th Street #1F","price":"$1,575,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"214 North 11th Street","unit":"1F","url":"https://streeteasy.com/building/warehouse-11/1f","sourceGroupLabel":"Compass","formula":"2BR","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.2181530299908794,"lat":40.7187,"lon":-73.9536},{"id":"1838753","title":"214 North 11th Street #5A","price":"$1,250,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"214 North 11th Street","unit":"5A","url":"https://streeteasy.com/building/warehouse-11/5a","sourceGroupLabel":"Brown Harris Stevens","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.2181530299908794,"lat":40.7187,"lon":-73.9536},{"id":"1752736","title":"229 Withers Street #2A","price":"$1,250,000","bedrooms":2,"bathrooms":1,"areaName":"Williamsburg","street":"229 Withers Street","unit":"2A","url":"https://streeteasy.com/building/ora-condominium/2a","sourceGroupLabel":"SERHANT.","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.4814439263255003,"lat":40.717796,"lon":-73.94249},{"id":"1841486","title":"229 Withers Street #3A","price":"$1,275,000","bedrooms":2,"bathrooms":1,"areaName":"Williamsburg","street":"229 Withers Street","unit":"3A","url":"https://streeteasy.com/building/ora-condominium/3a","sourceGroupLabel":"SERHANT.","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.4814439263255003,"lat":40.717796,"lon":-73.94249},{"id":"1783238","title":"229 Withers Street #4A","price":"$1,300,000","bedrooms":2,"bathrooms":1,"areaName":"Williamsburg","street":"229 Withers Street","unit":"4A","url":"https://streeteasy.com/building/ora-condominium/4a","sourceGroupLabel":"SERHANT.","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.4814439263255003,"lat":40.717796,"lon":-73.94249},{"id":"1786634","title":"236 North 7th Street #4L","price":"$850,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"236 North 7th Street","unit":"4L","url":"https://streeteasy.com/building/236-north-7-street-brooklyn/4l","sourceGroupLabel":"Keller Williams Realty Landmark II","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.13641349291810145,"lat":40.716312,"lon":-73.955734},{"id":"1852056","title":"246 Withers Street #3F","price":"$1,175,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"246 Withers Street","unit":"3F","url":"https://streeteasy.com/building/246-withers-street-brooklyn/3f","sourceGroupLabel":"Redfin Real Estate","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.4944497744104942,"lat":40.7174,"lon":-73.9419},{"id":"1851661","title":"29 Montrose Avenue #5B","price":"$1,175,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"29 Montrose Avenue","unit":"5B","url":"https://streeteasy.com/building/29-montrose-avenue-brooklyn/5b","sourceGroupLabel":"Compass","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.4906857779531886,"lat":40.707012,"lon":-73.9491},{"id":"1844665","title":"30 Skillman Avenue #4R","price":"$1,490,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"30 Skillman Avenue","unit":"4R","url":"https://streeteasy.com/building/30-skillman-avenue-brooklyn/4r","sourceGroupLabel":"Sotheby's International Realty","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.07710390716114916,"lat":40.715157,"lon":-73.95052},{"id":"1839170","title":"34 North 7th Street #6Z","price":"$1,180,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"34 North 7th Street","unit":"6Z","url":"https://streeteasy.com/building/the-edge-north-tower/6z","sourceGroupLabel":"Compass","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.35979875084955043,"lat":40.7208,"lon":-73.9631},{"id":"1847947","title":"406 Lorimer Street #F","price":"$1,095,000","bedrooms":2,"bathrooms":1,"areaName":"Williamsburg","street":"406 Lorimer Street","unit":"F","url":"https://streeteasy.com/building/the-artisan-condominium/f","sourceGroupLabel":"Corcoran","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.3525663035711183,"lat":40.709167,"lon":-73.94834},{"id":"1845127","title":"440 Kent Avenue #9D","price":"$1,450,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"440 Kent Avenue","unit":"9D","url":"https://streeteasy.com/building/schaefer-landing-north/9d","sourceGroupLabel":"Compass","formula":"2BR","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.8474496131075828,"lat":40.7092,"lon":-73.9692},{"id":"1834522","title":"58 Metropolitan Avenue #2D","price":"$999,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"58 Metropolitan Avenue","unit":"2D","url":"https://streeteasy.com/building/58-met/sale/1834522","sourceGroupLabel":"Brown Harris Stevens","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.38157525533505793,"lat":40.71714,"lon":-73.964806},{"id":"1850997","title":"58 Metropolitan Avenue #2G","price":"$925,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"58 Metropolitan Avenue","unit":"2G","url":"https://streeteasy.com/building/58-met/2g","sourceGroupLabel":"Brown Harris Stevens","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.38157525533505793,"lat":40.71714,"lon":-73.964806},{"id":"1847961","title":"69 Berry Street #L1","price":"$1,100,000","bedrooms":1,"bathrooms":1,"areaName":"Williamsburg","street":"69 Berry Street","unit":"L1","url":"https://streeteasy.com/building/69-berry-street-brooklyn/l1","sourceGroupLabel":"Compass","formula":"north 1BR near Bedford","sizeSqft":null,"nearestName":"Bedford Ave L","nearestMiles":0.16376773343739853,"lat":40.72008,"lon":-73.95727},{"id":"1845732","title":"717 Grand Street #302","price":"$1,400,000","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"717 Grand Street","unit":"302","url":"https://streeteasy.com/building/717-grand-street/302","sourceGroupLabel":"Aguayo & Associates","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.34403669960495575,"lat":40.71184,"lon":-73.94437},{"id":"1845720","title":"717 Grand Street #303","price":"$1,175,000","bedrooms":2,"bathrooms":1,"areaName":"Williamsburg","street":"717 Grand Street","unit":"303","url":"https://streeteasy.com/building/717-grand-street/303","sourceGroupLabel":"Aguayo & Associates","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.34403669960495575,"lat":40.71184,"lon":-73.94437},{"id":"1846260","title":"96 Woodpoint Road #3A","price":"$1,174,900","bedrooms":2,"bathrooms":2,"areaName":"Williamsburg","street":"96 Woodpoint Road","unit":"3A","url":"https://streeteasy.com/building/muse-condos/3a","sourceGroupLabel":"Nest Seekers International","formula":"2BR","sizeSqft":null,"nearestName":"Lorimer/Metropolitan","nearestMiles":0.5873508643041473,"lat":40.71865,"lon":-73.94081}]}</script>
+  <script>
+    const payload = JSON.parse(document.getElementById('watchData').textContent);
+    const DOWN_PAYMENT = 450000;
+    const RATE = 0.07;
+    const TERM = 360;
+    const BEDFORD = { lat: 40.71772, lon: -73.95756 };
+    const state = { bed: 'all', zone: 'all', sort: 'bedford', q: '' };
+
+    function money(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
+    function priceNumber(value) { return Number(String(value || '').replace(/[^0-9.]/g, '')) || 0; }
+    function walkMinutes(miles) { return Number.isFinite(miles) ? Math.max(1, Math.round(miles * 20)) : null; }
+    function milesBetween(a, b) {
+      const toRad = n => n * Math.PI / 180;
+      const r = 3958.8;
+      const dLat = toRad(b.lat - a.lat);
+      const dLon = toRad(b.lon - a.lon);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+      return 2 * r * Math.asin(Math.sqrt(h));
+    }
+    function mortgage(price) {
+      const loan = priceNumber(price) - DOWN_PAYMENT;
+      if (loan <= 0) return null;
+      const monthly = RATE / 12;
+      const multiplier = (monthly * ((1 + monthly) ** TERM)) / (((1 + monthly) ** TERM) - 1);
+      return loan * multiplier;
+    }
+    function bedfordWalk(item) {
+      if (!item.lat || !item.lon) return null;
+      return walkMinutes(milesBetween({ lat: item.lat, lon: item.lon }, BEDFORD));
+    }
+    function area(item) {
+      const street = String(item.street || item.title || '').toLowerCase();
+      if (street.includes('north ')) return 'North Williamsburg';
+      if (street.includes('berry') || street.includes('kent') || street.includes('metropolitan')) return 'North/Waterfront';
+      if (street.includes('scholes') || street.includes('kingsland') || street.includes('woodpoint')) return 'East Williamsburg-ish';
+      if (street.includes('graham') || street.includes('grand')) return 'Grand/Graham side';
+      if (street.includes('withers') || street.includes('skillman') || street.includes('powers')) return 'Lorimer/McCarren edge';
+      return item.areaName || 'Williamsburg';
+    }
+    function score(item) {
+      const p = priceNumber(item.price);
+      const pi = mortgage(item.price) || Infinity;
+      const bw = bedfordWalk(item) || 99;
+      if (item.bedrooms === 2 && bw <= 10 && p <= 1600000) return 'Strong fit';
+      if (item.bedrooms === 2 && p <= 1200000) return 'Value 2BR';
+      if (item.bedrooms === 1 && bw <= 8 && pi <= 7000) return 'Clean 1BR';
+      if (p <= 1000000) return 'Value check';
+      return 'Maybe';
+    }
+    function pitfall(item) {
+      const bw = bedfordWalk(item) || 99;
+      if (!item.sizeSqft) return 'sqft unknown';
+      if (item.bedrooms === 1) return 'only 1BR';
+      if (bw > 12) return 'farther from Bedford';
+      return 'check monthlies';
+    }
+    function miniMapSvg(item) {
+      if (!item.lat || !item.lon) return '<div class="fallback"></div>';
+      const minLat = 40.703, maxLat = 40.725, minLon = -73.974, maxLon = -73.94;
+      const x = ((item.lon - minLon) / (maxLon - minLon)) * 100;
+      const y = (1 - ((item.lat - minLat) / (maxLat - minLat))) * 100;
+      const color = item.bedrooms === 2 ? '#176b45' : '#225c8f';
+      return '<svg viewBox="0 0 520 260" role="img" aria-label="Map preview for ' + escapeHtml(item.title) + '" style="width:100%;height:100%;display:block;background:#e8eee4">' +
+        '<defs><pattern id="miniGrid' + item.id + '" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M 28 0 L 0 0 0 28" fill="none" stroke="#c9d3c5" stroke-width="1"/></pattern></defs>' +
+        '<rect width="520" height="260" fill="url(#miniGrid' + item.id + ')"></rect>' +
+        '<path d="M-40 168 C70 126 160 190 270 148 C370 110 455 134 560 96" fill="none" stroke="#b7c7bf" stroke-width="22" opacity=".75"></path>' +
+        '<path d="M-20 214 C120 158 238 232 365 184 C458 150 505 158 555 128" fill="none" stroke="#d9ded3" stroke-width="24" opacity=".9"></path>' +
+        '<circle cx="' + (x * 5.2).toFixed(1) + '" cy="' + (y * 2.6).toFixed(1) + '" r="13" fill="' + color + '" stroke="white" stroke-width="4"></circle>' +
+        '<circle cx="' + (x * 5.2).toFixed(1) + '" cy="' + (y * 2.6).toFixed(1) + '" r="4" fill="white" opacity=".95"></circle>' +
+        '</svg>';
+    }
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
+    }
+    function enrich(item) {
+      return {
+        ...item,
+        priceValue: priceNumber(item.price),
+        pi: mortgage(item.price),
+        bedford: bedfordWalk(item),
+        nearestWalk: walkMinutes(item.nearestMiles),
+        area: area(item),
+        score: score(item),
+        pitfall: pitfall(item),
+      };
+    }
+    const allListings = payload.listings.map(enrich);
+
+    function renderStats(list) {
+      const twoBeds = list.filter(item => item.bedrooms === 2).length;
+      const northFast = list.filter(item => item.bedford && item.bedford <= 10).length;
+      const avgPi = list.length ? list.reduce((sum, item) => sum + (item.pi || 0), 0) / list.length : 0;
+      const cheapest = list.reduce((best, item) => !best || item.priceValue < best.priceValue ? item : best, null);
+      const top = list.filter(item => item.score === 'Strong fit').length;
+      document.getElementById('stats').innerHTML = [
+        stat('Current matches', list.length, 'watcher baseline'),
+        stat('True 2BRs', twoBeds, 'within filter'),
+        stat('≤10m Bedford', northFast, 'walk estimate'),
+        stat('Avg est P&I', avgPi ? money(avgPi) + '/mo' : 'n/a', 'principal + interest'),
+        stat('Strong fits', top, cheapest ? 'cheapest: ' + cheapest.price : 'filtered view'),
+      ].join('');
+    }
+    function stat(label, value, note) {
+      return '<div class="stat"><div class="label">' + escapeHtml(label) + '</div><div class="value">' + escapeHtml(value) + '</div><div class="note">' + escapeHtml(note) + '</div></div>';
+    }
+    function filtered() {
+      const q = state.q.trim().toLowerCase();
+      let list = allListings.filter(item => {
+        if (state.bed !== 'all' && Number(item.bedrooms) !== Number(state.bed)) return false;
+        if (state.zone === 'north' && !String(item.area).toLowerCase().includes('north')) return false;
+        if (state.zone === 'bedford' && (!item.bedford || item.bedford > 10)) return false;
+        if (state.zone === 'value' && !(item.priceValue <= 1000000 || item.score.includes('Value'))) return false;
+        if (q) {
+          const hay = [item.title, item.street, item.area, item.sourceGroupLabel, item.score, item.pitfall].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+      list.sort((a, b) => {
+        if (state.sort === 'price') return a.priceValue - b.priceValue;
+        if (state.sort === 'pi') return (a.pi || Infinity) - (b.pi || Infinity);
+        if (state.sort === 'beds') return b.bedrooms - a.bedrooms || a.priceValue - b.priceValue;
+        return (a.bedford || 99) - (b.bedford || 99) || a.priceValue - b.priceValue;
+      });
+      return list;
+    }
+    function renderListings() {
+      const list = filtered();
+      renderStats(list);
+      document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+      document.getElementById('listings').innerHTML = list.map(card).join('');
+      renderMap(list);
+    }
+    function card(item) {
+      const pi = item.pi ? money(item.pi) + '/mo' : 'n/a';
+      const bedford = item.bedford ? '~' + item.bedford + ' min' : 'n/a';
+      const nearest = item.nearestName ? item.nearestName + ' ~' + (item.nearestWalk || '?') + ' min' : 'nearest L n/a';
+      const scoreClass = item.score.includes('Strong') || item.score.includes('Value') ? 'good' : item.score.includes('Maybe') ? 'warn' : '';
+      return '<article class="card">' +
+        '<div class="thumb">' + miniMapSvg(item) + '<div class="pin">' + escapeHtml(item.area) + '</div></div>' +
+        '<div class="body"><div class="top"><h2>' + escapeHtml(item.title) + '</h2><div class="price">' + escapeHtml(item.price) + '</div></div>' +
+        '<div class="chips"><span class="chip">' + item.bedrooms + 'BR / ' + item.bathrooms + 'BA</span><span class="chip good">' + escapeHtml(pi) + ' P&I</span><span class="chip ' + scoreClass + '">' + escapeHtml(item.score) + '</span><span class="chip warn">' + escapeHtml(item.pitfall) + '</span></div>' +
+        '<div class="notes"><div class="note-line"><span>Bedford Ave L</span><strong>' + escapeHtml(bedford) + '</strong></div><div class="note-line"><span>Nearest L</span><strong>' + escapeHtml(nearest) + '</strong></div><div class="note-line"><span>Broker</span><strong>' + escapeHtml(item.sourceGroupLabel || 'n/a') + '</strong></div></div>' +
+        '<div class="actions"><a class="btn primary" href="' + escapeHtml(item.url) + '" target="_blank" rel="noreferrer">Open listing</a><a class="btn" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.title + ' Brooklyn NY') + '" target="_blank" rel="noreferrer">Map</a></div></div></article>';
+    }
+    function renderMap(list) {
+      const svg = document.getElementById('overviewMap');
+      const points = list.filter(item => item.lat && item.lon);
+      document.getElementById('mapCount').textContent = list.length;
+      if (!points.length) { svg.innerHTML = ''; return; }
+      const minLat = 40.703, maxLat = 40.725, minLon = -73.974, maxLon = -73.94;
+      const x = lon => ((lon - minLon) / (maxLon - minLon)) * 100;
+      const y = lat => (1 - ((lat - minLat) / (maxLat - minLat))) * 100;
+      const circles = points.map(item => '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noreferrer"><circle cx="' + x(item.lon).toFixed(2) + '%" cy="' + y(item.lat).toFixed(2) + '%" r="' + (item.bedrooms === 2 ? 5.2 : 4) + '" fill="' + (item.bedrooms === 2 ? '#176b45' : '#225c8f') + '" stroke="white" stroke-width="1.8"><title>' + escapeHtml(item.title + ' ' + item.price) + '</title></circle></a>').join('');
+      svg.innerHTML = '<defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M 32 0 L 0 0 0 32" fill="none" stroke="#c9d3c5" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="#e8eee4"/><rect width="100%" height="100%" fill="url(#grid)"/><path d="M0,160 C140,120 220,190 380,142 C520,98 630,130 800,80" fill="none" stroke="#bac8bf" stroke-width="18" opacity=".75"/><path d="M0,210 C180,160 310,238 480,182 C620,136 720,168 900,118" fill="none" stroke="#d9ded3" stroke-width="24" opacity=".85"/>' + circles;
+    }
+    function wireSegment(id, key, attr) {
+      document.getElementById(id).addEventListener('click', event => {
+        const button = event.target.closest('button');
+        if (!button) return;
+        state[key] = button.dataset[attr];
+        [...event.currentTarget.querySelectorAll('button')].forEach(btn => btn.classList.toggle('active', btn === button));
+        renderListings();
+      });
+    }
+    wireSegment('bedFilter', 'bed', 'bed');
+    wireSegment('zoneFilter', 'zone', 'zone');
+    document.getElementById('sortMode').addEventListener('change', event => { state.sort = event.target.value; renderListings(); });
+    document.getElementById('searchBox').addEventListener('input', event => { state.q = event.target.value; renderListings(); });
+    document.getElementById('refreshLabel').textContent = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(payload.generatedAt));
+    renderListings();
+  </script>
+</body>
+</html>

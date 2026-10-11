@@ -2368,8 +2368,11 @@ const COLS=10;
 const states=['','💡','✍️','✅'];
 const stateBg=['#1e3a5f','#854d0e','#1e40af','#166534'];
 const BOOK_SYNC_KEY='chapter-plan';
+const BOOK_PAGE_SYNC_KEY='page-tracker';
 let bookRemoteLoaded=false;
 let bookSyncTimer=null;
+let bookPageRemoteLoaded=false;
+let bookPageSyncTimer=null;
 const defaultBookPlan=[
   {code:'1A',title:'Frameworks',pages:20,note:'Expanded first chapter'},
   {code:'1B',title:'Tutorial',pages:10,note:'Standard chapter length'},
@@ -2588,9 +2591,48 @@ function getBookState(){
   }
   return s;
 }
-function saveBookState(s){localStorage.setItem('mc-book-state',JSON.stringify(s))}
+function saveBookState(s){localStorage.setItem('mc-book-state',JSON.stringify(s));scheduleBookPageSync()}
 function getBookDedicated(){return JSON.parse(localStorage.getItem('mc-book-dedicated')||'{}')}
-function saveBookDedicated(s){localStorage.setItem('mc-book-dedicated',JSON.stringify(s))}
+function saveBookDedicated(s){localStorage.setItem('mc-book-dedicated',JSON.stringify(s));scheduleBookPageSync()}
+function currentBookPagePayload(){return {state:getBookState(),dedicated:getBookDedicated(),updatedAt:new Date().toISOString()}}
+function applyBookPagePayload(payload){
+  if(payload?.state) localStorage.setItem('mc-book-state',JSON.stringify(payload.state));
+  if(payload?.dedicated) localStorage.setItem('mc-book-dedicated',JSON.stringify(payload.dedicated));
+}
+async function loadBookPageRemote(){
+  if(bookPageRemoteLoaded)return;
+  bookPageRemoteLoaded=true;
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/book_state?key=eq.${encodeURIComponent(BOOK_PAGE_SYNC_KEY)}&select=state&limit=1`,{headers:sbHeaders});
+    if(!r.ok)return;
+    const rows=await r.json();
+    if(rows?.[0]?.state){
+      applyBookPagePayload(rows[0].state);
+      renderBook();
+    }else{
+      scheduleBookPageSync();
+    }
+  }catch(e){console.log('loadBookPageRemote error',e)}
+}
+function scheduleBookPageSync(){
+  clearTimeout(bookPageSyncTimer);
+  bookPageSyncTimer=setTimeout(syncBookPageRemote,350);
+}
+async function syncBookPageRemote(){
+  const payload=currentBookPagePayload();
+  try{
+    await fetch(`${SB_URL}/rest/v1/book_state?key=eq.${encodeURIComponent(BOOK_PAGE_SYNC_KEY)}`,{
+      method:'PATCH',
+      headers:{...sbHeaders,'Prefer':'return=minimal'},
+      body:JSON.stringify({state:payload,updated_at:payload.updatedAt})
+    });
+    await fetch(`${SB_URL}/rest/v1/book_state?on_conflict=key`,{
+      method:'POST',
+      headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({key:BOOK_PAGE_SYNC_KEY,state:payload,updated_at:payload.updatedAt})
+    });
+  }catch(e){console.log('syncBookPageRemote error',e)}
+}
 function cycleBook(ch,i){const s=getBookState();const k=ch+'-'+i;const cur=s[k]||0;s[k]=(cur+1)%4;saveBookState(s);renderBook()}
 function toggleDedicated(ev,ch,i){ev.stopPropagation();const d=getBookDedicated();const k=ch+'-'+i;d[k]=!d[k];saveBookDedicated(d);renderBook()}
 function renderBook(){
@@ -2598,6 +2640,7 @@ function renderBook(){
   if(!grid)return;
   renderBookPlanner();
   loadBookRemote();
+  loadBookPageRemote();
   const st=getBookState();
   const ded=getBookDedicated();
   let ideas=0,written=0,edited=0,dedicated=0;

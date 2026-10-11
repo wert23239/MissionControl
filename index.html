@@ -2347,6 +2347,9 @@ const blankTitles=new Set(['(page 2)','(page 3)','(page 4)','(page 5)','(page 6)
 const COLS=10;
 const states=['','💡','✍️','✅'];
 const stateBg=['#1e3a5f','#854d0e','#1e40af','#166534'];
+const BOOK_SYNC_KEY='chapter-plan';
+let bookRemoteLoaded=false;
+let bookSyncTimer=null;
 const defaultBookPlan=[
   {code:'1A',title:'F.r.a.m.e.w.o.r.k.s.',pages:20,note:'Expanded first chapter'},
   {code:'1B',title:'Tutorial',pages:10,note:'Standard chapter length'},
@@ -2383,13 +2386,52 @@ function getBookPlan(){
   const saved=safeParseBookJSON('mc-book-plan',null);
   return Array.isArray(saved)&&saved.length?saved:defaultBookPlan.map(ch=>({...ch}));
 }
-function saveBookPlan(plan){localStorage.setItem('mc-book-plan',JSON.stringify(plan))}
+function saveBookPlan(plan){localStorage.setItem('mc-book-plan',JSON.stringify(plan));scheduleBookSync()}
 function getBookMeta(){
   const saved=safeParseBookJSON('mc-book-meta',null);
   return saved&&typeof saved==='object'?{currentPages:Number(saved.currentPages)||243}:{currentPages:243};
 }
-function saveBookMeta(meta){localStorage.setItem('mc-book-meta',JSON.stringify(meta))}
+function saveBookMeta(meta){localStorage.setItem('mc-book-meta',JSON.stringify(meta));scheduleBookSync()}
 function bookTargetPages(plan){return plan.reduce((sum,ch)=>sum+(Number(ch.pages)||0),0)}
+function currentBookPayload(){return {plan:getBookPlan(),meta:getBookMeta(),updatedAt:new Date().toISOString()}}
+function applyBookPayload(payload){
+  if(payload?.plan) localStorage.setItem('mc-book-plan',JSON.stringify(payload.plan));
+  if(payload?.meta) localStorage.setItem('mc-book-meta',JSON.stringify(payload.meta));
+}
+async function loadBookRemote(){
+  if(bookRemoteLoaded)return;
+  bookRemoteLoaded=true;
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/book_state?key=eq.${encodeURIComponent(BOOK_SYNC_KEY)}&select=state&limit=1`,{headers:sbHeaders});
+    if(!r.ok)return;
+    const rows=await r.json();
+    if(rows?.[0]?.state){
+      applyBookPayload(rows[0].state);
+      renderBookPlanner();
+    }else{
+      scheduleBookSync();
+    }
+  }catch(e){console.log('loadBookRemote error',e)}
+}
+function scheduleBookSync(){
+  clearTimeout(bookSyncTimer);
+  bookSyncTimer=setTimeout(syncBookRemote,350);
+}
+async function syncBookRemote(){
+  const payload=currentBookPayload();
+  try{
+    await fetch(`${SB_URL}/rest/v1/book_state?key=eq.${encodeURIComponent(BOOK_SYNC_KEY)}`,{
+      method:'PATCH',
+      headers:{...sbHeaders,'Prefer':'return=minimal'},
+      body:JSON.stringify({state:payload,updated_at:payload.updatedAt})
+    });
+    await fetch(`${SB_URL}/rest/v1/book_state?on_conflict=key`,{
+      method:'POST',
+      headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({key:BOOK_SYNC_KEY,state:payload,updated_at:payload.updatedAt})
+    });
+  }catch(e){console.log('syncBookRemote error',e)}
+}
 function updateBookPlan(index,field,value){
   const plan=getBookPlan();
   if(!plan[index])return;
@@ -2425,6 +2467,7 @@ function moveBookChapter(index,dir){
 function resetBookPlan(){
   localStorage.removeItem('mc-book-plan');
   localStorage.removeItem('mc-book-meta');
+  scheduleBookSync();
   renderBookPlanner();
 }
 function bookPlannerInput(value,onchange,extra){
@@ -2498,6 +2541,7 @@ function renderBook(){
   const grid=document.getElementById('bookGrid');
   if(!grid)return;
   renderBookPlanner();
+  loadBookRemote();
   const st=getBookState();
   const ded=getBookDedicated();
   let ideas=0,written=0,edited=0,dedicated=0;

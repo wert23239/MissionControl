@@ -92,15 +92,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .ch-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);color:#d4c4f0}
 .ch-table tr:hover{background:rgba(255,255,255,0.03)}
 .book-section{margin-bottom:12px;padding:16px}
-.book-section-head{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
-.book-section-code{font-size:18px;font-weight:800}
-.book-section-title{font-size:13px;color:#998eb5;font-weight:700}
+.book-section-head{display:grid;grid-template-columns:auto minmax(54px,82px) minmax(140px,1fr) auto;align-items:center;gap:8px;margin-bottom:12px}
+.book-drag-handle{cursor:grab;color:#665c78;font-size:16px;line-height:1;user-select:none}
+.book-drag-handle:active{cursor:grabbing}
+.book-inline-input{width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;color:#e8e0f0;font-family:inherit;font-size:12px}
+.book-inline-input:focus{outline:none;border-color:rgba(232,121,249,0.45)}
+.book-section-code-input{font-size:16px;font-weight:800;text-align:center;color:#f59e0b}
+.book-section-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.book-section-actions button,.book-page-tools button{padding:6px 8px;font-size:12px}
 .book-page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
-.book-page-cell{background:rgba(37,99,235,.72);border:1px solid rgba(255,255,255,.08);border-radius:8px;min-height:74px;padding:12px 28px 10px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center;user-select:none;transition:background .15s,border-color .15s,transform .15s;position:relative;font-family:inherit}
+.book-page-cell{background:rgba(37,99,235,.72);border:1px solid rgba(255,255,255,.08);border-radius:8px;min-height:94px;padding:10px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:8px;text-align:center;transition:background .15s,border-color .15s,transform .15s;position:relative;font-family:inherit}
 .book-page-cell:hover{border-color:rgba(232,121,249,.35);transform:translateY(-1px)}
-.book-page-icon{font-size:18px;line-height:1}
-.book-page-title{font-size:12px;color:#d4c4f0;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
-.book-dedicated-toggle{position:absolute;top:6px;right:6px;width:18px;height:18px;border:1px solid #555;border-radius:4px;background:transparent;cursor:pointer;font-size:11px;line-height:16px;text-align:center;color:#fff}
+.book-page-main{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:7px}
+.book-page-status{border:0;border-radius:6px;padding:5px 6px;color:#fff;cursor:pointer;font-size:14px;line-height:1;min-width:30px}
+.book-page-title-input{font-size:12px;padding:7px 8px;text-align:left}
+.book-page-tools{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.book-page-tools-left,.book-page-tools-right{display:flex;align-items:center;gap:5px}
+.book-page-delete{background:#3b1d2a!important;color:#fca5a5!important}
+.book-page-drop{border-color:rgba(232,121,249,0.45)}
+.book-dedicated-toggle{width:18px;height:18px;border:1px solid #555;border-radius:4px;background:transparent;cursor:pointer;font-size:11px;line-height:16px;text-align:center;color:#fff}
 .book-dedicated-toggle.active{background:#22c55e;border-color:#22c55e}
 .book-page-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
 .book-page-action{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px}
@@ -388,24 +398,12 @@ notebook:`<h2 class="panel-title">📋 Notebook</h2>
 </div>`,
 
 book:((()=>{
-const currentPages=243;
-const targetPages=280;
-const pagesLeft=Math.max(targetPages-currentPages,0);
-const progressPct=Math.round((currentPages/targetPages)*100);
 return `<h2 class="panel-title">📖 Book Progress</h2>
-<div class="panel-sub">New PDF: 243 pages. Working target: 280 pages, assuming 27 chapter slots at 10 pages, with 1A expanded to 20. Roughly 37 pages left.</div>
-<div class="stats">
-${stat('Current Draft',currentPages,'pages in HyperRealNewLaptop')}
-${stat('Working Target',targetPages,'27 slots × 10 + extra 1A')}
-${stat('Pages Left',pagesLeft,'rough writing gap')}
-${stat('Progress',progressPct+'%','by page count')}
-</div>
-<div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b">
-<div style="font-size:13px;line-height:1.7;color:#d4c4f0">First chapter is treated as 20 pages now. The current ending is Bird Theory, about 10 pages. If cover/title/repeated opener pages are excluded later, the count will move slightly, but the useful answer right now is <strong>37-ish pages left</strong>.</div>
-</div>
-<div id="bookPlanner"></div>
+<div class="panel-sub">Supabase-backed page tracker. Chapters and pages are editable, draggable, addable, and removable.</div>
+<div id="bookStats" class="stats"></div>
 <div style="margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-<span style="font-size:12px;color:#665c78">Click cells to cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">—</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ written</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · <span style="color:#22c55e">☐</span> = dedicated (top-right checkbox)</span>
+<span style="font-size:12px;color:#665c78">Status cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">blank</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ writing</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · green checkbox = dedicated page</span>
+<button onclick="addBookChapter()">Add chapter</button>
 </div>
 <h3 style="margin:16px 0 8px;color:#e8e0f0">Page-Level Tracker</h3>
 <div id="bookGrid"></div>`;
@@ -2364,240 +2362,70 @@ function renderTasks(){
 const bookData={"1A": {"name": "Frameworks", "titles": ["Intro", "Abusable", "Erase", "Opps", "Side Quests", "Book 1", "Potential Energy", "Hyper-Morality", "Trough of Doubt", "Motivation Sync", "(page 11)", "(page 12)", "(page 13)", "(page 14)", "(page 15)", "(page 16)", "(page 17)", "(page 18)", "(page 19)", "(page 20)"]}, "1B": {"name": "Tutorial", "titles": ["Intro", "(page 2)", "(page 3)", "(page 4)", "(page 5)", "(page 6)", "(page 7)", "(page 8)", "(page 9)", "(page 10)"]}, "1C": {"name": "Box Theory", "titles": ["Intro", "Mis-attribution", "Cursed Person", "Role Misalign", "The Meal Box", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2A": {"name": "Taxes", "titles": ["Intro", "Party Tax", "Type 2 Fun", "Single Tax", "Ode to Taxes", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2B": {"name": "Pyramid Theory", "titles": ["Intro", "Envy", "Promo Rejection 2", "Beyond Pyramid 2", "Analysis Paralysis", "Know your Role", "(blank)", "(blank)", "(blank)", "(blank)"]}, "2C": {"name": "Box Theory P.2", "titles": ["Intro", "After a split...", "After a split...", "Alone Box", "Meal Box", "Coffee Shops", "Friendships", "Meals(Luxury)", "NY Dates", "(blank)"]}, "3A": {"name": "Categories", "titles": ["Intro", "(page 2)", "(page 3)", "(page 4)", "(page 5)", "(page 6)", "(page 7)", "(page 8)", "(page 9)", "(page 10)"]}, "3B": {"name": "Death Theory", "titles": ["Intro", "Love", "Can is White", "Damage Rolls 2", "Extroversion", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "3C": {"name": "Therapy", "titles": ["Intro", "Escape", "Pick up pieces", "Work Values", "Saying No", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "4": {"name": "Hard Mode", "titles": ["Intro", "Capitalism 2", "Happiness", "Other Side", "1-on-1 Dates", "Close Minded", "Palestine", "Abortion Free", "Unfair Life", "Men/Women", "Internal Worry", "Work Rewards", "Consistency"]}, "5": {"name": "Uniqueness", "titles": ["Intro", "(blank)", "One Pager", "Abandoned 1", "Abandoned 2", "Half Page", "Half Page 2", "One Paragraph", "One Para Mind", "One Sentence", "One Sentence 2"]}, "6A": {"name": "Void Theory", "titles": ["Intro", "Leaving Void", "Void Reduction", "Void Life", "Void Expansion", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "6B": {"name": "Game Theory", "titles": ["Intro", "Pre-Destined", "Aussies", "Victim Card", "Roster Meta", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "6C": {"name": "Plan(e) Theory", "titles": ["Intro", "Love NY", "Tech A", "Pleaser P.2", "Hostel", "No bad seat", "(blank)", "(blank)", "(blank)", "(blank)"]}, "7A": {"name": "A Retrospective", "titles": ["Intro", "Tax Evasion", "Out of Cards", "Insecurity", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "7B": {"name": "The Simp", "titles": ["Intro", "Other Side", "Goal of sex", "Premature Victory", "Weird rich guy", "(blank)", "SUPER Straight", "Pick someone", "(blank)", "(blank)"]}, "7C": {"name": "A Spectrum", "titles": ["Intro", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8A": {"name": "Mindset", "titles": ["Secretary Problem", "Drinking ticket", "Fairness", "13th Reason", "(blank)", "Majority wrong", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8B": {"name": "Social Death Penalty", "titles": ["Intro", "Future cancel", "Nuclear bomb", "Complaints", "Louie CK", "Population", "(blank)", "(blank)", "(blank)", "(blank)"]}, "8C": {"name": "Salt & Pepper", "titles": ["Intro", "Loading Music", "Raw", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9A": {"name": "The Draft", "titles": ["Intro", "Martyr", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9B": {"name": "SDP P.2", "titles": ["Intro", "Ukraine", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "9C": {"name": "Substance Abuse", "titles": ["Intro", "Friends", "NY weekends", "Lost in doing", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10A": {"name": "Type 2 Fun", "titles": ["Intro", "Main page", "Instant gratify", "Exotic fun", "Hard != fun", "Have you heard", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10B": {"name": "Endless Pattern", "titles": ["Intro", "Unconsensual", "Experimentation", "Closed minded", "(untitled)", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "10C": {"name": "Default Mode", "titles": ["Intro", "Time machine", "Abusive Rel", "Age is number", "Block builder", "(blank)", "(blank)", "(blank)", "(blank)", "(blank)"]}, "11": {"name": "Hyper Reality", "titles": ["Intro", "Ring of Doubt", "Waiting", "Asexual", "Challenge/Chore", "Gratitude", "Hey man", "Friendships", "Hard Mode", "Healthy", "Roster hits", "Crash"]}};
 const bookOrder=['1A','1B','1C','2A','2B','2C','3A','3B','3C','4','5','6A','6B','6C','7A','7B','7C','8A','8B','8C','9A','9B','9C','10A','10B','10C','11'];
 const blankTitles=new Set(['(page 2)','(page 3)','(page 4)','(page 5)','(page 6)','(page 7)','(page 8)','(page 9)','(page 10)','(page 11)','(page 12)','(page 13)','(page 14)','(page 15)','(page 16)','(page 17)','(page 18)','(page 19)','(page 20)','(untitled)','(blank)']);
-const COLS=10;
 const states=['','💡','✍️','✅'];
 const stateBg=['#1e3a5f','#854d0e','#1e40af','#166534'];
-const BOOK_SYNC_KEY='chapter-plan';
 const BOOK_PAGE_SYNC_KEY='page-tracker';
-let bookRemoteLoaded=false;
-let bookSyncTimer=null;
 let bookPageRemoteLoaded=false;
 let bookPageSyncTimer=null;
-const defaultBookPlan=[
-  {code:'1A',title:'Frameworks',pages:20,note:'Expanded first chapter'},
-  {code:'1B',title:'Tutorial',pages:10,note:'Standard chapter length'},
-  {code:'1C',title:'Box Theory',pages:10,note:'Standard chapter length'},
-  {code:'2A',title:'Taxes',pages:10,note:'Standard chapter length'},
-  {code:'2B',title:'Pyramid Theory',pages:10,note:'Standard chapter length'},
-  {code:'2C',title:'Box Theory P.2',pages:10,note:'Standard chapter length'},
-  {code:'3A',title:'Categories',pages:10,note:'Standard chapter length'},
-  {code:'3B',title:'Death Theory',pages:10,note:'Standard chapter length'},
-  {code:'3C',title:'Therapy',pages:10,note:'Standard chapter length'},
-  {code:'4',title:'Hard Mode',pages:10,note:'Universal chapter'},
-  {code:'5',title:'Uniqueness',pages:10,note:'Universal chapter'},
-  {code:'6A',title:'Void Theory',pages:10,note:'Standard chapter length'},
-  {code:'6B',title:'Game Theory',pages:10,note:'Standard chapter length'},
-  {code:'6C',title:'Plan(e) Theory',pages:10,note:'Standard chapter length'},
-  {code:'7A',title:'Retrospective',pages:10,note:'Standard chapter length'},
-  {code:'7B',title:'The Simp',pages:10,note:'Standard chapter length'},
-  {code:'7C',title:'A Spectrum',pages:10,note:'Standard chapter length'},
-  {code:'8A',title:'Mindset',pages:10,note:'Standard chapter length'},
-  {code:'8B',title:'Social Death Penalty',pages:10,note:'Standard chapter length'},
-  {code:'8C',title:'Salt & Pepper',pages:10,note:'Standard chapter length'},
-  {code:'9A',title:'The Draft',pages:10,note:'Standard chapter length'},
-  {code:'9B',title:'Social Death Penalty P.2',pages:10,note:'Standard chapter length'},
-  {code:'9C',title:'Substance Abuse',pages:10,note:'Standard chapter length'},
-  {code:'10A',title:'Type 2 Fun',pages:10,note:'Standard chapter length'},
-  {code:'10B',title:'Endless Pattern',pages:10,note:'Standard chapter length'},
-  {code:'10C',title:'Default Mode',pages:10,note:'Standard chapter length'},
-  {code:'11',title:'Hyper Reality',pages:10,note:'Final universal chapter'}
-];
+let bookDrag=null;
 function safeParseBookJSON(key,fallback){
   try{return JSON.parse(localStorage.getItem(key)||'')||fallback}catch(e){return fallback}
 }
-function getBookPlan(){
-  const saved=safeParseBookJSON('mc-book-plan',null);
-  return Array.isArray(saved)&&saved.length?saved:defaultBookPlan.map(ch=>({...ch}));
+function defaultBookChapters(){
+  return bookOrder.map(code=>({
+    code,
+    name:bookData[code].name,
+    pages:bookData[code].titles.map(title=>({
+      title,
+      status:blankTitles.has(title)?0:2,
+      dedicated:false
+    }))
+  }));
 }
-function saveBookPlan(plan){localStorage.setItem('mc-book-plan',JSON.stringify(plan));scheduleBookSync()}
-function getBookMeta(){
-  const saved=safeParseBookJSON('mc-book-meta',null);
-  return saved&&typeof saved==='object'?{currentPages:Number(saved.currentPages)||243}:{currentPages:243};
+function normalizeBookChapters(chapters){
+  if(!Array.isArray(chapters)||!chapters.length)return defaultBookChapters();
+  return chapters.map((ch,idx)=>({
+    code:String(ch.code??`Ch ${idx+1}`),
+    name:String(ch.name??ch.title??'Untitled chapter'),
+    pages:Array.isArray(ch.pages)&&ch.pages.length?ch.pages.map((p,i)=>({
+      title:String(p.title??`(page ${i+1})`),
+      status:Math.max(0,Math.min(3,Number(p.status)||0)),
+      dedicated:!!p.dedicated
+    })):[{title:'(blank)',status:0,dedicated:false}]
+  }));
 }
-function saveBookMeta(meta){localStorage.setItem('mc-book-meta',JSON.stringify(meta));scheduleBookSync()}
-function bookTargetPages(plan){return plan.reduce((sum,ch)=>sum+(Number(ch.pages)||0),0)}
-function currentBookPayload(){return {plan:getBookPlan(),meta:getBookMeta(),updatedAt:new Date().toISOString()}}
-function applyBookPayload(payload){
-  if(payload?.plan) localStorage.setItem('mc-book-plan',JSON.stringify(payload.plan));
-  if(payload?.meta) localStorage.setItem('mc-book-meta',JSON.stringify(payload.meta));
-}
-async function loadBookRemote(){
-  if(bookRemoteLoaded)return;
-  bookRemoteLoaded=true;
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/book_state?key=eq.${encodeURIComponent(BOOK_SYNC_KEY)}&select=state&limit=1`,{headers:sbHeaders});
-    if(!r.ok)return;
-    const rows=await r.json();
-    if(rows?.[0]?.state){
-      applyBookPayload(rows[0].state);
-      renderBookPlanner();
-    }else{
-      scheduleBookSync();
-    }
-  }catch(e){console.log('loadBookRemote error',e)}
-}
-function scheduleBookSync(){
-  clearTimeout(bookSyncTimer);
-  bookSyncTimer=setTimeout(syncBookRemote,350);
-}
-async function syncBookRemote(){
-  const payload=currentBookPayload();
-  try{
-    await fetch(`${SB_URL}/rest/v1/book_state?key=eq.${encodeURIComponent(BOOK_SYNC_KEY)}`,{
-      method:'PATCH',
-      headers:{...sbHeaders,'Prefer':'return=minimal'},
-      body:JSON.stringify({state:payload,updated_at:payload.updatedAt})
+function migrateLegacyBookChapters(payload){
+  const chapters=defaultBookChapters();
+  const state=payload?.state||safeParseBookJSON('mc-book-state',{});
+  const dedicated=payload?.dedicated||safeParseBookJSON('mc-book-dedicated',{});
+  chapters.forEach(ch=>{
+    ch.pages.forEach((p,i)=>{
+      const k=ch.code+'-'+i;
+      if(k in state)p.status=Math.max(0,Math.min(3,Number(state[k])||0));
+      if(k in dedicated)p.dedicated=!!dedicated[k];
     });
-    await fetch(`${SB_URL}/rest/v1/book_state?on_conflict=key`,{
-      method:'POST',
-      headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify({key:BOOK_SYNC_KEY,state:payload,updated_at:payload.updatedAt})
-    });
-  }catch(e){console.log('syncBookRemote error',e)}
+  });
+  return chapters;
 }
-function updateBookPlan(index,field,value){
-  const plan=getBookPlan();
-  if(!plan[index])return;
-  plan[index][field]=field==='pages'?Math.max(0,Number(value)||0):value;
-  saveBookPlan(plan);
-  renderBookPlanner();
+function getBookChapters(){
+  const saved=safeParseBookJSON('mc-book-chapters',null);
+  if(Array.isArray(saved)&&saved.length)return normalizeBookChapters(saved);
+  const legacyState=safeParseBookJSON('mc-book-state',null);
+  const legacyDedicated=safeParseBookJSON('mc-book-dedicated',null);
+  if(legacyState||legacyDedicated)return migrateLegacyBookChapters({state:legacyState,dedicated:legacyDedicated});
+  return defaultBookChapters();
 }
-function updateBookCurrentPages(value){
-  saveBookMeta({currentPages:Math.max(0,Number(value)||0)});
-  renderBookPlanner();
+function saveBookChapters(chapters){
+  localStorage.setItem('mc-book-chapters',JSON.stringify(normalizeBookChapters(chapters)));
+  scheduleBookPageSync();
 }
-function bumpBookCurrentPages(delta){
-  const meta=getBookMeta();
-  updateBookCurrentPages((Number(meta.currentPages)||0)+delta);
-}
-function addBookChapter(afterIndex){
-  const plan=getBookPlan();
-  const row={code:'New',title:'Untitled chapter',pages:10,note:'Custom chapter'};
-  if(Number.isInteger(afterIndex)) plan.splice(afterIndex+1,0,row);
-  else plan.push(row);
-  saveBookPlan(plan);
-  renderBookPlanner();
-}
-function addBookTargetPages(pages){
-  const plan=getBookPlan();
-  const extraIndex=plan.findIndex(ch=>ch.code==='+'&&ch.title==='Extra pages');
-  if(extraIndex>=0){
-    plan[extraIndex].pages=(Number(plan[extraIndex].pages)||0)+pages;
-  }else{
-    plan.push({code:'+',title:'Extra pages',pages,note:'Added target pages'});
-  }
-  saveBookPlan(plan);
-  renderBookPlanner();
-}
-function deleteBookChapter(index){
-  const plan=getBookPlan();
-  plan.splice(index,1);
-  saveBookPlan(plan);
-  renderBookPlanner();
-}
-function moveBookChapter(index,dir){
-  const plan=getBookPlan();
-  const next=index+dir;
-  if(next<0||next>=plan.length)return;
-  const row=plan.splice(index,1)[0];
-  plan.splice(next,0,row);
-  saveBookPlan(plan);
-  renderBookPlanner();
-}
-function resetBookPlan(){
-  localStorage.removeItem('mc-book-plan');
-  localStorage.removeItem('mc-book-meta');
-  scheduleBookSync();
-  renderBookPlanner();
-}
-function bookPlannerInput(value,onchange,extra){
-  return `<input value="${escapeHtml(String(value??''))}" onchange="${onchange}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;color:#e8e0f0;font-family:inherit;font-size:12px;${extra||''}">`;
-}
-function renderBookPlanner(){
-  const el=document.getElementById('bookPlanner');
-  if(!el)return;
-  const plan=getBookPlan();
-  const meta=getBookMeta();
-  const target=bookTargetPages(plan);
-  const pagesLeft=Math.max(target-meta.currentPages,0);
-  const progress=target?Math.min(100,Math.round((meta.currentPages/target)*100)):0;
-  const rows=plan.map((ch,i)=>`<tr>
-    <td>${bookPlannerInput(ch.code,`updateBookPlan(${i},'code',this.value)`,'min-width:54px')}</td>
-    <td>${bookPlannerInput(ch.title,`updateBookPlan(${i},'title',this.value)`,'min-width:140px')}</td>
-    <td>${bookPlannerInput(ch.pages,`updateBookPlan(${i},'pages',this.value)`,'max-width:76px')}</td>
-    <td>${bookPlannerInput(ch.note,`updateBookPlan(${i},'note',this.value)`,'min-width:160px')}</td>
-    <td style="white-space:nowrap;text-align:right">
-      <button onclick="addBookChapter(${i})" title="Insert below" style="padding:6px 8px;margin-right:4px">+</button>
-      <button onclick="moveBookChapter(${i},-1)" title="Move up" style="padding:6px 8px;margin-right:4px">↑</button>
-      <button onclick="moveBookChapter(${i},1)" title="Move down" style="padding:6px 8px;margin-right:4px">↓</button>
-      <button onclick="deleteBookChapter(${i})" title="Delete" style="padding:6px 8px;background:#3b1d2a;color:#fca5a5">×</button>
-    </td>
-  </tr>`).join('');
-  el.innerHTML=`<div class="card" style="margin-bottom:16px;padding:14px 16px;border-left:3px solid #22c55e">
-    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-      <div>
-        <div style="font-size:13px;font-weight:800;color:#e8e0f0;margin-bottom:4px">Custom chapter math</div>
-        <div style="font-size:12px;color:#665c78">Edit any row, add chapters wherever, and the pages-left math recalculates from the plan.</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="addBookChapter()">Add chapter</button>
-        <button onclick="resetBookPlan()" style="background:#2a2535;color:#d4c4f0">Reset</button>
-      </div>
-    </div>
-    <div class="stats" style="margin-bottom:12px">
-      ${stat('Current Draft',bookPlannerInput(meta.currentPages,'updateBookCurrentPages(this.value)','text-align:center;font-size:18px;font-weight:800'),'editable pages')}
-      ${stat('Custom Target',target,'from chapter rows')}
-      ${stat('Pages Left',pagesLeft,'live recalculation')}
-      ${stat('Progress',progress+'%','custom plan')}
-    </div>
-    <div class="book-page-actions">
-      <div class="book-page-action">
-        <div class="book-page-action-title">Add written pages</div>
-        <div class="book-page-action-buttons">
-          <button onclick="bumpBookCurrentPages(1)">+1 draft</button>
-          <button onclick="bumpBookCurrentPages(5)">+5 draft</button>
-          <button onclick="bumpBookCurrentPages(10)">+10 draft</button>
-        </div>
-      </div>
-      <div class="book-page-action">
-        <div class="book-page-action-title">Add target pages</div>
-        <div class="book-page-action-buttons">
-          <button onclick="addBookTargetPages(1)">+1 target</button>
-          <button onclick="addBookTargetPages(5)">+5 target</button>
-          <button onclick="addBookTargetPages(10)">+10 target</button>
-        </div>
-      </div>
-    </div>
-    <div style="overflow-x:auto">
-      <table class="ch-table">
-        <tr><th>Ch</th><th>Title</th><th>Pages</th><th>Note</th><th></th></tr>
-        ${rows}
-      </table>
-    </div>
-    <div style="font-size:12px;color:#665c78;line-height:1.6;margin-top:10px">Default plan keeps Frameworks at 20 pages and the rest at 10. Bird Theory is currently treated as the ending inside the draft; add it as its own row if you want it to raise the target.</div>
-  </div>`;
-}
-function getBookState(){
-  const s=JSON.parse(localStorage.getItem('mc-book-state')||'{}');
-  if(!s._init){
-    bookOrder.forEach(ch=>{
-      bookData[ch].titles.forEach((t,i)=>{
-        const k=ch+'-'+i;
-        if(!(k in s)&&!blankTitles.has(t)){s[k]=2;}
-      });
-    });
-    s._init=true;
-    localStorage.setItem('mc-book-state',JSON.stringify(s));
-  }
-  return s;
-}
-function saveBookState(s){localStorage.setItem('mc-book-state',JSON.stringify(s));scheduleBookPageSync()}
-function getBookDedicated(){return JSON.parse(localStorage.getItem('mc-book-dedicated')||'{}')}
-function saveBookDedicated(s){localStorage.setItem('mc-book-dedicated',JSON.stringify(s));scheduleBookPageSync()}
-function currentBookPagePayload(){return {state:getBookState(),dedicated:getBookDedicated(),updatedAt:new Date().toISOString()}}
+function currentBookPagePayload(){return {chapters:getBookChapters(),updatedAt:new Date().toISOString()}}
 function applyBookPagePayload(payload){
-  if(payload?.state) localStorage.setItem('mc-book-state',JSON.stringify(payload.state));
-  if(payload?.dedicated) localStorage.setItem('mc-book-dedicated',JSON.stringify(payload.dedicated));
+  if(payload?.chapters){
+    localStorage.setItem('mc-book-chapters',JSON.stringify(normalizeBookChapters(payload.chapters)));
+  }else if(payload?.state||payload?.dedicated){
+    localStorage.setItem('mc-book-chapters',JSON.stringify(migrateLegacyBookChapters(payload)));
+  }
 }
 async function loadBookPageRemote(){
   if(bookPageRemoteLoaded)return;
@@ -2633,40 +2461,181 @@ async function syncBookPageRemote(){
     });
   }catch(e){console.log('syncBookPageRemote error',e)}
 }
-function cycleBook(ch,i){const s=getBookState();const k=ch+'-'+i;const cur=s[k]||0;s[k]=(cur+1)%4;saveBookState(s);renderBook()}
-function toggleDedicated(ev,ch,i){ev.stopPropagation();const d=getBookDedicated();const k=ch+'-'+i;d[k]=!d[k];saveBookDedicated(d);renderBook()}
+function updateBookChapter(index,field,value){
+  const chapters=getBookChapters();
+  if(!chapters[index])return;
+  chapters[index][field]=value;
+  saveBookChapters(chapters);
+  renderBook();
+}
+function addBookChapter(afterIndex){
+  const chapters=getBookChapters();
+  const row={code:'New',name:'Untitled chapter',pages:Array.from({length:10},(_,i)=>({title:`(page ${i+1})`,status:0,dedicated:false}))};
+  if(Number.isInteger(afterIndex))chapters.splice(afterIndex+1,0,row);
+  else chapters.push(row);
+  saveBookChapters(chapters);
+  renderBook();
+}
+function deleteBookChapter(index){
+  const chapters=getBookChapters();
+  chapters.splice(index,1);
+  saveBookChapters(chapters);
+  renderBook();
+}
+function updateBookPage(chIndex,pageIndex,field,value){
+  const chapters=getBookChapters();
+  const page=chapters[chIndex]?.pages?.[pageIndex];
+  if(!page)return;
+  page[field]=field==='status'?Math.max(0,Math.min(3,Number(value)||0)):value;
+  saveBookChapters(chapters);
+  renderBook();
+}
+function cycleBookPage(chIndex,pageIndex){
+  const chapters=getBookChapters();
+  const page=chapters[chIndex]?.pages?.[pageIndex];
+  if(!page)return;
+  page.status=((Number(page.status)||0)+1)%4;
+  saveBookChapters(chapters);
+  renderBook();
+}
+function toggleDedicated(ev,chIndex,pageIndex){
+  ev.stopPropagation();
+  const chapters=getBookChapters();
+  const page=chapters[chIndex]?.pages?.[pageIndex];
+  if(!page)return;
+  page.dedicated=!page.dedicated;
+  saveBookChapters(chapters);
+  renderBook();
+}
+function addBookPage(chIndex,afterIndex){
+  const chapters=getBookChapters();
+  const pages=chapters[chIndex]?.pages;
+  if(!pages)return;
+  const page={title:`(page ${pages.length+1})`,status:0,dedicated:false};
+  if(Number.isInteger(afterIndex))pages.splice(afterIndex+1,0,page);
+  else pages.push(page);
+  saveBookChapters(chapters);
+  renderBook();
+}
+function deleteBookPage(chIndex,pageIndex){
+  const chapters=getBookChapters();
+  const pages=chapters[chIndex]?.pages;
+  if(!pages)return;
+  pages.splice(pageIndex,1);
+  if(!pages.length)pages.push({title:'(blank)',status:0,dedicated:false});
+  saveBookChapters(chapters);
+  renderBook();
+}
+function startBookChapterDrag(ev,chIndex){
+  bookDrag={type:'chapter',chIndex};
+  ev.dataTransfer.effectAllowed='move';
+}
+function dropBookChapter(ev,targetIndex){
+  ev.preventDefault();
+  ev.stopPropagation();
+  if(!bookDrag||bookDrag.type!=='chapter')return;
+  const chapters=getBookChapters();
+  const from=bookDrag.chIndex;
+  if(from===targetIndex)return;
+  const row=chapters.splice(from,1)[0];
+  const to=from<targetIndex?targetIndex-1:targetIndex;
+  chapters.splice(Math.max(0,to),0,row);
+  bookDrag=null;
+  saveBookChapters(chapters);
+  renderBook();
+}
+function startBookPageDrag(ev,chIndex,pageIndex){
+  bookDrag={type:'page',chIndex,pageIndex};
+  ev.dataTransfer.effectAllowed='move';
+}
+function dropBookPage(ev,targetChIndex,targetPageIndex){
+  ev.preventDefault();
+  ev.stopPropagation();
+  if(!bookDrag||bookDrag.type!=='page')return;
+  const chapters=getBookChapters();
+  const sourcePages=chapters[bookDrag.chIndex]?.pages;
+  const targetPages=chapters[targetChIndex]?.pages;
+  if(!sourcePages||!targetPages)return;
+  const page=sourcePages.splice(bookDrag.pageIndex,1)[0];
+  let insertAt=Number.isInteger(targetPageIndex)?targetPageIndex:targetPages.length;
+  if(bookDrag.chIndex===targetChIndex&&bookDrag.pageIndex<insertAt)insertAt--;
+  targetPages.splice(Math.max(0,insertAt),0,page);
+  if(!sourcePages.length)sourcePages.push({title:'(blank)',status:0,dedicated:false});
+  bookDrag=null;
+  saveBookChapters(chapters);
+  renderBook();
+}
+function bookStatsFor(chapters){
+  const counts={total:0,blank:0,idea:0,writing:0,edited:0,dedicated:0};
+  chapters.forEach(ch=>ch.pages.forEach(p=>{
+    counts.total++;
+    if(p.status===1)counts.idea++;
+    else if(p.status===2)counts.writing++;
+    else if(p.status===3)counts.edited++;
+    else counts.blank++;
+    if(p.dedicated)counts.dedicated++;
+  }));
+  counts.remaining=counts.blank+counts.idea+counts.writing;
+  counts.progress=counts.total?Math.round((counts.edited/counts.total)*100):0;
+  return counts;
+}
 function renderBook(){
   const grid=document.getElementById('bookGrid');
   if(!grid)return;
-  renderBookPlanner();
-  loadBookRemote();
   loadBookPageRemote();
-  const st=getBookState();
-  const ded=getBookDedicated();
-  let ideas=0,written=0,edited=0,dedicated=0;
-  Object.entries(st).forEach(([k,v])=>{if(k==='_init')return;if(v===1)ideas++;if(v===2)written++;if(v===3)edited++});
-  Object.values(ded).forEach(v=>{if(v)dedicated++});
+  const chapters=getBookChapters();
+  const counts=bookStatsFor(chapters);
+  const statsEl=document.getElementById('bookStats');
+  if(statsEl){
+    statsEl.innerHTML=
+      stat('Total Pages',counts.total,'from tracker')+
+      stat('Blanks',counts.blank,'empty page slots')+
+      stat('Ideas',counts.idea,'rough page ideas')+
+      stat('Writing',counts.writing,'drafted / needs edit')+
+      stat('Edited',counts.edited,counts.progress+'% complete')+
+      stat('Remaining',counts.remaining,'not fully edited');
+  }
   const univCh=['4','5','11'];
   let html='';
-  bookOrder.forEach(ch=>{
-    const d=bookData[ch];
-    const isUniv=univCh.includes(ch);
+  chapters.forEach((chapter,chIndex)=>{
+    const isUniv=univCh.includes(chapter.code);
     const codeColor=isUniv?'#f59e0b':'#e879f9';
-    const pages=d.titles;
-    const cells=pages.map((pageTitle,idx)=>{
-      const k=ch+'-'+idx;
-      const v=st[k]||0;
-      const isDed=ded[k]||false;
+    const cells=chapter.pages.map((page,idx)=>{
+      const v=Number(page.status)||0;
+      const isDed=!!page.dedicated;
       const icon=states[v]||'-';
       const bg=stateBg[v];
-      const title=escapeHtml(pageTitle);
-      return `<button class="book-page-cell" onclick="cycleBook('${ch}',${idx})" title="${title}" style="background:${bg}" type="button">
-        <span class="book-page-icon">${icon}</span>
-        <span class="book-page-title">${title}</span>
-        <span class="book-dedicated-toggle ${isDed?'active':''}" onclick="toggleDedicated(event,'${ch}',${idx})">${isDed?'✓':''}</span>
-      </button>`;
+      return `<div class="book-page-cell" style="background:${bg}" ondragover="event.preventDefault();this.classList.add('book-page-drop')" ondragleave="this.classList.remove('book-page-drop')" ondrop="this.classList.remove('book-page-drop');dropBookPage(event,${chIndex},${idx})">
+        <div class="book-page-main">
+          <span class="book-drag-handle" draggable="true" ondragstart="startBookPageDrag(event,${chIndex},${idx})" title="Drag page">⋮⋮</span>
+          <input class="book-inline-input book-page-title-input" value="${escapeHtml(page.title)}" onchange="updateBookPage(${chIndex},${idx},'title',this.value)" aria-label="Page title">
+          <button class="book-page-status" onclick="cycleBookPage(${chIndex},${idx})" style="background:${bg}" title="Cycle status">${icon||'-'}</button>
+        </div>
+        <div class="book-page-tools">
+          <div class="book-page-tools-left">
+            <span style="font-size:10px;color:#c9bdd8">p${idx+1}</span>
+            <span class="book-dedicated-toggle ${isDed?'active':''}" onclick="toggleDedicated(event,${chIndex},${idx})" title="Dedicated page">${isDed?'✓':''}</span>
+          </div>
+          <div class="book-page-tools-right">
+            <button onclick="addBookPage(${chIndex},${idx})" title="Insert page after">+</button>
+            <button class="book-page-delete" onclick="deleteBookPage(${chIndex},${idx})" title="Delete page">×</button>
+          </div>
+        </div>
+      </div>`;
     }).join('');
-    html+=`<div class="card book-section"><div class="book-section-head"><span class="book-section-code" style="color:${codeColor}">${escapeHtml(ch)}</span><span class="book-section-title">${escapeHtml(d.name)}</span></div><div class="book-page-grid" aria-label="${escapeHtml(d.name)} chapter pages">${cells}</div></div>`;
+    html+=`<div class="card book-section" ondragover="event.preventDefault()" ondrop="dropBookChapter(event,${chIndex})">
+      <div class="book-section-head">
+        <span class="book-drag-handle" draggable="true" ondragstart="startBookChapterDrag(event,${chIndex})" title="Drag chapter">⋮⋮</span>
+        <input class="book-inline-input book-section-code-input" value="${escapeHtml(chapter.code)}" onchange="updateBookChapter(${chIndex},'code',this.value)" style="color:${codeColor}" aria-label="Chapter code">
+        <input class="book-inline-input" value="${escapeHtml(chapter.name)}" onchange="updateBookChapter(${chIndex},'name',this.value)" aria-label="Chapter title">
+        <span class="book-section-actions">
+          <button onclick="addBookPage(${chIndex})">Add page</button>
+          <button onclick="addBookChapter(${chIndex})">Add chapter</button>
+          <button onclick="deleteBookChapter(${chIndex})" style="background:#3b1d2a;color:#fca5a5">Delete</button>
+        </span>
+      </div>
+      <div class="book-page-grid" aria-label="${escapeHtml(chapter.name)} chapter pages" ondragover="event.preventDefault()" ondrop="dropBookPage(event,${chIndex})">${cells}</div>
+    </div>`;
   });
   grid.innerHTML=html;
 }

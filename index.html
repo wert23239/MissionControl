@@ -287,7 +287,7 @@ overview:`<h2 class="panel-title">🏠 Overview</h2>
 <div class="stats">
 ${stat('Day',`<span id="dayCount">—</span>`,`<span id="daySub">since Feb 14, 2026</span>`)}
 ${stat('Tasks Done','8 / 18','44% complete')}
-${stat('Book Progress','63%','130 / 207 pages')}
+${stat('Book Progress','87%','243 / 280 pages')}
 ${stat('Test Coverage','<span id="covPct">—</span>','<span id="covSub">loading...</span>')}
 </div>
 <div id="dailyTipCard" class="card" style="margin-bottom:20px;padding:16px 20px;border-left:3px solid #f59e0b">
@@ -370,27 +370,55 @@ notebook:`<h2 class="panel-title">📋 Notebook</h2>
 book:((()=>{
 
 const ch=[
-['1A','F.r.a.m.e.w.o.r.k.s.','✅',0],['1B','Tutorial','✅',0],['1C','Box Theory','✅',0],
-['2A','Taxes','🟡',2],['2B','Pyramid Theory','🟡',3],['2C','Box Theory P.2','🟡',2],
-['3A','Categories','🟡',2],['3B','Death Theory','🟡',2],['3C','Therapy','✅',0],
-['4','Hard Mode','🟡',8],['5','Uniqueness','🔴',19],
-['6A','Void Theory','✅',0],['6B','Game Theory','✅',0],['6C','Plan(e) Theory','🟡',1],
-['7A','Retrospective','🟡',1],['7B','The Simp','🟡',3],['7C','A Spectrum','🟡',1],
-['8A','Mindset','🟡',2],['8B','Social Death Penalty','✅',0],['8C','Salt & Pepper','🟡',2],
-['9A','The Draft','🟡',6],['9B','Social Death Penalty P.2','🟡',4],['9C','Substance Abuse','🟡',3],
-['10A','Type 2 Fun','✅',0],['10B','Endless Pattern','🟡',3],['10C','Default Mode','🟡',3],
-['11','Hyper Reality','🔴',10]
+['1A','F.r.a.m.e.w.o.r.k.s.','20 pp','Expanded first chapter; now double-size'],
+['1B','Tutorial','10 pp','Standard chapter length'],
+['1C','Box Theory','10 pp','Standard chapter length'],
+['2A','Taxes','10 pp','Standard chapter length'],
+['2B','Pyramid Theory','10 pp','Standard chapter length'],
+['2C','Box Theory P.2','10 pp','Standard chapter length'],
+['3A','Categories','10 pp','Standard chapter length'],
+['3B','Death Theory','10 pp','Standard chapter length'],
+['3C','Therapy','10 pp','Standard chapter length'],
+['4','Hard Mode','10 pp','Universal chapter'],
+['5','Uniqueness','10 pp','Universal chapter'],
+['6A','Void Theory','10 pp','Standard chapter length'],
+['6B','Game Theory','10 pp','Standard chapter length'],
+['6C','Plan(e) Theory','10 pp','Standard chapter length'],
+['7A','Retrospective','10 pp','Standard chapter length'],
+['7B','The Simp','10 pp','Standard chapter length'],
+['7C','A Spectrum','10 pp','Standard chapter length'],
+['8A','Mindset','10 pp','Standard chapter length'],
+['8B','Social Death Penalty','10 pp','Standard chapter length'],
+['8C','Salt & Pepper','10 pp','Standard chapter length'],
+['9A','The Draft','10 pp','Standard chapter length'],
+['9B','Social Death Penalty P.2','10 pp','Standard chapter length'],
+['9C','Substance Abuse','10 pp','Standard chapter length'],
+['10A','Type 2 Fun','10 pp','Standard chapter length'],
+['10B','Endless Pattern','10 pp','Standard chapter length'],
+['10C','Default Mode','10 pp','Standard chapter length'],
+['11','Hyper Reality','10 pp','Final universal chapter'],
+['Bird','Bird Theory','10 pp','Current final section in the new PDF']
 ];
+const currentPages=243;
+const targetPages=280;
+const pagesLeft=Math.max(targetPages-currentPages,0);
+const progressPct=Math.round((currentPages/targetPages)*100);
 const chTable=`<div class="card" style="overflow-x:auto;margin-bottom:16px">
 <table class="ch-table">
-<tr><th>Ch</th><th>Title</th><th>Status</th><th>Pages Left</th></tr>
-${ch.map(([c,t,s,p])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+t+'</td><td>'+s+'</td><td>'+(p||'—')+'</td></tr>').join('')}
+<tr><th>Ch</th><th>Title</th><th>Target</th><th>Note</th></tr>
+${ch.map(([c,t,target,note])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+t+'</td><td>'+target+'</td><td>'+note+'</td></tr>').join('')}
 </table>
 </div>`;
 return `<h2 class="panel-title">📖 Book Progress</h2>
-<div class="panel-sub">Hyper Reality — chapter by chapter</div>
+<div class="panel-sub">New PDF: 243 pages. Working target: 280 pages, assuming 27 chapter slots at 10 pages, with 1A expanded to 20. Roughly 37 pages left.</div>
 <div class="stats">
-<div id="bookStats"></div>
+${stat('Current Draft',currentPages,'pages in HyperRealNewLaptop')}
+${stat('Working Target',targetPages,'27 slots × 10 + extra 1A')}
+${stat('Pages Left',pagesLeft,'rough writing gap')}
+${stat('Progress',progressPct+'%','by page count')}
+</div>
+<div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b">
+<div style="font-size:13px;line-height:1.7;color:#d4c4f0">First chapter is treated as 20 pages now. The current ending is Bird Theory, about 10 pages. If cover/title/repeated opener pages are excluded later, the count will move slightly, but the useful answer right now is <strong>37-ish pages left</strong>.</div>
 </div>
 <div style="margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
 <span style="font-size:12px;color:#665c78">Click cells to cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">—</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ written</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · <span style="color:#22c55e">☐</span> = dedicated (top-right checkbox)</span>
@@ -2377,15 +2405,12 @@ function cycleBook(ch,i){const s=getBookState();const k=ch+'-'+i;const cur=s[k]|
 function toggleDedicated(ev,ch,i){ev.stopPropagation();const d=getBookDedicated();const k=ch+'-'+i;d[k]=!d[k];saveBookDedicated(d);renderBook()}
 function renderBook(){
   const grid=document.getElementById('bookGrid');
-  const stats=document.getElementById('bookStats');
   if(!grid)return;
   const st=getBookState();
   const ded=getBookDedicated();
-  let totalPages=0,ideas=0,written=0,edited=0,dedicated=0;
-  bookOrder.forEach(ch=>{totalPages+=bookData[ch].titles.length});
+  let ideas=0,written=0,edited=0,dedicated=0;
   Object.entries(st).forEach(([k,v])=>{if(k==='_init')return;if(v===1)ideas++;if(v===2)written++;if(v===3)edited++});
   Object.values(ded).forEach(v=>{if(v)dedicated++});
-  stats.innerHTML=`${stat('Total Pages',totalPages,'across 27 chapters')}${stat('💡 Ideas',ideas,'')}${stat('✍️ Written',written,'')}${stat('✅ Edited',edited,'')}${stat('📌 Dedicated',dedicated,'')}`;
   const univCh=['4','5','11'];
   let html='';
   bookOrder.forEach(ch=>{

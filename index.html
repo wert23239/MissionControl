@@ -368,47 +368,10 @@ notebook:`<h2 class="panel-title">📋 Notebook</h2>
 </div>`,
 
 book:((()=>{
-
-const ch=[
-['1A','F.r.a.m.e.w.o.r.k.s.','20 pp','Expanded first chapter; now double-size'],
-['1B','Tutorial','10 pp','Standard chapter length'],
-['1C','Box Theory','10 pp','Standard chapter length'],
-['2A','Taxes','10 pp','Standard chapter length'],
-['2B','Pyramid Theory','10 pp','Standard chapter length'],
-['2C','Box Theory P.2','10 pp','Standard chapter length'],
-['3A','Categories','10 pp','Standard chapter length'],
-['3B','Death Theory','10 pp','Standard chapter length'],
-['3C','Therapy','10 pp','Standard chapter length'],
-['4','Hard Mode','10 pp','Universal chapter'],
-['5','Uniqueness','10 pp','Universal chapter'],
-['6A','Void Theory','10 pp','Standard chapter length'],
-['6B','Game Theory','10 pp','Standard chapter length'],
-['6C','Plan(e) Theory','10 pp','Standard chapter length'],
-['7A','Retrospective','10 pp','Standard chapter length'],
-['7B','The Simp','10 pp','Standard chapter length'],
-['7C','A Spectrum','10 pp','Standard chapter length'],
-['8A','Mindset','10 pp','Standard chapter length'],
-['8B','Social Death Penalty','10 pp','Standard chapter length'],
-['8C','Salt & Pepper','10 pp','Standard chapter length'],
-['9A','The Draft','10 pp','Standard chapter length'],
-['9B','Social Death Penalty P.2','10 pp','Standard chapter length'],
-['9C','Substance Abuse','10 pp','Standard chapter length'],
-['10A','Type 2 Fun','10 pp','Standard chapter length'],
-['10B','Endless Pattern','10 pp','Standard chapter length'],
-['10C','Default Mode','10 pp','Standard chapter length'],
-['11','Hyper Reality','10 pp','Final universal chapter'],
-['Bird','Bird Theory','10 pp','Current final section in the new PDF']
-];
 const currentPages=243;
 const targetPages=280;
 const pagesLeft=Math.max(targetPages-currentPages,0);
 const progressPct=Math.round((currentPages/targetPages)*100);
-const chTable=`<div class="card" style="overflow-x:auto;margin-bottom:16px">
-<table class="ch-table">
-<tr><th>Ch</th><th>Title</th><th>Target</th><th>Note</th></tr>
-${ch.map(([c,t,target,note])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+t+'</td><td>'+target+'</td><td>'+note+'</td></tr>').join('')}
-</table>
-</div>`;
 return `<h2 class="panel-title">📖 Book Progress</h2>
 <div class="panel-sub">New PDF: 243 pages. Working target: 280 pages, assuming 27 chapter slots at 10 pages, with 1A expanded to 20. Roughly 37 pages left.</div>
 <div class="stats">
@@ -420,10 +383,10 @@ ${stat('Progress',progressPct+'%','by page count')}
 <div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b">
 <div style="font-size:13px;line-height:1.7;color:#d4c4f0">First chapter is treated as 20 pages now. The current ending is Bird Theory, about 10 pages. If cover/title/repeated opener pages are excluded later, the count will move slightly, but the useful answer right now is <strong>37-ish pages left</strong>.</div>
 </div>
+<div id="bookPlanner"></div>
 <div style="margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
 <span style="font-size:12px;color:#665c78">Click cells to cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">—</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ written</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · <span style="color:#22c55e">☐</span> = dedicated (top-right checkbox)</span>
 </div>
-${chTable}
 <h3 style="margin:16px 0 8px;color:#e8e0f0">Page-Level Tracker</h3>
 <div id="bookGrid"></div>`;
 })()),
@@ -2384,6 +2347,134 @@ const blankTitles=new Set(['(page 2)','(page 3)','(page 4)','(page 5)','(page 6)
 const COLS=10;
 const states=['','💡','✍️','✅'];
 const stateBg=['#1e3a5f','#854d0e','#1e40af','#166534'];
+const defaultBookPlan=[
+  {code:'1A',title:'F.r.a.m.e.w.o.r.k.s.',pages:20,note:'Expanded first chapter'},
+  {code:'1B',title:'Tutorial',pages:10,note:'Standard chapter length'},
+  {code:'1C',title:'Box Theory',pages:10,note:'Standard chapter length'},
+  {code:'2A',title:'Taxes',pages:10,note:'Standard chapter length'},
+  {code:'2B',title:'Pyramid Theory',pages:10,note:'Standard chapter length'},
+  {code:'2C',title:'Box Theory P.2',pages:10,note:'Standard chapter length'},
+  {code:'3A',title:'Categories',pages:10,note:'Standard chapter length'},
+  {code:'3B',title:'Death Theory',pages:10,note:'Standard chapter length'},
+  {code:'3C',title:'Therapy',pages:10,note:'Standard chapter length'},
+  {code:'4',title:'Hard Mode',pages:10,note:'Universal chapter'},
+  {code:'5',title:'Uniqueness',pages:10,note:'Universal chapter'},
+  {code:'6A',title:'Void Theory',pages:10,note:'Standard chapter length'},
+  {code:'6B',title:'Game Theory',pages:10,note:'Standard chapter length'},
+  {code:'6C',title:'Plan(e) Theory',pages:10,note:'Standard chapter length'},
+  {code:'7A',title:'Retrospective',pages:10,note:'Standard chapter length'},
+  {code:'7B',title:'The Simp',pages:10,note:'Standard chapter length'},
+  {code:'7C',title:'A Spectrum',pages:10,note:'Standard chapter length'},
+  {code:'8A',title:'Mindset',pages:10,note:'Standard chapter length'},
+  {code:'8B',title:'Social Death Penalty',pages:10,note:'Standard chapter length'},
+  {code:'8C',title:'Salt & Pepper',pages:10,note:'Standard chapter length'},
+  {code:'9A',title:'The Draft',pages:10,note:'Standard chapter length'},
+  {code:'9B',title:'Social Death Penalty P.2',pages:10,note:'Standard chapter length'},
+  {code:'9C',title:'Substance Abuse',pages:10,note:'Standard chapter length'},
+  {code:'10A',title:'Type 2 Fun',pages:10,note:'Standard chapter length'},
+  {code:'10B',title:'Endless Pattern',pages:10,note:'Standard chapter length'},
+  {code:'10C',title:'Default Mode',pages:10,note:'Standard chapter length'},
+  {code:'11',title:'Hyper Reality',pages:10,note:'Final universal chapter'}
+];
+function safeParseBookJSON(key,fallback){
+  try{return JSON.parse(localStorage.getItem(key)||'')||fallback}catch(e){return fallback}
+}
+function getBookPlan(){
+  const saved=safeParseBookJSON('mc-book-plan',null);
+  return Array.isArray(saved)&&saved.length?saved:defaultBookPlan.map(ch=>({...ch}));
+}
+function saveBookPlan(plan){localStorage.setItem('mc-book-plan',JSON.stringify(plan))}
+function getBookMeta(){
+  const saved=safeParseBookJSON('mc-book-meta',null);
+  return saved&&typeof saved==='object'?{currentPages:Number(saved.currentPages)||243}:{currentPages:243};
+}
+function saveBookMeta(meta){localStorage.setItem('mc-book-meta',JSON.stringify(meta))}
+function bookTargetPages(plan){return plan.reduce((sum,ch)=>sum+(Number(ch.pages)||0),0)}
+function updateBookPlan(index,field,value){
+  const plan=getBookPlan();
+  if(!plan[index])return;
+  plan[index][field]=field==='pages'?Math.max(0,Number(value)||0):value;
+  saveBookPlan(plan);
+  renderBookPlanner();
+}
+function updateBookCurrentPages(value){
+  saveBookMeta({currentPages:Math.max(0,Number(value)||0)});
+  renderBookPlanner();
+}
+function addBookChapter(){
+  const plan=getBookPlan();
+  plan.push({code:'New',title:'Untitled chapter',pages:10,note:'Custom chapter'});
+  saveBookPlan(plan);
+  renderBookPlanner();
+}
+function deleteBookChapter(index){
+  const plan=getBookPlan();
+  plan.splice(index,1);
+  saveBookPlan(plan);
+  renderBookPlanner();
+}
+function moveBookChapter(index,dir){
+  const plan=getBookPlan();
+  const next=index+dir;
+  if(next<0||next>=plan.length)return;
+  const row=plan.splice(index,1)[0];
+  plan.splice(next,0,row);
+  saveBookPlan(plan);
+  renderBookPlanner();
+}
+function resetBookPlan(){
+  localStorage.removeItem('mc-book-plan');
+  localStorage.removeItem('mc-book-meta');
+  renderBookPlanner();
+}
+function bookPlannerInput(value,onchange,extra){
+  return `<input value="${escapeHtml(String(value??''))}" onchange="${onchange}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;color:#e8e0f0;font-family:inherit;font-size:12px;${extra||''}">`;
+}
+function renderBookPlanner(){
+  const el=document.getElementById('bookPlanner');
+  if(!el)return;
+  const plan=getBookPlan();
+  const meta=getBookMeta();
+  const target=bookTargetPages(plan);
+  const pagesLeft=Math.max(target-meta.currentPages,0);
+  const progress=target?Math.min(100,Math.round((meta.currentPages/target)*100)):0;
+  const rows=plan.map((ch,i)=>`<tr>
+    <td>${bookPlannerInput(ch.code,`updateBookPlan(${i},'code',this.value)`,'min-width:54px')}</td>
+    <td>${bookPlannerInput(ch.title,`updateBookPlan(${i},'title',this.value)`,'min-width:140px')}</td>
+    <td>${bookPlannerInput(ch.pages,`updateBookPlan(${i},'pages',this.value)`,'max-width:76px')}</td>
+    <td>${bookPlannerInput(ch.note,`updateBookPlan(${i},'note',this.value)`,'min-width:160px')}</td>
+    <td style="white-space:nowrap;text-align:right">
+      <button onclick="moveBookChapter(${i},-1)" title="Move up" style="padding:6px 8px;margin-right:4px">↑</button>
+      <button onclick="moveBookChapter(${i},1)" title="Move down" style="padding:6px 8px;margin-right:4px">↓</button>
+      <button onclick="deleteBookChapter(${i})" title="Delete" style="padding:6px 8px;background:#3b1d2a;color:#fca5a5">×</button>
+    </td>
+  </tr>`).join('');
+  el.innerHTML=`<div class="card" style="margin-bottom:16px;padding:14px 16px;border-left:3px solid #22c55e">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:#e8e0f0;margin-bottom:4px">Custom chapter math</div>
+        <div style="font-size:12px;color:#665c78">Edit any row, add chapters wherever, and the pages-left math recalculates from the plan.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="addBookChapter()">Add chapter</button>
+        <button onclick="resetBookPlan()" style="background:#2a2535;color:#d4c4f0">Reset</button>
+      </div>
+    </div>
+    <div class="stats" style="margin-bottom:12px">
+      ${stat('Current Draft',bookPlannerInput(meta.currentPages,'updateBookCurrentPages(this.value)','text-align:center;font-size:18px;font-weight:800'),'editable pages')}
+      ${stat('Custom Target',target,'from chapter rows')}
+      ${stat('Pages Left',pagesLeft,'live recalculation')}
+      ${stat('Progress',progress+'%','custom plan')}
+    </div>
+    <div style="overflow-x:auto">
+      <table class="ch-table">
+        <tr><th>Ch</th><th>Title</th><th>Pages</th><th>Note</th><th></th></tr>
+        ${rows}
+      </table>
+    </div>
+    <div style="font-size:12px;color:#665c78;line-height:1.6;margin-top:10px">Default plan keeps Frameworks at 20 pages and the rest at 10. Bird Theory is currently treated as the ending inside the draft; add it as its own row if you want it to raise the target.</div>
+  </div>`;
+}
 function getBookState(){
   const s=JSON.parse(localStorage.getItem('mc-book-state')||'{}');
   if(!s._init){
@@ -2406,6 +2497,7 @@ function toggleDedicated(ev,ch,i){ev.stopPropagation();const d=getBookDedicated(
 function renderBook(){
   const grid=document.getElementById('bookGrid');
   if(!grid)return;
+  renderBookPlanner();
   const st=getBookState();
   const ded=getBookDedicated();
   let ideas=0,written=0,edited=0,dedicated=0;

@@ -102,6 +102,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .book-page-title{font-size:12px;color:#d4c4f0;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .book-dedicated-toggle{position:absolute;top:6px;right:6px;width:18px;height:18px;border:1px solid #555;border-radius:4px;background:transparent;cursor:pointer;font-size:11px;line-height:16px;text-align:center;color:#fff}
 .book-dedicated-toggle.active{background:#22c55e;border-color:#22c55e}
+.book-page-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.book-page-action{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px}
+.book-page-action-title{font-size:12px;font-weight:800;color:#e8e0f0;margin-bottom:8px}
+.book-page-action-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.book-page-action-buttons button{padding:7px 10px;font-size:12px}
 
 /* Skills grid */
 .skill-card{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.04);border-radius:12px;font-size:13px;border:1px solid rgba(255,255,255,0.04);transition:all 0.2s}
@@ -2458,9 +2463,26 @@ function updateBookCurrentPages(value){
   saveBookMeta({currentPages:Math.max(0,Number(value)||0)});
   renderBookPlanner();
 }
-function addBookChapter(){
+function bumpBookCurrentPages(delta){
+  const meta=getBookMeta();
+  updateBookCurrentPages((Number(meta.currentPages)||0)+delta);
+}
+function addBookChapter(afterIndex){
   const plan=getBookPlan();
-  plan.push({code:'New',title:'Untitled chapter',pages:10,note:'Custom chapter'});
+  const row={code:'New',title:'Untitled chapter',pages:10,note:'Custom chapter'};
+  if(Number.isInteger(afterIndex)) plan.splice(afterIndex+1,0,row);
+  else plan.push(row);
+  saveBookPlan(plan);
+  renderBookPlanner();
+}
+function addBookTargetPages(pages){
+  const plan=getBookPlan();
+  const extraIndex=plan.findIndex(ch=>ch.code==='+'&&ch.title==='Extra pages');
+  if(extraIndex>=0){
+    plan[extraIndex].pages=(Number(plan[extraIndex].pages)||0)+pages;
+  }else{
+    plan.push({code:'+',title:'Extra pages',pages,note:'Added target pages'});
+  }
   saveBookPlan(plan);
   renderBookPlanner();
 }
@@ -2502,6 +2524,7 @@ function renderBookPlanner(){
     <td>${bookPlannerInput(ch.pages,`updateBookPlan(${i},'pages',this.value)`,'max-width:76px')}</td>
     <td>${bookPlannerInput(ch.note,`updateBookPlan(${i},'note',this.value)`,'min-width:160px')}</td>
     <td style="white-space:nowrap;text-align:right">
+      <button onclick="addBookChapter(${i})" title="Insert below" style="padding:6px 8px;margin-right:4px">+</button>
       <button onclick="moveBookChapter(${i},-1)" title="Move up" style="padding:6px 8px;margin-right:4px">↑</button>
       <button onclick="moveBookChapter(${i},1)" title="Move down" style="padding:6px 8px;margin-right:4px">↓</button>
       <button onclick="deleteBookChapter(${i})" title="Delete" style="padding:6px 8px;background:#3b1d2a;color:#fca5a5">×</button>
@@ -2523,6 +2546,24 @@ function renderBookPlanner(){
       ${stat('Custom Target',target,'from chapter rows')}
       ${stat('Pages Left',pagesLeft,'live recalculation')}
       ${stat('Progress',progress+'%','custom plan')}
+    </div>
+    <div class="book-page-actions">
+      <div class="book-page-action">
+        <div class="book-page-action-title">Add written pages</div>
+        <div class="book-page-action-buttons">
+          <button onclick="bumpBookCurrentPages(1)">+1 draft</button>
+          <button onclick="bumpBookCurrentPages(5)">+5 draft</button>
+          <button onclick="bumpBookCurrentPages(10)">+10 draft</button>
+        </div>
+      </div>
+      <div class="book-page-action">
+        <div class="book-page-action-title">Add target pages</div>
+        <div class="book-page-action-buttons">
+          <button onclick="addBookTargetPages(1)">+1 target</button>
+          <button onclick="addBookTargetPages(5)">+5 target</button>
+          <button onclick="addBookTargetPages(10)">+10 target</button>
+        </div>
+      </div>
     </div>
     <div style="overflow-x:auto">
       <table class="ch-table">

@@ -289,8 +289,8 @@ async function searchSoulseek(query) {
   for (const resp of responses) {
     for (const f of (resp.files || [])) {
       const fn = (f.filename || '').toLowerCase();
-      if (!fn.endsWith('.wav') && !fn.endsWith('.aiff') && !fn.endsWith('.aif') && !fn.endsWith('.flac') && !fn.endsWith('.mp3')) continue;
-      const qualScore = (fn.endsWith('.wav') || fn.endsWith('.aiff') || fn.endsWith('.aif')) ? 3 : fn.endsWith('.flac') ? 2 : 1;
+      if (!fn.endsWith('.wav') && !fn.endsWith('.wave') && !fn.endsWith('.aiff') && !fn.endsWith('.aif') && !fn.endsWith('.flac') && !fn.endsWith('.mp3')) continue;
+      const qualScore = (fn.endsWith('.wav') || fn.endsWith('.wave') || fn.endsWith('.aiff') || fn.endsWith('.aif')) ? 3 : fn.endsWith('.flac') ? 2 : 1;
       const basename = (f.filename || '').split(/[/\\]/).pop();
       const matchScore = songMatchScore(basename, parsed);
       if (matchScore <= 0) continue;
@@ -303,7 +303,7 @@ async function searchSoulseek(query) {
         popularity: matchScore + qualScore * 25 + Math.min(25, Math.round((f.size || 0) / 2000000)),
         tag: classifyVersion(basename),
         duration: 0,
-        quality: fn.endsWith('.wav') ? 'WAV' : (fn.endsWith('.aiff') || fn.endsWith('.aif')) ? 'AIFF' : fn.endsWith('.flac') ? 'FLAC' : 'MP3',
+        quality: (fn.endsWith('.wav') || fn.endsWith('.wave')) ? 'WAV' : (fn.endsWith('.aiff') || fn.endsWith('.aif')) ? 'AIFF' : fn.endsWith('.flac') ? 'FLAC' : 'MP3',
         sizeBytes: f.size || 0,
       });
     }

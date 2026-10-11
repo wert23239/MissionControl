@@ -19,11 +19,11 @@ function sanitizeName(name) {
 /**
  * Determine audio quality priority score (higher = better)
  * @param {string} filename - Filename or extension
- * @returns {number} Quality score: WAV/AIFF=3, FLAC=2, MP3=1, other=0
+ * @returns {number} Quality score: WAV/WAVE/AIFF=3, FLAC=2, MP3=1, other=0
  */
 function qualityScore(filename) {
   const fn = filename.toLowerCase();
-  if (fn.endsWith('.wav')) return 3;
+  if (fn.endsWith('.wav') || fn.endsWith('.wave')) return 3;
   if (fn.endsWith('.aiff') || fn.endsWith('.aif')) return 3;
   if (fn.endsWith('.flac')) return 2;
   if (fn.endsWith('.mp3')) return 1;
@@ -298,7 +298,7 @@ function planCleanup(files) {
       toDelete.push(f);
     }
     
-    if (f.depth && f.depth > 0 && (ext === 'wav' || ext === 'aiff' || ext === 'aif' || ext === 'mp3')) {
+    if (f.depth && f.depth > 0 && (ext === 'wav' || ext === 'wave' || ext === 'aiff' || ext === 'aif' || ext === 'mp3')) {
       toFlatten.push(f);
     }
   }

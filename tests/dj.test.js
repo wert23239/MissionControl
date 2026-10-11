@@ -48,6 +48,7 @@ describe('sanitizeName', () => {
 
 describe('qualityScore', () => {
   test('WAV scores highest (3)', () => expect(qualityScore('track.wav')).toBe(3));
+  test('WAVE scores as WAV quality (3)', () => expect(qualityScore('track.wave')).toBe(3));
   test('AIFF scores as lossless highest quality (3)', () => {
     expect(qualityScore('track.aiff')).toBe(3);
     expect(qualityScore('track.aif')).toBe(3);
@@ -163,6 +164,14 @@ describe('pickBestFile', () => {
       { filename: 'song.wav', size: 50000000 },
     ];
     expect(pickBestFile(files).filename).toBe('song.wav');
+  });
+
+  test('picks WAVE as a top lossless candidate', () => {
+    const files = [
+      { filename: 'song.flac', size: 30000000 },
+      { filename: 'song.wave', size: 50000000 },
+    ];
+    expect(pickBestFile(files).filename).toBe('song.wave');
   });
 
   test('picks AIFF as a top lossless candidate', () => {
@@ -361,6 +370,11 @@ describe('planCleanup', () => {
 
   test('identifies nested AIFF files for flattening', () => {
     const r = planCleanup([{ name: 'song.aiff', extension: 'aiff', depth: 1 }]);
+    expect(r.toFlatten).toHaveLength(1);
+  });
+
+  test('identifies nested WAVE files for flattening', () => {
+    const r = planCleanup([{ name: 'song.wave', extension: 'wave', depth: 1 }]);
     expect(r.toFlatten).toHaveLength(1);
   });
 

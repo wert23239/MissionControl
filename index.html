@@ -223,6 +223,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
   .bingo-cell{min-height:48px;font-size:8px;padding:4px 2px;word-break:break-word}
   .expense-row{font-size:12px}
 }
+
+.isaac-toolbar button,.isaac-character button{background:#6d28d9;color:#fff;border:1px solid #8b5cf6;border-radius:8px;padding:9px 12px;cursor:pointer}.isaac-character button{margin:4px 0}.isaac-character button:disabled{opacity:.5}.isaac-toolbar~p a,#panel-isaac a{color:#c4b5fd}.isaac-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-bottom:12px}.isaac-toolbar label{display:grid;gap:6px;min-width:160px}.isaac-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}.isaac-character summary{cursor:pointer;font-size:17px;font-weight:700;padding:4px 0}.isaac-character .isaac-base{font-size:12px;color:#c4b5fd;line-height:1.6;margin:12px 0;padding:10px;background:#ffffff08;border-radius:8px}.isaac-character label{display:grid;gap:6px;font-size:12px;margin:12px 0}.isaac-character textarea{min-height:80px;resize:vertical}.isaac-character select{color-scheme:dark}.isaac-character fieldset{border:0;padding:0;margin:0;min-width:0}.isaac-character small{color:#b2a7c5}.isaac-save-status{font-size:12px;min-height:18px;color:#c4b5fd}.isaac-character[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -255,6 +257,7 @@ const sections=[
   {id:'dj',icon:'🎵',label:'Music',dot:'#e879f9'},
   {id:'notebook',icon:'📋',label:'Notebook',dot:'#22d3ee'},
   {id:'book',icon:'📖',label:'Book',dot:'#f59e0b'},
+  {id:'isaac',icon:'👹',label:'Isaac Loadouts',dot:'#a78bfa'},
   {id:'memory',icon:'🧠',label:'Memory',dot:'#22c55e'},
   {id:'skills',icon:'⚡',label:'Skills',dot:'#22d3ee'},
   {id:'money',icon:'💰',label:'Money',dot:'#22c55e'},
@@ -263,7 +266,6 @@ const sections=[
   {id:'packing',icon:'🧳',label:'Packing',dot:'#38bdf8'},
   {id:'bingo',icon:'🎯',label:'Bingo',dot:'#e879f9'},
   {id:'crons',icon:'⏰',label:'Crons',dot:'#998eb5'},
-  {id:'isaac',icon:'👹',label:'Isaac Mod',dot:'#ef4444'},
   {id:'deepgram',icon:'🎙️',label:'STT Investigation',dot:'#06b6d4'},
   {id:'salesforce',icon:'☁️',label:'Salesforce Adapter',dot:'#3b82f6'},
   {id:'nexon-ecw',icon:'🧪',label:'Nexon eCW',dot:'#38bdf8'},
@@ -400,7 +402,7 @@ notebook:`<h2 class="panel-title">📋 Notebook</h2>
 book:((()=>{
 return `<h2 class="panel-title">📖 Book Progress</h2>
 <div class="panel-sub">Supabase-backed page tracker. Chapters and pages are editable, draggable, addable, and removable.</div>
-<div id="bookStats" class="stats"></div>
+<div id="bookStats" class="stats"></div><div style="margin-bottom:16px"><button onclick="switchPanel('isaac')">👹 Isaac character loadouts →</button></div>
 <div style="margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
 <span style="font-size:12px;color:#665c78">Status cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">blank</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ writing</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · green checkbox = dedicated page</span>
 <button onclick="addBookChapter()">Add chapter</button>
@@ -793,54 +795,13 @@ ${renderLinkShelf()}
 </div>
 <div id="projectGrid" class="grid2"></div>`,
 
-isaac:`<h2 class="panel-title">👹 Twisted R Key Mod</h2>
-<div class="panel-sub">Binding of Isaac modding project · <a href="https://github.com/wert23239/TwistedRKey" target="_blank" style="color:#e879f9;text-decoration:none;border-bottom:1px solid rgba(232,121,249,0.3);">GitHub Repo ↗</a></div>
-
-<div class="card" style="margin-bottom:20px">
-<h3>💡 Concept</h3>
-<div style="font-size:14px;color:#d4c4f0;line-height:1.6">New item that appears after endgame bosses — teleports you back to stage 1 but <span style="color:#ef4444;font-weight:600">strips all your items</span>. Goal: beat all bosses in one mega-run.</div>
-</div>
-
-<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🎭 Character Setups</h3>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Isaac</span><br>Mom's Knife + Soy Milk</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Jacob & Esau</span><br>Dr. Fetus + My Reflection + No. 2</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Isaac</span><br>Inverse Sacred Orb (Sacred Orb x3)</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Azazel</span><br>Rock Bottom (one stat)</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Eden</span><br>Experimental Treatment + extra boss, single Eden Blessing</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Lost</span><br>Grounded (can't fly), one flight item</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Lost</span><br>Little Baggy, Planetariums</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Cain</span><br>All items become pickups, The Shovel</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Keeper</span><br>No shop doors, Cursed Penny + Magnet</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Eden</span><br>TM Trainer, one inverse R key on death</div>
-<div class="kanban-item"><span style="color:#e879f9;font-weight:600">Tainted Jacob</span><br>Birthright</div>
-</div>
-
-<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🏆 Boss Checklist</h3>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
-<div class="kanban-item" style="text-align:center;font-size:12px">👩 Mom</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">❤️ Mom's Heart / It Lives</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">😇 Isaac</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">💀 ???</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">😈 Satan</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">🐑 The Lamb</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">👿 Mega Satan</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">🤫 Hush</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">🌀 Delirium</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">🪱 Mother</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">🐕 Dogma</div>
-<div class="kanban-item" style="text-align:center;font-size:12px">🐉 The Beast</div>
-</div>
-
-<h3 style="font-size:12px;font-weight:700;color:#665c78;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🛠️ Dev Setup Status</h3>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-<div class="stat"><div class="stat-label">UTM</div><div class="stat-value green" style="font-size:16px">Installed ✅</div></div>
-<div class="stat"><div class="stat-label">Steam</div><div class="stat-value green" style="font-size:16px">Installed ✅</div></div>
-<div class="stat"><div class="stat-label">CrystalFetch</div><div class="stat-value green" style="font-size:16px">Installed ✅</div></div>
-<div class="stat"><div class="stat-label">Windows 11 VM</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
-<div class="stat"><div class="stat-label">Isaac + Repentogon</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
-<div class="stat"><div class="stat-label">Mod Testing</div><div class="stat-value amber" style="font-size:16px">Pending ⏳</div></div>
-</div>`,
+isaac:`<h2 class="panel-title">👹 Isaac Loadout Planner</h2>
+<div class="panel-sub">Twisted R Key · your character-by-character design notebook</div>
+<div class="card" style="margin-bottom:16px"><strong>Normal starting kits stay.</strong><p>Everything below is an optional addition to the character’s normal items, health and abilities for your unlocked save. Isaac keeps D6. Custom behavior is a proposal until we build and test it.</p><a href="https://www.tboi.com/all-items" target="_blank" rel="noopener">Item &amp; trinket reference ↗</a> · <a href="#book" onclick="switchPanel('book');return false">Book tracker</a></div>
+<div class="isaac-toolbar"><label>Find a character <input id="isaacSearch" class="book-inline-input" type="search" placeholder="Isaac, Lost, Tainted…" oninput="filterIsaacCharacters()"></label><label>Show <select id="isaacFilter" class="book-inline-input" onchange="filterIsaacCharacters()"><option value="all">All 34 characters</option><option value="normal">Normal</option><option value="tainted">Tainted</option></select></label><span id="isaacLoadStatus" role="status">Loading saved designs…</span><button type="button" onclick="loadIsaacPlanner()">Reload saved designs</button></div>
+<p class="panel-sub">Edits autosave to Supabase. Fill these out, then tell Gatsby when to review them. Nothing is applied to the game automatically.</p>
+<div id="isaacCharacters" class="isaac-grid"></div>
+<datalist id="isaacItemNames"></datalist><datalist id="isaacTrinketNames"></datalist>`,
 deepgram:`<h2 class="panel-title">🎙️ Deepgram STT Degradation Investigation</h2>
 <div class="panel-sub">Voice agent transcription quality has dropped over the past year — deep dive into all possible causes</div>
 
@@ -4075,6 +4036,7 @@ switchPanel=function(id){
   if(id==='bracket')switchBracket(currentBracket);
 };
 </script>
+<script src="isaac-planner.js"></script>
 <div id="kb-help" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="this.style.display='none'">
 <div style="background:#231e30;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px 32px;max-width:360px;width:90%" onclick="event.stopPropagation()">
 <h3 style="color:#e879f9;margin-bottom:16px;font-size:16px">⌨️ Keyboard Shortcuts</h3>

@@ -93,6 +93,14 @@ describe('parseSongQuery', () => {
     });
   });
 
+  test('parses artist-first em dash store exports', () => {
+    expect(parseSongQuery('Daft Punk — One More Time')).toEqual({
+      title: 'One More Time',
+      artist: 'Daft Punk',
+      searchText: 'One More Time',
+    });
+  });
+
   test('parses title-first dash exports without surrounding spaces', () => {
     expect(parseSongQuery('Atmosphere—FISHER, Kita Alexander')).toEqual({
       title: 'Atmosphere',
@@ -145,6 +153,11 @@ describe('songMatchScore', () => {
 
   test('matches pasted artist-first en dash rows by song title', () => {
     const score = songMatchScore('Daft Punk - One More Time.wav', 'Daft Punk – One More Time');
+    expect(score).toBeGreaterThan(0);
+  });
+
+  test('matches pasted artist-first em dash rows by song title', () => {
+    const score = songMatchScore('Daft Punk - One More Time.wav', 'Daft Punk — One More Time');
     expect(score).toBeGreaterThan(0);
   });
 

@@ -19,7 +19,7 @@ const ISAAC_CHARACTERS = [
  ['tainted-forgotten','Tainted Forgotten','Thrown skeleton and flying Soul'],['tainted-bethany','Tainted Bethany','Pocket Lemegeton; blood-charge and wisp mechanics'],
  ['tainted-jacob','Tainted Jacob','Pocket Anima Sola; Dark Esau mechanic']
 ];
-const ISAAC_FIELDS = ['mode','items','active','trinkets','consumables','health','custom'];
+const ISAAC_FIELDS = ['mode','items','active','trinkets','consumables','health','custom','customItemName','icon'];
 let isaacDesigns={}, isaacReady=false, isaacLoading=false;
 const isaacTimers={}, isaacQueues={}, isaacVersions={};
 const isaacDirty=new Set();
@@ -29,10 +29,29 @@ function renderIsaacPlanner(){
  const grid=document.getElementById('isaacCharacters'); if(!grid)return;
  grid.innerHTML=ISAAC_CHARACTERS.map(([id,name,base])=>{
   const d=isaacDesigns[id]||{};
-  const input=(field,label,placeholder,list='')=>`<label>${label}<input class="book-inline-input" data-field="${field}" value="${escapeHtml(d[field]||'')}" placeholder="${escapeHtml(placeholder)}" ${list?`list="${list}"`:''} oninput="editIsaacDesign('${id}',this.dataset.field,this.value)"></label>`;
-  return `<details class="card isaac-character" data-character="${id}" data-name="${escapeHtml(name.toLowerCase())}" ${id==='isaac'?'open':''}><summary>${escapeHtml(name)}</summary><div class="isaac-base"><strong>🔒 Keep normal starting kit</strong><br>${escapeHtml(base)}<br><small>Baseline summary, not an exhaustive item list; use this save’s normal unlocked kit.</small></div><fieldset ${isaacReady?'':'disabled'}><label>Extra-loadout option<select class="book-inline-input" data-field="mode" onchange="editIsaacDesign('${id}','mode',this.value)"><option value="normal" ${d.mode!=='optional'?'selected':''}>Normal kit only (default)</option><option value="optional" ${d.mode==='optional'?'selected':''}>Optional custom loadout</option></select></label>${input('items','Extra passive items (names or IDs)','e.g. Mom’s Knife (114), Soy Milk (330)','isaacItemNames')}${input('active','Extra active / pocket item','Describe item and slot; keep the normal active','isaacItemNames')}${input('trinkets','Extra trinkets (names or IDs)','e.g. Curved Horn (35)','isaacTrinketNames')}${input('consumables','Cards, pills & pickups','e.g. one Holy Card, 3 bombs, 5 coins')}${input('health','Health / stat additions','Describe additions; normal starting health stays')}<label>Custom item / mechanic description<textarea class="book-inline-input" data-field="custom" placeholder="Describe what this character should do, item effects, triggers, restrictions, or a custom item we need to build." oninput="editIsaacDesign('${id}','custom',this.value)">${escapeHtml(d.custom||'')}</textarea></label>${id==='isaac'?'<button type="button" onclick="suggestIsaacKnife()">Use Knife + Soy Milk as optional extras</button> ':''}<button type="button" onclick="saveIsaacDesign('${id}')">Save this character</button></fieldset><p class="isaac-save-status" id="isaac-status-${id}" role="status">${isaacReady?(d.updatedAt?'Loaded saved design':'No extra loadout designed yet'):'Waiting for saved designs…'}</p></details>`;
+  const input=(field,label,placeholder,list='')=>`<label>${label}<input class="book-inline-input" data-field="${field}" value="${escapeHtml(field==='icon'&&String(d.icon||'').startsWith('data:')?'':d[field]||'')}" placeholder="${escapeHtml(placeholder)}" ${list?`list="${list}"`:''} oninput="editIsaacDesign('${id}',this.dataset.field,this.value)"></label>`;
+  return `<details class="card isaac-character" data-character="${id}" data-name="${escapeHtml(name.toLowerCase())}" ${id==='isaac'?'open':''}><summary>${escapeHtml(name)}</summary><div class="isaac-base"><strong>🔒 Keep normal starting kit</strong><br>${escapeHtml(base)}<br><small>Baseline summary, not an exhaustive item list; use this save’s normal unlocked kit.</small></div><fieldset ${isaacReady?'':'disabled'}><label>Extra-loadout option<select class="book-inline-input" data-field="mode" onchange="editIsaacDesign('${id}','mode',this.value)"><option value="normal" ${d.mode!=='optional'?'selected':''}>Normal kit only (default)</option><option value="optional" ${d.mode==='optional'?'selected':''}>Optional custom loadout</option></select></label>${input('items','Extra passive items (names or IDs)','e.g. Mom’s Knife (114), Soy Milk (330)','isaacItemNames')}${input('active','Extra active / pocket item','Describe item and slot; keep the normal active','isaacItemNames')}${input('trinkets','Extra trinkets (names or IDs)','e.g. Curved Horn (35)','isaacTrinketNames')}${input('consumables','Cards, pills & pickups','e.g. one Holy Card, 3 bombs, 5 coins')}${input('health','Health / stat additions','Describe additions; normal starting health stays')}${input('customItemName','Custom item name','e.g. Unlucky Foot')}<div class="isaac-icon-area"><div id="isaac-icon-${id}" class="isaac-icon-preview">${isaacIconMarkup(d.icon)}</div><div><label>Custom item icon<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload icon for ${escapeHtml(name)}" onchange="uploadIsaacIcon('${id}',this)"></label><small>PNG recommended for transparency. Uploaded icons are saved with your design.</small><button type="button" onclick="removeIsaacIcon('${id}')">Clear icon</button></div></div>${input('icon','Or paste an image URL','https://…')}<label>Custom item / mechanic description<textarea class="book-inline-input" data-field="custom" placeholder="Describe what this character should do, item effects, triggers, restrictions, or a custom item we need to build." oninput="editIsaacDesign('${id}','custom',this.value)">${escapeHtml(d.custom||'')}</textarea></label>${id==='isaac'?'<button type="button" onclick="suggestIsaacKnife()">Use Knife + Soy Milk as optional extras</button> ':''}<button type="button" onclick="saveIsaacDesign('${id}')">Save this character</button></fieldset><p class="isaac-save-status" id="isaac-status-${id}" role="status">${isaacReady?(d.updatedAt?'Loaded saved design':'No extra loadout designed yet'):'Waiting for saved designs…'}</p></details>`;
  }).join('');filterIsaacCharacters();
 }
+function safeIsaacIcon(value){
+ const s=String(value||'').trim();return /^(https?:\/\/|data:image\/(png|jpeg|webp);base64,)/i.test(s)?s:'';
+}
+function isaacIconMarkup(value){const src=safeIsaacIcon(value);return src?`<img src="${escapeHtml(src)}" alt="Custom item icon" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>Image unavailable</span>`:'<span>Icon<br>placeholder</span>';}
+function updateIsaacIconPreview(id,value){const el=document.getElementById('isaac-icon-'+id);if(el)el.innerHTML=isaacIconMarkup(value);}
+function removeIsaacIcon(id){editIsaacDesign(id,'icon','');const input=document.querySelector(`[data-character="${id}"] [data-field="icon"]`);if(input)input.value='';}
+async function uploadIsaacIcon(id,input){
+ const file=input.files?.[0];if(!file)return;
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>5*1024*1024){isaacStatus(id,'Choose a PNG, JPEG or WebP image under 5 MB.');input.value='';return;}
+ const objectUrl=URL.createObjectURL(file);
+ try{
+  const img=new Image();img.src=objectUrl;await img.decode();
+  const scale=Math.min(1,128/Math.max(img.naturalWidth,img.naturalHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  const icon=canvas.toDataURL('image/png');editIsaacDesign(id,'icon',icon);const field=document.querySelector(`[data-character="${id}"] [data-field="icon"]`);if(field)field.value='';
+ }catch(e){isaacStatus(id,'Could not read this image. Try another PNG.');}
+ finally{URL.revokeObjectURL(objectUrl);input.value='';}
+}
+
 function filterIsaacCharacters(){
  const q=(document.getElementById('isaacSearch')?.value||'').toLowerCase();const filter=document.getElementById('isaacFilter')?.value||'all';
  document.querySelectorAll('.isaac-character').forEach(el=>{const t=el.dataset.character.startsWith('tainted-');el.hidden=!el.dataset.name.includes(q)||(filter==='normal'&&t)||(filter==='tainted'&&!t);});
@@ -54,6 +73,7 @@ async function loadIsaacPlanner(){
 function editIsaacDesign(id,field,value){
  if(!isaacReady||!ISAAC_FIELDS.includes(field))return;
  isaacDesigns[id]={...isaacDesigns[id],[field]:value,keepNormalStartingItems:true};isaacVersions[id]=(isaacVersions[id]||0)+1;
+ if(field==='icon')updateIsaacIconPreview(id,value);
  isaacDirty.add(id);isaacStatus(id,'Unsaved changes…');clearTimeout(isaacTimers[id]);isaacTimers[id]=setTimeout(()=>saveIsaacDesign(id),650);
 }
 function saveIsaacDesign(id){

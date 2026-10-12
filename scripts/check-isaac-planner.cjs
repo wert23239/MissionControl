@@ -18,11 +18,19 @@ await page.locator('[data-character="isaac"] button').last().click();await page.
 assert.equal(rows.get('isaac-loadout-isaac').state.keepNormalStartingItems,true);
 await page.reload();await page.getByText('Connected · edits autosave to Supabase').waitFor();assert.equal(await page.locator('[data-character="isaac"] [data-field="items"]').inputValue(),"Mom's Knife (114), Soy Milk (330)");
 assert.equal(await page.locator('[data-character="isaac"] [data-field="custom"]').inputValue(),'<script>not executable</script> custom idea');
+await page.locator('[data-character="isaac"] input[type="file"]').setInputFiles({name:'custom-icon.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9ioAAAAASUVORK5CYII=','base64')});
+await page.locator('#isaac-icon-isaac img').waitFor();await page.waitForFunction(()=>document.querySelector('#isaac-icon-isaac img').naturalWidth>0);
+await page.waitForFunction(()=>document.querySelector('#isaac-status-isaac').textContent.includes('Saved to Supabase'));
+assert(rows.get('isaac-loadout-isaac').state.icon.startsWith('data:image/png;base64,'));
+await page.reload();await page.getByText('Connected · edits autosave to Supabase').waitFor();await page.waitForFunction(()=>document.querySelector('#isaac-icon-isaac img').naturalWidth>0);
+assert.equal(await page.locator('[data-character="isaac"] [data-field="custom"]').inputValue(),'<script>not executable</script> custom idea');
+await page.locator('[data-character="isaac"] [data-field="icon"]').fill('javascript:alert(1)');assert.equal(await page.locator('#isaac-icon-isaac img').count(),0);
+await page.locator('[data-character="isaac"]').getByRole('button',{name:'Clear icon'}).click();assert.equal(await page.locator('#isaac-icon-isaac img').count(),0);
 await page.locator('#isaacFilter').selectOption('tainted');assert.equal(await page.locator('.isaac-character:visible').count(),17);await page.locator('#isaacSearch').fill('lost');assert.equal(await page.locator('.isaac-character:visible').count(),1);
 await page.locator('#isaacFilter').selectOption('all');await page.locator('#isaacSearch').fill('');
 failSave=true;await page.locator('[data-character="isaac"] [data-field="trinkets"]').fill('Curved Horn');await page.locator('[data-character="isaac"] button').last().click();await page.locator('#isaac-status-isaac').filter({hasText:'Not saved'}).waitFor();await page.getByRole('button',{name:'Reload saved designs'}).click();await page.getByText('Reload paused: save pending edits first.').waitFor();assert.equal(await page.locator('[data-character="isaac"] [data-field="trinkets"]').inputValue(),'Curved Horn');failSave=false;await page.locator('[data-character="isaac"] button').last().click();await page.locator('#isaac-status-isaac').filter({hasText:'Saved to Supabase'}).waitFor();
 await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
 await page.screenshot({path:path.join(root,'../tmp/isaac-planner-mobile.png'),fullPage:false});assert.equal(errors.length,0,errors.join('\n'));
-console.log('PASS: 34 characters, 17 tainted, protected D6 baseline, persistence/reload, safe text, search, failed-save recovery, mobile width, no runtime errors');
+console.log('PASS: 34 characters, 17 tainted, protected D6 baseline, persistence/reload, safe text, search, failed-save recovery, mobile width, icon upload/persistence/clear, unsafe URL rejection, no runtime errors');
 }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

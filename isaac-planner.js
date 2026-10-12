@@ -20,7 +20,7 @@ const ISAAC_CHARACTERS = [
  ['tainted-jacob','Tainted Jacob','Pocket Anima Sola; Dark Esau mechanic']
 ];
 const ISAAC_FIELDS = ['mode','items','active','trinkets','consumables','health','custom','customItemName','icon'];
-let isaacDesigns={}, isaacReady=false, isaacLoading=false;
+let isaacDesigns={}, isaacBuilds={}, isaacReady=false, isaacLoading=false;
 const isaacTimers={}, isaacQueues={}, isaacVersions={};
 const isaacDirty=new Set();
 const isaacKey=id=>'isaac-loadout-'+id;
@@ -29,9 +29,23 @@ function renderIsaacPlanner(){
  const grid=document.getElementById('isaacCharacters'); if(!grid)return;
  grid.innerHTML=ISAAC_CHARACTERS.map(([id,name,base])=>{
   const d=isaacDesigns[id]||{};
+  const build=isaacBuildMarkup(id,d);
   const input=(field,label,placeholder,list='')=>`<label>${label}<input class="book-inline-input" data-field="${field}" value="${escapeHtml(field==='icon'&&String(d.icon||'').startsWith('data:')?'':d[field]||'')}" placeholder="${escapeHtml(placeholder)}" ${list?`list="${list}"`:''} oninput="editIsaacDesign('${id}',this.dataset.field,this.value)"></label>`;
-  return `<details class="card isaac-character" data-character="${id}" data-name="${escapeHtml(name.toLowerCase())}" ${id==='isaac'?'open':''}><summary>${escapeHtml(name)}</summary><div class="isaac-base"><strong>🔒 Keep normal starting kit</strong><br>${escapeHtml(base)}<br><small>Baseline summary, not an exhaustive item list; use this save’s normal unlocked kit.</small></div><fieldset ${isaacReady?'':'disabled'}><label>Extra-loadout option<select class="book-inline-input" data-field="mode" onchange="editIsaacDesign('${id}','mode',this.value)"><option value="normal" ${d.mode!=='optional'?'selected':''}>Normal kit only (default)</option><option value="optional" ${d.mode==='optional'?'selected':''}>Optional custom loadout</option></select></label>${input('items','Extra passive items (names or IDs)','e.g. Mom’s Knife (114), Soy Milk (330)','isaacItemNames')}${input('active','Extra active / pocket item','Describe item and slot; keep the normal active','isaacItemNames')}${input('trinkets','Extra trinkets (names or IDs)','e.g. Curved Horn (35)','isaacTrinketNames')}${input('consumables','Cards, pills & pickups','e.g. one Holy Card, 3 bombs, 5 coins')}${input('health','Health / stat additions','Describe additions; normal starting health stays')}${input('customItemName','Custom item name','e.g. Unlucky Foot')}<div class="isaac-icon-area"><div id="isaac-icon-${id}" class="isaac-icon-preview">${isaacIconMarkup(d.icon)}</div><div><label>Custom item icon<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload icon for ${escapeHtml(name)}" onchange="uploadIsaacIcon('${id}',this)"></label><small>PNG recommended for transparency. Uploaded icons are saved with your design.</small><button type="button" onclick="removeIsaacIcon('${id}')">Clear icon</button></div></div>${input('icon','Or paste an image URL','https://…')}<label>Custom item / mechanic description<textarea class="book-inline-input" data-field="custom" placeholder="Describe what this character should do, item effects, triggers, restrictions, or a custom item we need to build." oninput="editIsaacDesign('${id}','custom',this.value)">${escapeHtml(d.custom||'')}</textarea></label>${id==='isaac'?'<button type="button" onclick="suggestIsaacKnife()">Use Knife + Soy Milk as optional extras</button> ':''}<button type="button" onclick="saveIsaacDesign('${id}')">Save this character</button></fieldset><p class="isaac-save-status" id="isaac-status-${id}" role="status">${isaacReady?(d.updatedAt?'Loaded saved design':'No extra loadout designed yet'):'Waiting for saved designs…'}</p></details>`;
+  return `<details class="card isaac-character" data-character="${id}" data-name="${escapeHtml(name.toLowerCase())}" ${id==='isaac'?'open':''}><summary>${escapeHtml(name)} ${isaacBuildBadge(id,d)}</summary>${build}<div class="isaac-base"><strong>🔒 Keep normal starting kit</strong><br>${escapeHtml(base)}<br><small>Baseline summary, not an exhaustive item list; use this save’s normal unlocked kit.</small></div><fieldset ${isaacReady?'':'disabled'}><label>Extra-loadout option<select class="book-inline-input" data-field="mode" onchange="editIsaacDesign('${id}','mode',this.value)"><option value="normal" ${d.mode!=='optional'?'selected':''}>Normal kit only (default)</option><option value="optional" ${d.mode==='optional'?'selected':''}>Optional custom loadout</option></select></label>${input('items','Extra passive items (names or IDs)','e.g. Mom’s Knife (114), Soy Milk (330)','isaacItemNames')}${input('active','Extra active / pocket item','Describe item and slot; keep the normal active','isaacItemNames')}${input('trinkets','Extra trinkets (names or IDs)','e.g. Curved Horn (35)','isaacTrinketNames')}${input('consumables','Cards, pills & pickups','e.g. one Holy Card, 3 bombs, 5 coins')}${input('health','Health / stat additions','Describe additions; normal starting health stays')}${input('customItemName','Custom item name','e.g. Unlucky Foot')}<div class="isaac-icon-area"><div id="isaac-icon-${id}" class="isaac-icon-preview">${isaacIconMarkup(d.icon)}</div><div><label>Custom item icon<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload icon for ${escapeHtml(name)}" onchange="uploadIsaacIcon('${id}',this)"></label><small>PNG recommended for transparency. Uploaded icons are saved with your design.</small><button type="button" onclick="removeIsaacIcon('${id}')">Clear icon</button></div></div>${input('icon','Or paste an image URL','https://…')}<label>Custom item / mechanic description<textarea class="book-inline-input" data-field="custom" placeholder="Describe what this character should do, item effects, triggers, restrictions, or a custom item we need to build." oninput="editIsaacDesign('${id}','custom',this.value)">${escapeHtml(d.custom||'')}</textarea></label>${id==='isaac'?'<button type="button" onclick="suggestIsaacKnife()">Use Knife + Soy Milk as optional extras</button> ':''}<button type="button" onclick="saveIsaacDesign('${id}')">Save this character</button></fieldset><p class="isaac-save-status" id="isaac-status-${id}" role="status">${isaacReady?(d.updatedAt?'Loaded saved design':'No extra loadout designed yet'):'Waiting for saved designs…'}</p></details>`;
  }).join('');filterIsaacCharacters();
+}
+// Build evidence has separate rows: user draft saves cannot erase test results.
+function isaacBuildBadge(id,d){
+ const b=isaacBuilds[id];if(!b)return '<small>○ Not implemented</small>';
+ const changed=b.designUpdatedAt!==d.updatedAt;
+ const label=changed?'◐ Design changed · review needed':b.inGameTested?'✓ Tested in-game':b.implemented?'◐ Implemented · not game-tested':'○ In progress';
+ return `<small class="isaac-build-badge">${escapeHtml(label)}</small>`;
+}
+function isaacBuildMarkup(id,d){
+ const b=isaacBuilds[id];if(!b)return '';
+ const changed=b.designUpdatedAt!==d.updatedAt;
+ const preview=safeIsaacIcon(b.image);const download=/^https?:\/\//i.test(b.downloadUrl||'')?b.downloadUrl:'';
+ return `<div class="isaac-build-evidence"><strong>Build / testing</strong><p>${escapeHtml(b.notes||'')}</p>${changed?'<p>These results belong to an earlier saved design. Changes need review and retesting.</p>':''}${b.version?`<small>Build: ${escapeHtml(b.version)}</small>`:''}${download?`<a href="${escapeHtml(download)}">Download this build</a>`:''}${preview?`<a href="${escapeHtml(preview)}" target="_blank" rel="noopener"><img src="${escapeHtml(preview)}" alt="${escapeHtml(b.imageLabel||'Build preview')}" loading="lazy"></a><small>${escapeHtml(b.imageLabel||'Preview — not proof of game testing')}</small>`:''}${b.testedAt?`<small>Game test: ${escapeHtml(new Date(b.testedAt).toLocaleString())}</small>`:''}</div>`;
 }
 function safeIsaacIcon(value){
  const s=String(value||'').trim();return /^(https?:\/\/|data:image\/(png|jpeg|webp);base64,)/i.test(s)?s:'';
@@ -63,9 +77,9 @@ async function loadIsaacPlanner(){
  isaacLoading=true;isaacReady=false;renderIsaacPlanner();
  const status=document.getElementById('isaacLoadStatus');status.textContent='Loading saved designs…';
  try{
-  const r=await fetch(`${SB_URL}/rest/v1/book_state?key=like.isaac-loadout-*&select=key,state&limit=100`,{headers:sbHeaders});if(!r.ok)throw new Error('Load failed');
-  const rows=await r.json();isaacDesigns={};
-  for(const row of rows){const id=row.key.slice('isaac-loadout-'.length);if(ISAAC_CHARACTERS.some(c=>c[0]===id)&&row.state&&typeof row.state==='object')isaacDesigns[id]=row.state;}
+  const r=await fetch(`${SB_URL}/rest/v1/book_state?key=like.isaac-*&select=key,state&limit=100`,{headers:sbHeaders});if(!r.ok)throw new Error('Load failed');
+  const rows=await r.json();isaacDesigns={};isaacBuilds={};
+  for(const row of rows){if(row.key.startsWith('isaac-build-')){isaacBuilds[row.key.slice('isaac-build-'.length)]=row.state;continue;}const id=row.key.slice('isaac-loadout-'.length);if(ISAAC_CHARACTERS.some(c=>c[0]===id)&&row.state&&typeof row.state==='object')isaacDesigns[id]=row.state;}
   isaacReady=true;status.textContent='Connected · edits autosave to Supabase';renderIsaacPlanner();
  }catch(e){status.textContent='Cannot load saved designs. Try Reload when connected.';}
  finally{isaacLoading=false;}

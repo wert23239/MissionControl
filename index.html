@@ -2480,6 +2480,10 @@ function addBookChapter(afterIndex){
 }
 function deleteBookChapter(index){
   const chapters=getBookChapters();
+  const chapter=chapters[index];
+  if(!chapter)return;
+  const count=chapter.pages.length;
+  if(!confirm(`Delete chapter ${chapter.code}: ${chapter.name} and all ${count} ${count===1?'page':'pages'}? This cannot be undone.`))return;
   chapters.splice(index,1);
   saveBookChapters(chapters);
   renderBook();

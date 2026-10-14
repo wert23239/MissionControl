@@ -31,7 +31,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .sidebar-footer{padding:12px 16px;font-size:11px;color:#665c78;text-align:center}
 
 /* Main */
-.main{flex:1;overflow-y:auto;padding:28px}
+.main{flex:1;min-width:0;overflow-y:auto;padding:28px}
 .url-bar{background:#231e30;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:8px;margin-bottom:24px;font-size:13px;color:#665c78}
 .panel{display:none;animation:fadeIn .3s}
 .panel.active{display:block}
@@ -225,6 +225,46 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 }
 
 .isaac-item-tags{display:flex;flex-wrap:wrap;gap:6px}.isaac-item-tag{display:inline-flex;align-items:center;gap:6px;max-width:100%;overflow-wrap:anywhere;padding:4px 8px;background:#4c1d95;border:1px solid #8b5cf6;border-radius:16px}.isaac-item-tag button{padding:0 5px!important;margin:0!important;border:0!important;background:transparent!important;font-size:18px;line-height:1.2}.isaac-build-badge{display:inline-block;margin-left:8px;font-size:11px;color:#c4b5fd}.isaac-build-evidence{padding:12px;border:1px solid #6d28d9;border-radius:8px;font-size:12px;line-height:1.5;margin:12px 0}.isaac-build-evidence small{display:block}.isaac-build-evidence img{display:block;max-width:100%;max-height:240px;object-fit:contain;image-rendering:pixelated;margin:10px 0}.isaac-icon-area{display:flex;align-items:center;gap:16px;margin:16px 0}.isaac-icon-area>div:last-child{flex:1;min-width:0}.isaac-icon-area input[type=file]{max-width:100%;font-size:12px}.isaac-icon-preview{width:96px;height:96px;flex:0 0 96px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed #a78bfa;border-radius:12px;background:repeating-conic-gradient(#30283f 0% 25%,#211b2c 0% 50%) 50% / 16px 16px;color:#b2a7c5;font-size:12px}.isaac-icon-preview img{max-width:80px;max-height:80px;image-rendering:pixelated}.isaac-toolbar button,.isaac-character button{background:#6d28d9;color:#fff;border:1px solid #8b5cf6;border-radius:8px;padding:9px 12px;cursor:pointer}.isaac-character button{margin:4px 0}.isaac-character button:disabled{opacity:.5}.isaac-toolbar~p a,#panel-isaac a{color:#c4b5fd}.isaac-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-bottom:12px}.isaac-toolbar label{display:grid;gap:6px;min-width:160px}.isaac-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}.isaac-character summary{cursor:pointer;font-size:17px;font-weight:700;padding:4px 0}.isaac-character .isaac-base{font-size:12px;color:#c4b5fd;line-height:1.6;margin:12px 0;padding:10px;background:#ffffff08;border-radius:8px}.isaac-character label{display:grid;gap:6px;font-size:12px;margin:12px 0}.isaac-character textarea{min-height:80px;resize:vertical}.isaac-character select{color-scheme:dark}.isaac-character fieldset{border:0;padding:0;margin:0;min-width:0}.isaac-character small{color:#b2a7c5}.isaac-save-status{font-size:12px;min-height:18px;color:#c4b5fd}.isaac-character[hidden]{display:none}
+
+/* Book workspace: consistent controls and comfortable, responsive page cards. */
+#panel-book{font-family:'Inter',system-ui,-apple-system,sans-serif;line-height:1.5}
+#panel-book button,#panel-book input,#panel-book textarea{font-family:inherit;letter-spacing:normal}
+#panel-book button{appearance:none;background:#302a3d;color:#e8e0f0;border:1px solid #51465f;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:500;line-height:1.4;cursor:pointer;transition:background .15s,border-color .15s}
+#panel-book button:hover{background:#40364f;border-color:#9984b0}
+#panel-book button:focus-visible,#panel-book input:focus-visible,#panel-book textarea:focus-visible{outline:2px solid #e879f9;outline-offset:3px}
+#panel-book .panel-sub{color:#a99dbb}
+#panel-book .stat-label,#panel-book .stat-sub{color:#a99dbb}
+#panel-book .stats{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
+.book-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin:20px 0}
+.book-legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px;color:#c5b9d5;font-size:12px}
+.book-status-chip{padding:4px 9px;border-radius:6px;white-space:nowrap}
+.book-status-chip.blank{background:#283448;color:#c4d4ee}.book-status-chip.idea{background:#493921;color:#f8d591}.book-status-chip.writing{background:#29345d;color:#bacbff}.book-status-chip.edited{background:#243f32;color:#a9e5bc}
+.book-legend-note{color:#a99dbb;margin-left:4px}
+.book-tracker-heading{font-size:16px;font-weight:600;margin:24px 0 12px}
+#panel-book .book-section{padding:18px;margin-bottom:18px;background:#211d2c;border-color:#3c334b}
+#panel-book .book-section-head{grid-template-columns:16px 64px minmax(0,1fr) auto;gap:10px;margin-bottom:16px}
+#panel-book .book-inline-input{min-width:0;font-size:13px;line-height:1.5;color:#e8e0f0;border-color:#4c4259;background:rgba(255,255,255,.035)}
+#panel-book .book-section-code-input{font-size:15px;font-weight:600}
+#panel-book .book-page-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:12px}
+#panel-book .book-page-cell{min-width:0;min-height:132px;padding:12px;gap:12px;border-radius:10px;background:#252c3b;border:1px solid #39465c;border-top:3px solid #60799c;text-align:left}
+#panel-book .book-page-cell[data-status="1"]{background:#332d26;border-color:#5c4a32;border-top-color:#d6a64c}
+#panel-book .book-page-cell[data-status="2"]{background:#272d45;border-color:#424f7b;border-top-color:#7c98f4}
+#panel-book .book-page-cell[data-status="3"]{background:#25372e;border-color:#3b5c47;border-top-color:#65bd83}
+#panel-book .book-page-main{grid-template-columns:12px minmax(0,1fr) 30px;gap:8px;align-items:start}
+#panel-book .book-page-title-input{resize:vertical;min-height:58px;padding:7px 8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+#panel-book .book-drag-handle{color:#a99dbb;padding-top:9px;font-size:14px}
+#panel-book .book-page-status{background:transparent;border-color:transparent;min-width:30px;padding:7px 4px;font-size:15px}
+#panel-book .book-page-number{font-size:11px;font-weight:500;color:#c2bdd0;font-variant-numeric:tabular-nums}
+#panel-book .book-page-tools button{width:28px;height:28px;padding:0;font-size:16px;display:inline-flex;align-items:center;justify-content:center}
+#panel-book .book-page-tools-left,#panel-book .book-page-tools-right{gap:8px}
+#panel-book .book-page-tools .book-dedicated-toggle{width:20px;height:20px;border-color:#8c8498;background:transparent;font-size:12px}
+#panel-book .book-page-tools .book-dedicated-toggle.active{background:#34774c;border-color:#65bd83}
+#panel-book .book-page-delete{background:transparent!important;color:#f5a7b1!important;border-color:#76505b}
+#panel-book .book-page-drop{outline:2px solid #e879f9;outline-offset:2px}
+@media(min-width:769px) and (max-width:1280px){.sidebar{width:212px}.main{padding:20px}}
+@media(max-width:1100px){#panel-book .book-section-head{grid-template-columns:16px 64px minmax(0,1fr)}#panel-book .book-section-actions{grid-column:2/-1;justify-content:flex-start}}
+@media(max-width:768px){#panel-book .book-section{padding:12px}#panel-book .book-page-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:10px}#panel-book .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.book-legend-note{flex-basis:100%;margin:4px 0 0}}
+
 </style>
 </head>
 <body>
@@ -403,11 +443,11 @@ book:((()=>{
 return `<h2 class="panel-title">📖 Book Progress</h2>
 <div class="panel-sub">Supabase-backed page tracker. Chapters and pages are editable, draggable, addable, and removable.</div>
 <div id="bookStats" class="stats"></div><div style="margin-bottom:16px"><button onclick="switchPanel('isaac')">👹 Isaac character loadouts →</button></div>
-<div style="margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-<span style="font-size:12px;color:#665c78">Status cycle: <span style="background:#1e3a5f;padding:2px 8px;border-radius:4px">blank</span> → <span style="background:#854d0e;padding:2px 8px;border-radius:4px">💡 idea</span> → <span style="background:#1e40af;padding:2px 8px;border-radius:4px">✍️ writing</span> → <span style="background:#166534;padding:2px 8px;border-radius:4px">✅ edited</span> · green checkbox = dedicated page</span>
-<button onclick="addBookChapter()">Add chapter</button>
+<div class="book-toolbar">
+<div class="book-legend" aria-label="Page status cycle"><span>Status:</span><span class="book-status-chip blank">Blank</span><span class="book-status-chip idea">💡 Idea</span><span class="book-status-chip writing">✍️ Writing</span><span class="book-status-chip edited">✓ Edited</span><span class="book-legend-note">✓ checkbox = dedicated page</span></div>
+<button onclick="addBookChapter()">+ Add chapter</button>
 </div>
-<h3 style="margin:16px 0 8px;color:#e8e0f0">Page-Level Tracker</h3>
+<h3 class="book-tracker-heading">Page-level tracker</h3>
 <div id="bookGrid"></div>`;
 })()),
 
@@ -2567,16 +2607,16 @@ function renderBook(){
       const isDed=!!page.dedicated;
       const icon=states[v]||'-';
       const bg=stateBg[v];
-      return `<div class="book-page-cell" style="background:${bg}" ondragover="event.preventDefault();this.classList.add('book-page-drop')" ondragleave="this.classList.remove('book-page-drop')" ondrop="this.classList.remove('book-page-drop');dropBookPage(event,${chIndex},${idx})">
+      return `<div class="book-page-cell" data-status="${v}" ondragover="event.preventDefault();this.classList.add('book-page-drop')" ondragleave="this.classList.remove('book-page-drop')" ondrop="this.classList.remove('book-page-drop');dropBookPage(event,${chIndex},${idx})">
         <div class="book-page-main">
           <span class="book-drag-handle" draggable="true" ondragstart="startBookPageDrag(event,${chIndex},${idx})" title="Drag page">⋮⋮</span>
-          <input class="book-inline-input book-page-title-input" value="${escapeHtml(page.title)}" onchange="updateBookPage(${chIndex},${idx},'title',this.value)" aria-label="Page title">
-          <button class="book-page-status" onclick="cycleBookPage(${chIndex},${idx})" style="background:${bg}" title="Cycle status">${icon||'-'}</button>
+          <textarea class="book-inline-input book-page-title-input" rows="2" onchange="updateBookPage(${chIndex},${idx},'title',this.value)" aria-label="Page ${idx+1} title" spellcheck="false">${escapeHtml(page.title)}</textarea>
+          <button class="book-page-status" onclick="cycleBookPage(${chIndex},${idx})" title="Cycle status: ${['Blank','Idea','Writing','Edited'][v]}" aria-label="Page ${idx+1} status: ${['Blank','Idea','Writing','Edited'][v]}">${icon||'-'}</button>
         </div>
         <div class="book-page-tools">
           <div class="book-page-tools-left">
-            <span style="font-size:10px;color:#c9bdd8">p${idx+1}</span>
-            <span class="book-dedicated-toggle ${isDed?'active':''}" onclick="toggleDedicated(event,${chIndex},${idx})" title="Dedicated page">${isDed?'✓':''}</span>
+            <span class="book-page-number">Page ${idx+1}</span>
+            <button class="book-dedicated-toggle ${isDed?'active':''}" onclick="toggleDedicated(event,${chIndex},${idx})" title="Dedicated page" aria-label="Page ${idx+1} dedicated" aria-pressed="${isDed}">${isDed?'✓':''}</button>
           </div>
           <div class="book-page-tools-right">
             <button onclick="addBookPage(${chIndex},${idx})" title="Insert page after">+</button>

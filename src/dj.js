@@ -36,6 +36,8 @@ function stripExtension(name) {
 
 function normalizeTokens(value) {
   return (value || '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/\b(feat|featuring|ft|with|x)\b\.?/g, ' ')

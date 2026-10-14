@@ -135,6 +135,19 @@ describe('parseSongQuery', () => {
 });
 
 describe('songMatchScore', () => {
+  test.each(['Café', 'Cafe\u0301'])('matches accented query %s against ASCII filenames', title => {
+    expect(songMatchScore('Cafe.wav', title)).toBe(songMatchScore('Cafe.wav', 'Cafe'));
+  });
+
+  test('matches accented filenames against ASCII queries', () => {
+    expect(songMatchScore('Café.wav', 'Cafe')).toBe(songMatchScore('Cafe.wav', 'Cafe'));
+  });
+
+  test('preserves artist relevance across accent variants', () => {
+    expect(songMatchScore('Beyonce - Halo.wav', 'Halo by Beyoncé'))
+      .toBe(songMatchScore('Beyonce - Halo.wav', 'Halo by Beyonce'));
+  });
+
   test('matches by song title even when artist is missing', () => {
     const score = songMatchScore('07 - Atmosphere (Extended Mix).flac', 'Atmosphere — FISHER, Kita Alexander');
     expect(score).toBeGreaterThan(0);

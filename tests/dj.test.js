@@ -135,6 +135,24 @@ describe('parseSongQuery', () => {
 });
 
 describe('songMatchScore', () => {
+  test.each(['Go', 'Up', 'Sun'])('matches the short title %s as a whole word', title => {
+    expect(songMatchScore(`Artist - ${title} (Extended Mix).wav`, title)).toBeGreaterThan(0);
+  });
+
+  test.each([['Go', 'Gone'], ['Up', 'Super'], ['Sun', 'Sunrise']])(
+    'does not match short title %s inside %s', (title, otherTitle) => {
+      expect(songMatchScore(`Artist - ${otherTitle}.wav`, title)).toBe(0);
+    }
+  );
+
+  test('can select a download for a short title without selecting a substring match', () => {
+    const files = [
+      { filename: 'Artist - Gone.wav', size: 50000000 },
+      { filename: 'Artist - Go.flac', size: 30000000 },
+    ];
+    expect(pickBestFile(files, 'Go by Artist')).toBe(files[1]);
+  });
+
   test.each(['Café', 'Cafe\u0301'])('matches accented query %s against ASCII filenames', title => {
     expect(songMatchScore('Cafe.wav', title)).toBe(songMatchScore('Cafe.wav', 'Cafe'));
   });

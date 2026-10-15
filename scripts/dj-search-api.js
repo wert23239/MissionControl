@@ -134,7 +134,10 @@ function songMatchScore(filename, parsed) {
   score += Math.round(titleCoverage * 70);
 
   const longTitleTokens = titleTokens.filter(t => t.length >= 4);
-  const hasAnchor = longTitleTokens.some(t => fileCompact.includes(t)) || (titleCompact.length >= 4 && fileCompact.includes(titleCompact));
+  // Short titles need a whole-word match, not a substring ("Go" != "Gone").
+  const shortTitleMatch = titleCompact.length < 4 && titleTokens.length === 1
+    && normalizeTokens(base).includes(titleTokens[0]);
+  const hasAnchor = shortTitleMatch || longTitleTokens.some(t => fileCompact.includes(t)) || (titleCompact.length >= 4 && fileCompact.includes(titleCompact));
   if (!hasAnchor || titleCoverage < 0.45) return 0;
 
   if (artistTokens.length) {

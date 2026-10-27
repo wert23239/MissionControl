@@ -3720,7 +3720,7 @@ async function loadSpending(){
 
   // ── Current Month Pace ──
   const now=new Date();
-  const curMonth=now.toISOString().slice(0,7);
+  const curMonth=localDateKey(now).slice(0,7);
   const dayOfMonth=now.getDate();
   const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   const paceEl=document.getElementById('spend-pace');
@@ -3810,11 +3810,12 @@ function searchTxns(){
 
 function exportSpendingCSV(mode){
   if(!allSpendingTxns.length){alert('No spending data loaded yet.');return;}
+  const exportDate=localDateKey();
   let txns=[];
   if(mode==='all'){
     txns=allSpendingTxns;
   }else if(mode==='month'){
-    const cur=new Date().toISOString().slice(0,7);
+    const cur=exportDate.slice(0,7);
     txns=allSpendingTxns.filter(t=>t.transaction_date&&t.transaction_date.startsWith(cur));
     if(!txns.length){alert('No transactions for current month yet.');return;}
   }else if(mode==='search'){
@@ -3830,7 +3831,7 @@ function exportSpendingCSV(mode){
   const blob=new Blob([csv],{type:'text/csv'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download=`spending-${mode}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.href=url;a.download=`spending-${mode}-${exportDate}.csv`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 

@@ -3824,9 +3824,15 @@ function exportSpendingCSV(mode){
     txns=allSpendingTxns.filter(t=>t.description&&t.description.toUpperCase().includes(q));
     if(!txns.length){alert('No matching transactions.');return;}
   }
-  const esc=v=>{const s=String(v??'');return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s;};
+  // Quoting alone does not stop spreadsheet apps from executing text as formulas.
+  // Keep numeric amounts numeric, but force formula-like imported text to be literal.
+  const esc=v=>{
+    let s=String(v??'');
+    if(/^\s*[=+@-]/.test(s)||/^[\t\r\n]/.test(s))s="'"+s;
+    return /[,"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  };
   const header='Date,Description,Amount,Category,Type';
-  const rows=txns.map(t=>[t.transaction_date,esc(t.description),t.amount,esc(t.category||''),esc(t.type||'')].join(','));
+  const rows=txns.map(t=>[esc(t.transaction_date),esc(t.description),t.amount,esc(t.category||''),esc(t.type||'')].join(','));
   const csv=header+'\n'+rows.join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const url=URL.createObjectURL(blob);

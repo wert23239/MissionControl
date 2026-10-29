@@ -1959,8 +1959,8 @@ function sanitizePackingWeatherHtml(html=''){
   });
   return template.innerHTML;
 }
-function todayISO(){return new Date().toISOString().slice(0,10)}
-function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
+function todayISO(){return localDateKey()}
+function addDaysISO(days){const d=new Date();d.setDate(d.getDate()+days);return localDateKey(d)}
 function readPackingLocal(){try{return JSON.parse(localStorage.getItem(PACKING_STORAGE_KEY)||'{}')||{};}catch(e){return {};}}
 function setPackingSyncStatus(text){const el=document.getElementById('packingSync');if(el)el.textContent=text||'';}
 function syncPackingDateBounds(){

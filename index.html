@@ -1804,8 +1804,11 @@ async function loadRecentActivity(){
   const el=document.getElementById('overviewActivity');
   if(!el)return;
   try{
-    const today=new Date().toISOString().slice(0,10);
-    const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const now=new Date();
+    const today=localDateKey(now);
+    const previousDay=new Date(now);
+    previousDay.setDate(previousDay.getDate()-1);
+    const yesterday=localDateKey(previousDay);
     const r=await fetch(SB_URL+'/rest/v1/journal?order=created_at.desc&limit=15',{headers:sbHeaders});
     const entries=r.ok?await r.json():[];
     if(!entries.length){el.innerHTML='<div style="color:#665c78;font-size:13px">No journal entries yet</div>';return}
@@ -2238,7 +2241,7 @@ async function addJournalEntry(){
   const text=input.value.trim();if(!text)return;
   const cat=document.getElementById('journalCat').value;
   input.value='';
-  const today=new Date().toISOString().slice(0,10);
+  const today=localDateKey();
   await fetch(SB_URL+'/rest/v1/journal',{method:'POST',headers:{...sbHeaders,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({entry:text,date:today,category:cat})});
   renderJournal();
 }

@@ -665,8 +665,9 @@ calendar:`<h2 class="panel-title">📅 Calendar</h2>
 <div style="display:flex;gap:8px;margin-bottom:16px;">
 <input type="date" id="calDate" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
 <input type="text" id="calEvent" placeholder="Event description..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;color:#e8e0f0;font-family:inherit;font-size:13px;">
-<button onclick="addCal()" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
+<button id="calAdd" onclick="addCal()" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
 </div>
+<p id="calSaveStatus" role="status" style="font-size:13px;color:#e879f9;"></p>
 <div id="calList" class="card" style="max-height:60vh;overflow-y:auto;"></div>`,
 
 packing:`<h2 class="panel-title">🧳 Packing List</h2>
@@ -3228,14 +3229,34 @@ async function loadCalFromSupabase(){
     calCache=r.ok?await r.json():[];
   }catch(e){calCache=[];}
 }
+let calSaving=false;
 async function addCal(){
-  const d=document.getElementById('calDate').value;
-  const e=document.getElementById('calEvent').value.trim();
+  if(calSaving)return;
+  const dateInput=document.getElementById('calDate');
+  const eventInput=document.getElementById('calEvent');
+  const d=dateInput.value;
+  const draft=eventInput.value;
+  const e=draft.trim();
   if(!d||!e)return;
+  const button=document.getElementById('calAdd');
+  const status=document.getElementById('calSaveStatus');
+  calSaving=true;
+  button.disabled=true;
+  status.textContent='Saving event…';
   try{
-    await fetch(SB_URL+'/rest/v1/calendar',{method:'POST',headers:{...sbHeaders,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:d,event:e})});
-  }catch(err){console.log('Calendar insert failed',err)}
-  document.getElementById('calEvent').value='';
+    const response=await fetch(SB_URL+'/rest/v1/calendar',{method:'POST',headers:{...sbHeaders,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({date:d,event:e})});
+    if(!response.ok)throw new Error('Calendar insert HTTP '+response.status);
+  }catch(err){
+    console.log('Calendar insert failed',err);
+    status.textContent='Could not save event. Your draft is kept — try Add again.';
+    return;
+  }finally{
+    calSaving=false;
+    button.disabled=false;
+  }
+  // Do not erase a new draft typed while the previous event was saving.
+  if(eventInput.value===draft&&dateInput.value===d)eventInput.value='';
+  status.textContent='Event saved.';
   await loadCalFromSupabase();
   renderCal();
 }

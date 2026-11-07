@@ -668,6 +668,7 @@ calendar:`<h2 class="panel-title">📅 Calendar</h2>
 <button id="calAdd" onclick="addCal()" style="background:linear-gradient(135deg,#e879f9,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;">Add</button>
 </div>
 <p id="calSaveStatus" role="status" style="font-size:13px;color:#e879f9;"></p>
+<p id="calLoadStatus" role="status" style="font-size:13px;color:#e879f9;"></p>
 <div id="calList" class="card" style="max-height:60vh;overflow-y:auto;"></div>`,
 
 packing:`<h2 class="panel-title">🧳 Packing List</h2>
@@ -3223,11 +3224,23 @@ async function toggleBingo(i){
 
 // Calendar (Supabase-backed)
 let calCache=[];
+let calLoadFailed=false;
 async function loadCalFromSupabase(){
   try{
     const r=await fetch(SB_URL+'/rest/v1/calendar?order=date',{headers:sbHeaders});
-    calCache=r.ok?await r.json():[];
-  }catch(e){calCache=[];}
+    if(!r.ok)throw new Error('Calendar fetch HTTP '+r.status);
+    const events=await r.json();
+    if(!Array.isArray(events))throw new Error('Invalid calendar response');
+    calCache=events;
+    calLoadFailed=false;
+  }catch(e){
+    // A failed refresh is not an empty calendar. Keep the last successful data.
+    calLoadFailed=true;
+  }
+  const status=document.getElementById('calLoadStatus');
+  if(status)status.textContent=calLoadFailed
+    ?'Could not refresh events. Previously loaded events are kept; reopen Calendar to retry.'
+    :'';
 }
 let calSaving=false;
 async function addCal(){
@@ -3272,7 +3285,7 @@ function renderCal(){
   const list=calCache;
   const el=document.getElementById('calList');
   if(!el)return;
-  if(!list.length){el.innerHTML='<div class="empty-state">📅 No events yet — add some dates!</div>';return}
+  if(!list.length){el.innerHTML=calLoadFailed?'<div class="empty-state">Events could not be loaded. Reopen Calendar to retry.</div>':'<div class="empty-state">📅 No events yet — add some dates!</div>';return}
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const todayStart=new Date();
   todayStart.setHours(0,0,0,0);

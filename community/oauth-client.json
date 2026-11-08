@@ -1,0 +1,9 @@
+{
+  "client_id": "https://wert23239.github.io/MissionControl/community/oauth-client.json",
+  "client_name": "Olive Tree — Mission Control",
+  "client_uri": "https://wert23239.github.io/MissionControl/community/",
+  "redirect_uris": ["https://wert23239.github.io/MissionControl/community/"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none"
+}

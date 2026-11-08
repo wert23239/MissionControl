@@ -32,7 +32,8 @@ export function normalize(raw,level='Unassessed'){
 export function parseInput(text,kind,level){
  text=text.trim();if(!text)throw Error('Choose a file or paste data first.');
  if(text[0]==='['||text[0]==='{')return unwrap(JSON.parse(text)).map(r=>({member:normalize(r,level),raw:r}));
- if(/^(name|email|first.?name|guest|user.?name|phone|full.?name)/i.test(text.split(/\r?\n/)[0])&&/[\t,]/.test(text.split(/\r?\n/)[0]))return csv(text).map(r=>({member:normalize(r,level),raw:r}));
+ const header=text.split(/\r?\n/)[0];
+ if(/[\t,]/.test(header)&&header.split(/[,\t]/).map(norm).some(h=>['name','email','emailaddress','firstname','fullname','username','useremail','guestname','guestemail','phone'].includes(h)))return csv(text).map(r=>({member:normalize(r,level),raw:r}));
  if(kind==='Email'){
   const from=text.match(/^From:\s*(?:"?([^<\n]+?)"?\s*)?<([^>]+)>/im)||text.match(/^From:\s*([^\s<>]+@[^\s<>]+)/im);
   if(from){const r=from.length===3?{name:from[1].trim().replace(/^"|"$/g,''),email:from[2]}:{email:from[1]};return [{member:normalize(r,level),raw:{...r,message:text}}];}

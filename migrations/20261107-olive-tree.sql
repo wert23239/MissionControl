@@ -94,9 +94,9 @@ BEGIN
   c.tokens=c.tokens||tok||jsonb_build_object('expires_at',extract(epoch from now())+coalesce((tok->>'expires_in')::integer,3600));
   UPDATE ot_luma SET tokens=c.tokens WHERE id;
  END IF;
- headers=ARRAY[extensions.http_header('Authorization','Bearer '||(c.tokens->>'access_token')),extensions.http_header('Accept','application/json, text/event-stream'),extensions.http_header('MCP-Protocol-Version','2025-03-26')];
+ headers=ARRAY[extensions.http_header('Authorization','Bearer '||(c.tokens->>'access_token')),extensions.http_header('Accept','application/json, text/event-stream'),extensions.http_header('MCP-Protocol-Version',coalesce(c.tokens->>'mcp_protocol','2025-03-26'))];
  IF c.tokens->>'mcp_session' IS NOT NULL AND method<>'initialize' THEN headers=array_append(headers,extensions.http_header('Mcp-Session-Id',c.tokens->>'mcp_session')); END IF;
- SELECT * INTO resp FROM extensions.http(('POST','https://mcp.luma.com',headers,'application/json',jsonb_build_object('jsonrpc','2.0','id',1,'method',method,'params',params)::text)::extensions.http_request);
+ SELECT * INTO resp FROM extensions.http(('POST','https://mcp.luma.com',headers,'application/json',(jsonb_build_object('jsonrpc','2.0','method',method,'params',params)||CASE WHEN method='notifications/initialized' THEN '{}'::jsonb ELSE '{"id":1}'::jsonb END)::text)::extensions.http_request);
  IF resp.status NOT BETWEEN 200 AND 299 THEN RAISE EXCEPTION 'Luma request failed (HTTP %). Reconnect if expired.',resp.status; END IF;
  IF method='notifications/initialized' THEN RETURN '{}'::jsonb; END IF;
  IF length(resp.content)>5000000 THEN RAISE EXCEPTION 'Luma response too large. Use a smaller page.'; END IF;
@@ -108,6 +108,7 @@ BEGIN
  IF result IS NULL THEN RAISE EXCEPTION 'Luma returned an unreadable response'; END IF;
  IF result ? 'error' THEN RAISE EXCEPTION 'Luma: %',left(result->'error'->>'message',300); END IF;
  IF method='initialize' THEN
+  IF result->'result'->>'protocolVersion' IS NOT NULL THEN UPDATE ot_luma SET tokens=jsonb_set(tokens,'{mcp_protocol}',result->'result'->'protocolVersion') WHERE id; END IF;
   SELECT h.value INTO line FROM unnest(resp.headers) h WHERE lower(h.field)='mcp-session-id' LIMIT 1;
   IF line IS NOT NULL THEN UPDATE ot_luma SET tokens=jsonb_set(tokens,'{mcp_session}',to_jsonb(line)) WHERE id; END IF;
  END IF;

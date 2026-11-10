@@ -3276,10 +3276,26 @@ async function addCal(){
   renderCal();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='calEvent')addCal()});
-async function deleteCal(id){
+const calDeleting=new Set();
+async function deleteCal(id,button){
+  const key=String(id);
+  if(calDeleting.has(key))return;
+  const status=document.getElementById('calSaveStatus');
+  calDeleting.add(key);
+  if(button)button.disabled=true;
+  if(status)status.textContent='Deleting event…';
   try{
-    await fetch(SB_URL+'/rest/v1/calendar?id=eq.'+id,{method:'DELETE',headers:{...sbHeaders,'Prefer':'return=minimal'}});
-  }catch(err){console.log('Calendar delete failed',err)}
+    const response=await fetch(SB_URL+'/rest/v1/calendar?id=eq.'+encodeURIComponent(key),{method:'DELETE',headers:{...sbHeaders,'Prefer':'return=minimal'}});
+    if(!response.ok)throw new Error('Calendar delete HTTP '+response.status);
+  }catch(err){
+    console.log('Calendar delete failed',err);
+    if(status)status.textContent='Could not delete event. It is kept — try Delete again.';
+    return;
+  }finally{
+    calDeleting.delete(key);
+    if(button)button.disabled=false;
+  }
+  if(status)status.textContent='Event deleted.';
   await loadCalFromSupabase();
   renderCal();
 }
@@ -3312,7 +3328,7 @@ function renderCal(){
       </div>
       <div style="width:3px;height:28px;background:#e879f9;border-radius:2px;flex-shrink:0"></div>
       <div style="flex:1;font-size:14px;color:#d4c4f0">${escapeHtml(item.event)}</div>
-      <button onclick="deleteCal(${inlineActionArg(item.id)})" style="background:none;border:none;color:#665c78;cursor:pointer;font-size:14px;padding:0 4px">×</button>
+      <button aria-label="Delete event" onclick="deleteCal(${inlineActionArg(item.id)},this)" style="background:none;border:none;color:#665c78;cursor:pointer;font-size:14px;padding:0 4px">×</button>
     </div>`;
   });
   el.innerHTML=html;

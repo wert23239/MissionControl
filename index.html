@@ -3300,6 +3300,8 @@ async function deleteCal(id,button){
   renderCal();
 }
 function renderCal(){
+  // Keep month markers in sync with the list after loads, additions, and deletions.
+  renderCalGrid();
   const list=calCache;
   const el=document.getElementById('calList');
   if(!el)return;

@@ -291,6 +291,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
+// Initialize escaping before panel templates render quick links.
+const htmlEscapes={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const sections=[
   {id:'overview',icon:'🏠',label:'Overview',dot:'#e879f9'},
   {id:'projects',icon:'🚀',label:'Projects',dot:'#22d3ee'},
@@ -1715,7 +1717,6 @@ bracket:`<h2 class="panel-title">🏀 March Madness 2026</h2>
 const SB_URL='https://aihworyfcgstwbpzkzoy.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaHdvcnlmY2dzdHdicHprem95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjE0NzEsImV4cCI6MjA4NjY5NzQ3MX0.NrYtMgZ3D5VL-ES6iGXrmg-WEb-fRgU4AHKnLuhcTlE';
 const sbHeaders={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
-const htmlEscapes={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>htmlEscapes[ch]);}
 function inlineJsString(value){return JSON.stringify(String(value??'')).replace(/"/g,'&quot;');}
 function inlineActionArg(value){return "decodeURIComponent('"+encodeURIComponent(String(value??''))+"')";}
@@ -1857,7 +1858,8 @@ loadRecentActivity();
 })();
 
 // Build nav
-const savedTab=localStorage.getItem('mc-active-tab')||'overview';
+const requestedTab=location.hash.slice(1)||localStorage.getItem('mc-active-tab');
+const savedTab=sections.some(s=>s.id===requestedTab)?requestedTab:'overview';
 let addedDivider=false;
 sections.forEach((s,i)=>{
   // Add section labels
@@ -1890,6 +1892,8 @@ Object.entries(panels).forEach(([id,html])=>{
 });
 
 function switchPanel(id){
+  if(!document.getElementById('panel-'+id))return;
+  if(location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
@@ -1905,6 +1909,8 @@ function switchPanel(id){
   if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
 }
 
+
+window.addEventListener('hashchange',()=>switchPanel(location.hash.slice(1)||'overview'));
 
 // Packing list
 const PACKING_STORAGE_KEY='mc-packing-state';
@@ -3395,18 +3401,7 @@ renderCalGrid();
 // Initialize
 const origSwitch=switchPanel;
 switchPanel=function(id){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  localStorage.setItem('mc-active-tab',id);
-  const urlBar=document.querySelector('.url-bar');
-  if(urlBar)urlBar.innerHTML='🔒 missioncontrol.app/'+id;
-  if(id==='packing')initPackingTab();
-  if(id==='notebook'){loadTasks();renderNotes();renderJournal();}
-  if(id==='book')renderBook();
-  if(id==='bingo')renderBingo();
-  if(id==='crons')renderCrons();
-  if(id==='dj'){loadDJProfile();Promise.all([syncDJFromSupabase(),loadDJManifest()]).then(()=>renderDJ());}
+  origSwitch(id);
   if(id==='projects'){loadProjects()}
   if(id==='spending'){loadSpending()}
   if(id==='calendar'){loadCalFromSupabase().then(()=>renderCal());}
@@ -4145,6 +4140,7 @@ switchPanel=function(id){
   _origSwitch2(id);
   if(id==='bracket')switchBracket(currentBracket);
 };
+window.addEventListener('DOMContentLoaded',()=>switchPanel(savedTab));
 </script>
 <script src="isaac-planner.js"></script>
 <div id="kb-help" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="this.style.display='none'">

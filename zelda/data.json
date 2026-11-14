@@ -1,0 +1,283 @@
+{
+  "skulls": [
+    {
+      "id": "inside-great-deku-tree",
+      "area": "Inside Great Deku Tree",
+      "total": 4
+    },
+    {
+      "id": "kokiri-forest",
+      "area": "Kokiri Forest",
+      "total": 3
+    },
+    {
+      "id": "lost-woods",
+      "area": "Lost Woods",
+      "total": 3
+    },
+    {
+      "id": "sacred-grove",
+      "area": "Sacred Grove",
+      "total": 1
+    },
+    {
+      "id": "forest-temple",
+      "area": "Forest Temple",
+      "total": 5
+    },
+    {
+      "id": "hyrule-field",
+      "area": "Hyrule Field",
+      "total": 3
+    },
+    {
+      "id": "lon-lon-ranch",
+      "area": "Lon Lon Ranch",
+      "total": 3
+    },
+    {
+      "id": "hyrule-castle-town",
+      "area": "Hyrule Castle Town",
+      "total": 1
+    },
+    {
+      "id": "hyrule-castle",
+      "area": "Hyrule Castle",
+      "total": 2
+    },
+    {
+      "id": "kakariko-village",
+      "area": "Kakariko Village",
+      "total": 6
+    },
+    {
+      "id": "graveyard",
+      "area": "Graveyard",
+      "total": 2
+    },
+    {
+      "id": "bottom-of-the-well",
+      "area": "Bottom of the Well",
+      "total": 3
+    },
+    {
+      "id": "shadow-temple",
+      "area": "Shadow Temple",
+      "total": 5
+    },
+    {
+      "id": "death-mountain-trail",
+      "area": "Death Mountain Trail",
+      "total": 4
+    },
+    {
+      "id": "dodongo-cavern",
+      "area": "Dodongo Cavern",
+      "total": 5
+    },
+    {
+      "id": "goron-city",
+      "area": "Goron City",
+      "total": 2
+    },
+    {
+      "id": "death-mountain-crater",
+      "area": "Death Mountain Crater",
+      "total": 2
+    },
+    {
+      "id": "fire-temple",
+      "area": "Fire Temple",
+      "total": 5
+    },
+    {
+      "id": "zora-river",
+      "area": "Zora River",
+      "total": 4
+    },
+    {
+      "id": "zora-fountain",
+      "area": "Zora Fountain",
+      "total": 3
+    },
+    {
+      "id": "lord-jabu-jabu-s-belly",
+      "area": "Lord Jabu-Jabu's Belly",
+      "total": 4
+    },
+    {
+      "id": "zora-domain",
+      "area": "Zora Domain",
+      "total": 1
+    },
+    {
+      "id": "ice-cavern",
+      "area": "Ice Cavern",
+      "total": 3
+    },
+    {
+      "id": "lake-hylia",
+      "area": "Lake Hylia",
+      "total": 5
+    },
+    {
+      "id": "water-temple",
+      "area": "Water Temple",
+      "total": 5
+    },
+    {
+      "id": "gerudo-valley",
+      "area": "Gerudo Valley",
+      "total": 4
+    },
+    {
+      "id": "gerudo-fortress",
+      "area": "Gerudo Fortress",
+      "total": 2
+    },
+    {
+      "id": "mirage-desert",
+      "area": "Mirage Desert",
+      "total": 1
+    },
+    {
+      "id": "evil-desert-colossus",
+      "area": "Evil Desert Colossus",
+      "total": 3
+    },
+    {
+      "id": "spirit-temple",
+      "area": "Spirit Temple",
+      "total": 5
+    },
+    {
+      "id": "ganondorf-s-castle",
+      "area": "Ganondorf's Castle",
+      "total": 1
+    }
+  ],
+  "pieces": [
+    {
+      "id": "lon-lon-ranch",
+      "area": "Lon Lon Ranch",
+      "total": 1
+    },
+    {
+      "id": "hyrule-castle-town",
+      "area": "Hyrule Castle Town",
+      "total": 3
+    },
+    {
+      "id": "gerudo-valley",
+      "area": "Gerudo Valley",
+      "total": 2
+    },
+    {
+      "id": "lake-hylia",
+      "area": "Lake Hylia",
+      "total": 3
+    },
+    {
+      "id": "kakariko-village",
+      "area": "Kakariko Village",
+      "total": 4
+    },
+    {
+      "id": "graveyard",
+      "area": "Graveyard",
+      "total": 4
+    },
+    {
+      "id": "lost-woods",
+      "area": "Lost Woods",
+      "total": 2
+    },
+    {
+      "id": "goron-city",
+      "area": "Goron City",
+      "total": 1
+    },
+    {
+      "id": "death-mountain-crater",
+      "area": "Death Mountain Crater",
+      "total": 3
+    },
+    {
+      "id": "zora-river",
+      "area": "Zora River",
+      "total": 4
+    },
+    {
+      "id": "zora-domain",
+      "area": "Zora Domain",
+      "total": 1
+    },
+    {
+      "id": "hyrule-field",
+      "area": "Hyrule Field",
+      "total": 2
+    },
+    {
+      "id": "death-mountain-trail",
+      "area": "Death Mountain Trail",
+      "total": 1
+    },
+    {
+      "id": "zora-fountain",
+      "area": "Zora Fountain",
+      "total": 2
+    },
+    {
+      "id": "gerudo-fortress",
+      "area": "Gerudo Fortress",
+      "total": 2
+    },
+    {
+      "id": "evil-desert-colossus",
+      "area": "Evil Desert Colossus",
+      "total": 1
+    }
+  ],
+  "containers": [
+    {
+      "id": "inside-great-deku-tree",
+      "area": "Inside Great Deku Tree",
+      "total": 1
+    },
+    {
+      "id": "forest-temple",
+      "area": "Forest Temple",
+      "total": 1
+    },
+    {
+      "id": "shadow-temple",
+      "area": "Shadow Temple",
+      "total": 1
+    },
+    {
+      "id": "dodongo-cavern",
+      "area": "Dodongo Cavern",
+      "total": 1
+    },
+    {
+      "id": "fire-temple",
+      "area": "Fire Temple",
+      "total": 1
+    },
+    {
+      "id": "lord-jabu-jabu-s-belly",
+      "area": "Lord Jabu-Jabu's Belly",
+      "total": 1
+    },
+    {
+      "id": "water-temple",
+      "area": "Water Temple",
+      "total": 1
+    },
+    {
+      "id": "spirit-temple",
+      "area": "Spirit Temple",
+      "total": 1
+    }
+  ]
+}

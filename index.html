@@ -2196,7 +2196,16 @@ updateClock();setInterval(updateClock,30000);
 const catColors={General:'#e879f9',Website:'#22c55e',Book:'#f59e0b',Design:'#a855f7',Revenue:'#22c55e','Alex/Skills':'#22d3ee',Ideas:'#ef4444'};
 let noteFilter='All';
 
-function getNotes(){return JSON.parse(localStorage.getItem('mc-notes')||'[]')}
+function getNotes(){
+  // A damaged cache or blocked storage must not stop the Notes panel rendering.
+  // Keep reads non-destructive so the original cache remains recoverable.
+  try{
+    const notes=JSON.parse(localStorage.getItem('mc-notes')||'[]');
+    if(!Array.isArray(notes))return [];
+    return notes.filter(n=>n&&typeof n==='object'&&!Array.isArray(n)&&typeof n.text==='string')
+      .map(n=>({...n,cat:typeof n.cat==='string'&&n.cat.trim()?n.cat:'General'}));
+  }catch(e){return []}
+}
 function saveNotes(n){localStorage.setItem('mc-notes',JSON.stringify(n))}
 
 async function addNote(){

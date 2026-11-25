@@ -426,8 +426,9 @@ notebook:`<h2 class="panel-title">📋 Notebook</h2>
 <option value="General">General</option><option value="Website">Website</option><option value="Book">Book</option>
 <option value="Design">Design</option><option value="Revenue">Revenue</option><option value="Alex/Skills">Alex/Skills</option><option value="Ideas">Ideas</option>
 </select>
-<button onclick="addNote()">Add</button>
+<button id="noteAdd" onclick="addNote()">Add</button>
 </div>
+<div id="noteSaveStatus" role="status" aria-live="polite" style="font-size:12px;color:#998eb5;margin-bottom:10px"></div>
 <div class="filter-tabs" id="filterTabs"></div>
 <div id="notesList"></div>
 </div>
@@ -2208,20 +2209,47 @@ function getNotes(){
 }
 function saveNotes(n){localStorage.setItem('mc-notes',JSON.stringify(n))}
 
+let noteSaving=false;
 async function addNote(){
+  if(noteSaving)return;
   const input=document.getElementById('noteInput');
   const text=input.value.trim();if(!text)return;
+  const draft=input.value;
   const cat=document.getElementById('noteCat').value;
+  const button=document.getElementById('noteAdd');
+  const status=document.getElementById('noteSaveStatus');
   const time=new Date().toISOString();
-  input.value='';
+  noteSaving=true;
+  if(button)button.disabled=true;
+  if(status)status.textContent='Saving note…';
   try{
-    const rows=await sbInsert('notes',{text,cat,created_at:time});
-    const note=rows&&rows[0]?{text,cat,time,id:rows[0].id}:{text,cat,time};
-    const notes=getNotes();notes.unshift(note);saveNotes(notes);
-  }catch(e){
-    const notes=getNotes();notes.unshift({text,cat,time});saveNotes(notes);
+    let note={text,cat,time};
+    let remoteSaved=false;
+    try{
+      const rows=await sbInsert('notes',{text,cat,created_at:time});
+      if(!Array.isArray(rows)||!rows[0]?.id)throw new Error('Note was not saved');
+      note.id=rows[0].id;
+      remoteSaved=true;
+    }catch(e){/* Keep the existing local-only fallback when sync fails. */}
+    let localSaved=false;
+    try{
+      const notes=getNotes();notes.unshift(note);saveNotes(notes);
+      localSaved=true;
+    }catch(e){/* A full or blocked cache must not erase an unsaved draft. */}
+    if(!remoteSaved&&!localSaved){
+      if(status)status.textContent='Could not save note. Your draft is kept — try again.';
+      return;
+    }
+    // Do not erase a newer draft typed while the request was pending.
+    if(input.value===draft)input.value='';
+    if(status)status.textContent=remoteSaved
+      ? (localSaved?'Note saved.':'Note synced, but browser storage is unavailable. Reload when storage is available to view it.')
+      : 'Note saved only in this browser — cloud sync failed.';
+    renderNotes();
+  }finally{
+    noteSaving=false;
+    if(button)button.disabled=false;
   }
-  renderNotes();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='noteInput')addNote()});
 

@@ -2253,7 +2253,37 @@ async function addNote(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement?.id==='noteInput')addNote()});
 
-async function deleteNote(i){const n=getNotes();const note=n.splice(i,1)[0];saveNotes(n);renderNotes();if(note&&note.id)try{await sbDelete('notes',note.id)}catch(e){}}
+const noteDeleting=new Set();
+function noteDeleteKey(note){return JSON.stringify(note.id!=null?['id',note.id]:['local',note.time,note.text,note.cat])}
+async function deleteNote(i,button){
+  const note=getNotes()[i];if(!note)return;
+  const key=noteDeleteKey(note);if(noteDeleting.has(key))return;
+  const status=document.getElementById('noteSaveStatus');
+  noteDeleting.add(key);
+  if(button)button.disabled=true;
+  if(status)status.textContent='Deleting note…';
+  let remoteDeleted=false;
+  try{
+    if(note.id!=null){
+      const response=await sbDelete('notes',note.id);
+      if(!response.ok)throw new Error('Note deletion rejected');
+      remoteDeleted=true;
+    }
+    // Re-read after the request so newer notes and edits are not overwritten.
+    const notes=getNotes();
+    const index=notes.findIndex(n=>noteDeleteKey(n)===key);
+    if(index!==-1){notes.splice(index,1);saveNotes(notes)}
+    if(status)status.textContent='Note deleted.';
+  }catch(e){
+    if(status)status.textContent=remoteDeleted
+      ? 'Note deleted from cloud, but browser storage could not update. Try deleting again to clear this copy.'
+      : 'Could not delete note. Your note is kept — try again.';
+  }finally{
+    noteDeleting.delete(key);
+    if(button)button.disabled=false;
+    renderNotes();
+  }
+}
 function toggleNote(i){const n=getNotes();n[i].done=!n[i].done;saveNotes(n);renderNotes()}
 
 function renderNotes(){
@@ -2278,7 +2308,7 @@ function renderNotes(){
     const fullText=escapeHtml(text).replace(/\|/g,' · ');
     const collapsed=long?'note-collapsed':'';
     const body=long?`<div class="${collapsed}" style="cursor:pointer" onclick="this.classList.toggle('note-collapsed');this.classList.toggle('note-expanded')"><div class="note-short">${preview} <span style="color:#e879f9;font-size:11px">▶</span></div><div class="note-long">${fullText} <span style="color:#e879f9;font-size:11px">▲</span></div></div>`:fullText;
-    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'#e879f9'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${escapeHtml(n.cat)} · ${escapeHtml(t.toLocaleString())}</div></div><button class="note-del" onclick="deleteNote(${idx})">×</button></div>`;
+    return `<div class="note-item" style="align-items:center">${cb}<span class="note-dot" style="background:${catColors[n.cat]||'#e879f9'}"></span><div class="note-content" style="${strike}">${body}<div class="note-meta">${escapeHtml(n.cat)} · ${escapeHtml(t.toLocaleString())}</div></div><button class="note-del" aria-label="Delete note" ${noteDeleting.has(noteDeleteKey(n))?'disabled':''} onclick="deleteNote(${idx},this)">×</button></div>`;
   }).join('');
 }
 

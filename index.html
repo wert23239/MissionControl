@@ -2289,6 +2289,8 @@ function toggleNote(i){const n=getNotes();n[i].done=!n[i].done;saveNotes(n);rend
 function renderNotes(){
   const notes=getNotes();
   const cats=['All',...new Set(notes.map(n=>n.cat))];
+  // A deleted category must not leave a hidden filter showing a false empty state.
+  if(!cats.includes(noteFilter))noteFilter='All';
   const tabs=document.getElementById('filterTabs');
   if(tabs)tabs.innerHTML=cats.map(c=>`<button class="filter-tab${c===noteFilter?' active':''}" onclick="noteFilter=${inlineJsString(c)};renderNotes()">${escapeHtml(c)}</button>`).join('');
   const list=document.getElementById('notesList');
